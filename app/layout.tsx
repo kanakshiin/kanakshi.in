@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Josefin_Sans, Manrope } from "next/font/google";
+import { Josefin_Sans } from "next/font/google";
 
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
@@ -12,9 +12,9 @@ const headingFont = Josefin_Sans({
   variable: "--font-heading"
 });
 
-const bodyFont = Manrope({
+const bodyFont = Josefin_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body"
 });
 

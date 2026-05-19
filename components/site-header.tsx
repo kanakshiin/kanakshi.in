@@ -10,7 +10,7 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
-  const navItems = categories.slice(0, 6);
+  const navItems = categories.slice(0, 7);
 
   return (
     <>
@@ -19,6 +19,14 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
       </div>
 
       <header className="site-header">
+        <div className="header-utility">
+          <div className="container header-utility-shell">
+            <span>Free shipping on Indian orders</span>
+            <span>9910212007</span>
+            <span>Track your order</span>
+          </div>
+        </div>
+
         <div className="container header-shell">
           <div className="brand-lockup">
             <Link href="/" className="brand-mark">
@@ -32,13 +40,16 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
                 {category.name}
               </Link>
             ))}
-            <Link href="/shop">Shop All</Link>
+            <Link href="/shop" className="nav-highlight">
+              Shop All
+            </Link>
           </nav>
 
           <div className="header-tools" aria-label="Store tools">
             <Link href="/shop">Search</Link>
             <span>Wishlist</span>
             <span>Account</span>
+            <span>Cart</span>
           </div>
         </div>
       </header>
