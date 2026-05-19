@@ -28,10 +28,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const heroImage =
     activeCategory?.image ||
     referenceAssets.collections.homeDecor;
-  const shopItems = [
-    ...products.items.filter((product) => product.slug === "little-divinity-brass-decor-demo"),
-    ...products.items.filter((product) => product.slug !== "little-divinity-brass-decor-demo")
-  ];
+  const shopItems = products.items;
   const featuredCategories = categories.slice(0, 8);
   const storePromises = [
     "Handcrafted accents and idols",

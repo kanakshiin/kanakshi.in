@@ -229,6 +229,10 @@ export function resolveAssetUrl(path?: string | null): string {
     return path;
   }
 
+  if (path.startsWith("/")) {
+    return path;
+  }
+
   return `${BACKEND_SITE_URL}/${path.replace(/^\/+/, "")}`;
 }
 
