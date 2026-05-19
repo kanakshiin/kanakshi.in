@@ -1,3 +1,4 @@
+import { referenceAssets } from "./reference-assets";
 import { Category, Product, ProductListResponse, SiteSettings } from "./types";
 
 const API_BASE_URL =
@@ -18,12 +19,12 @@ const fallbackSettings: SiteSettings = {
 };
 
 const fallbackCategories: Category[] = [
-  { id: 1, parent_id: null, name: "God Idols", slug: "god-idols", image: null },
-  { id: 2, parent_id: null, name: "Wall Decor", slug: "wall-decor", image: null },
-  { id: 3, parent_id: null, name: "Table Decor", slug: "table-decor", image: null },
-  { id: 4, parent_id: null, name: "Pooja Decor", slug: "pooja-decor", image: null },
-  { id: 5, parent_id: null, name: "Home Kitchen", slug: "home-kitchen", image: null },
-  { id: 6, parent_id: null, name: "Gifting Edit", slug: "gifting-edit", image: null }
+  { id: 1, parent_id: null, name: "God Idols", slug: "god-idols", image: referenceAssets.collections.godIdols },
+  { id: 2, parent_id: null, name: "Wall Decor", slug: "wall-decor", image: referenceAssets.hero.wallDecor },
+  { id: 3, parent_id: null, name: "Table Decor", slug: "table-decor", image: referenceAssets.productHighlights.frame },
+  { id: 4, parent_id: null, name: "Pooja Decor", slug: "pooja-decor", image: referenceAssets.collections.poojaDecor },
+  { id: 5, parent_id: null, name: "Home Kitchen", slug: "home-kitchen", image: referenceAssets.collections.homeKitchen },
+  { id: 6, parent_id: null, name: "Gifting Edit", slug: "gifting-edit", image: referenceAssets.founderAndBrand.weddingGift }
 ];
 
 const fallbackProducts: Product[] = [
@@ -35,7 +36,10 @@ const fallbackProducts: Product[] = [
     sale_price: 11499,
     effective_price: 11499,
     category_name: "Best Seller",
-    images: []
+    short_desc: "An ornate brass centrepiece created to anchor meditation corners and entry consoles.",
+    description:
+      "Layered carving, rich antique finish, and a calm seated form make this a statement accent for gifting or everyday styling.",
+    images: [referenceAssets.productHighlights.buddha]
   },
   {
     id: 2,
@@ -45,7 +49,10 @@ const fallbackProducts: Product[] = [
     sale_price: 8599,
     effective_price: 8599,
     category_name: "Table Decor",
-    images: []
+    short_desc: "A warm brass photo frame with floral detailing for sideboards, mandirs, and memory shelves.",
+    description:
+      "Designed for festive gifting and curated tabletops, this frame blends handcrafted texture with heirloom-inspired styling.",
+    images: [referenceAssets.productHighlights.frame]
   },
   {
     id: 3,
@@ -55,7 +62,10 @@ const fallbackProducts: Product[] = [
     sale_price: 7499,
     effective_price: 7499,
     category_name: "Wall Decor",
-    images: []
+    short_desc: "A symbolic wall piece crafted for dramatic living room and foyer styling.",
+    description:
+      "Its sculptural silhouette and deep finish help create a gallery-like wall story rooted in Indian craft vocabulary.",
+    images: [referenceAssets.productHighlights.peacock]
   },
   {
     id: 4,
@@ -65,7 +75,10 @@ const fallbackProducts: Product[] = [
     sale_price: 5999,
     effective_price: 5999,
     category_name: "Pooja Decor",
-    images: []
+    short_desc: "A temple-inspired pedestal built to elevate pooja idols and ceremonial styling.",
+    description:
+      "Detailed yali forms, layered metalwork, and a compact display footprint make it ideal for festive arrangements.",
+    images: [referenceAssets.productHighlights.throne]
   }
 ];
 

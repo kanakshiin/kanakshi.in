@@ -10,12 +10,12 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
-  const navItems = categories.slice(0, 5);
+  const navItems = categories.slice(0, 6);
 
   return (
     <>
       <div className="top-offer-bar">
-        Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders
+        Handcrafted brass decor, gifting accents, and pooja essentials with all-India delivery
       </div>
 
       <header className="site-header">
@@ -32,12 +32,12 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
                 {category.name}
               </Link>
             ))}
-            <Link href="/shop">More</Link>
+            <Link href="/shop">Shop All</Link>
           </nav>
 
           <div className="header-tools" aria-label="Store tools">
-            <span>Search</span>
-            <span>Bag</span>
+            <Link href="/shop">Search</Link>
+            <span>Wishlist</span>
             <span>Account</span>
           </div>
         </div>

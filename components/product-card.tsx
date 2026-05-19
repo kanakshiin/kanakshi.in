@@ -15,7 +15,10 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
     <article className="product-card">
       <Link href={`/product/${product.slug}`} className="product-media">
         <img src={getPrimaryImage(product)} alt={product.name} />
-        {discount ? <span className="product-badge">{discount}% off</span> : null}
+        <div className="product-overlay-actions">
+          <span>Quick View</span>
+        </div>
+        {discount ? <span className="product-badge">Save {discount}%</span> : null}
       </Link>
 
       <div className="product-copy">
@@ -23,6 +26,7 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
         <Link href={`/product/${product.slug}`} className="product-title">
           {product.name}
         </Link>
+        {product.short_desc ? <p className="product-snippet">{product.short_desc}</p> : null}
         <div className="price-row">
           <strong>{formatPrice(product.effective_price ?? product.price, currencySymbol)}</strong>
           {Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price) ? (

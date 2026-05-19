@@ -18,30 +18,33 @@ export function SiteFooter({ categories, settings }: SiteFooterProps) {
       <section className="footer-usp-band">
         <div className="container footer-usp-grid">
           <div className="footer-usp-item">
-            <strong>Free Delivery</strong>
-            <span>on Indian Orders</span>
+            <strong>Pan India Shipping</strong>
+            <span>carefully packed and dispatched</span>
           </div>
           <div className="footer-usp-item">
-            <strong>Reach Us At</strong>
+            <strong>Talk To Us</strong>
             <span>{settings.site_phone || "+91 9910212007"}</span>
           </div>
           <div className="footer-usp-item">
-            <strong>COD Available</strong>
-            <span>Across major pin codes</span>
+            <strong>Festive Gifting Ready</strong>
+            <span>ideal for weddings and celebrations</span>
           </div>
           <div className="footer-usp-item">
-            <strong>Payment 100% Secure</strong>
-            <span>Trusted checkout experience</span>
+            <strong>Secure Payments</strong>
+            <span>trusted checkout experience</span>
           </div>
         </div>
       </section>
 
       <div className="container footer-shell">
         <div className="footer-column footer-contact">
-          <h3>Customer Service</h3>
+          <h3>Little Divinity</h3>
+          <p className="footer-copy">
+            Crafted for homes that want warmth, symbolism, and gifting pieces that feel memorable.
+          </p>
           <p>Address: E-3, Ground Floor Sector -3, Noida 201301</p>
           <p>Phone: {settings.site_phone || "+91 9910212007"}</p>
-          <p>E-mail: {settings.site_email || "hello@theadvitya.com"}</p>
+          <p>E-mail: {settings.site_email || "hello@littledivinity.com"}</p>
         </div>
 
         <div className="footer-column">
@@ -63,23 +66,23 @@ export function SiteFooter({ categories, settings }: SiteFooterProps) {
         </div>
 
         <div className="footer-column footer-newsletter">
-          <h3>Newsletter Signup</h3>
-          <p>Subscribe to our newsletter and get 10 off on your first order.</p>
+          <h3>Join The List</h3>
+          <p>Get new arrivals, festive edits, and gifting ideas in your inbox.</p>
           <form className="footer-newsletter-form">
             <input type="email" placeholder="Enter your e-mail" />
-            <button type="button">Get!</button>
+            <button type="button">Join</button>
           </form>
           <div className="footer-socials">
             <span>Facebook</span>
             <span>Instagram</span>
             <span>YouTube</span>
-            <span>LinkedIn</span>
+            <span>Pinterest</span>
           </div>
         </div>
       </div>
 
       <div className="container footer-bottom">
-        <span>© The Advitya 2023. All Rights Reserved</span>
+        <span>© Little Divinity 2026. All Rights Reserved</span>
         <span>MasterCard · Visa · RuPay · Paytm · PayPal</span>
       </div>
     </footer>
