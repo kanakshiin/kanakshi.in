@@ -80,7 +80,7 @@ img {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr) 180px;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   height: 80px;
 }
 
@@ -102,10 +102,10 @@ h3,
 .header-tools {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  gap: 1.35rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .header-nav {
@@ -151,9 +151,11 @@ h3,
 }
 
 .nav-highlight {
-  padding: 0.45rem 0.8rem;
+  padding: 0.55rem 1rem;
   border-radius: 999px;
-  background: rgba(241, 167, 32, 0.14);
+  background: rgba(241, 167, 32, 0.18);
+  color: var(--accent-deep);
+  box-shadow: 0 10px 20px rgba(241, 167, 32, 0.08);
 }
 
 .brand-logo {
@@ -416,13 +418,15 @@ h3 {
 .story-copy,
 .hero-promo-copy {
   position: absolute;
-  left: 1rem;
-  right: 1rem;
+  left: 50%;
   bottom: 1rem;
-  padding: 1rem 1.15rem;
-  border-radius: 22px;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  padding: 0.95rem 1.1rem;
+  border-radius: 24px;
   background: rgba(20, 14, 11, 0.82);
   color: #fff;
+  text-align: center;
 }
 
 .story-copy {
@@ -460,7 +464,7 @@ h3 {
 
 .hero-promo-card {
   min-height: 0;
-  border-radius: 0;
+  border-radius: 34px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -569,6 +573,22 @@ h3 {
   color: #191919;
   font-size: 1.5rem;
   line-height: 1;
+}
+
+.hero-promo-copy small {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-promo-copy strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  line-height: 1.15;
 }
 
 .footer-socials {
