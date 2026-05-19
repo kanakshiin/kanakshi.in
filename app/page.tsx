@@ -48,6 +48,49 @@ export default async function HomePage() {
     { title: "Artisan Craft Story", image: referenceAssets.founderAndBrand.artisans }
   ];
 
+  const heroPromos = [
+    {
+      title: "Wooden Collection",
+      subtitle: "Warm handcrafted accents",
+      image: referenceAssets.founderAndBrand.woodenDecor,
+      href: "/shop?category=wooden-collection"
+    },
+    {
+      title: "Serving & Gifting",
+      subtitle: "Festive pieces for every table",
+      image: referenceAssets.founderAndBrand.weddingGift,
+      href: "/shop?category=gifting"
+    }
+  ];
+
+  const circularCategories = [
+    {
+      title: "Ganesh Chaturthi",
+      image: referenceAssets.occasions.ganeshChaturthi,
+      href: "/shop?category=ganesh-chaturthi"
+    },
+    {
+      title: "Janmashtami",
+      image: referenceAssets.occasions.janmashtami,
+      href: "/shop?category=janmashtami"
+    },
+    {
+      title: "Navratri",
+      image: referenceAssets.occasions.navratri,
+      href: "/shop?category=navratri"
+    },
+    {
+      title: "Diwali",
+      image: referenceAssets.occasions.diwali,
+      href: "/shop?category=diwali"
+    },
+    {
+      title: "Dhanteras",
+      image: referenceAssets.occasions.dhanteras,
+      href: "/shop?category=dhanteras"
+    }
+  ];
+
   return (
     <main>
       <section className="announce-bar">
@@ -61,23 +104,26 @@ export default async function HomePage() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Little Divinity</p>
+            <p className="eyebrow">Handcrafted Heritage</p>
             <h1>{brandName}</h1>
-            <p className="hero-text">{tagline}</p>
+            <p className="hero-text">
+              Brass idols, pooja accents, home decor, gifting pieces, and handcrafted collections styled in the same
+              rich storefront spirit you asked for.
+            </p>
 
             <div className="hero-actions">
               <Link href="/shop" className="primary-button">
-                Shop Collection
+                Shop Now
               </Link>
               <a href="#bestsellers" className="secondary-button">
-                Explore Bestsellers
+                Best Sellers
               </a>
             </div>
 
             <div className="trust-row">
-              <span>Hand-finished brass decor</span>
+              <span>Made in India</span>
               <span>Free shipping above {freeShipping}</span>
-              <span>Wedding and festive gifting</span>
+              <span>Direct from artisans</span>
             </div>
           </div>
 
@@ -86,8 +132,20 @@ export default async function HomePage() {
             <div className="hero-panel">
               <small>Signature Collection</small>
               <strong>{spotlightCategory?.name || "Brass & Sacred Decor"}</strong>
-              <span>Warm textures, devotional accents, and statement pieces styled like an elevated handcrafted store.</span>
+              <span>Elevated gifting, pooja decor, and statement styling pieces in a warm gold-led storefront theme.</span>
             </div>
+          </div>
+
+          <div className="hero-promo-stack">
+            {heroPromos.map((promo) => (
+              <Link key={promo.title} href={promo.href} className="hero-promo-card">
+                <img src={promo.image} alt={promo.title} />
+                <div className="hero-promo-copy">
+                  <small>{promo.subtitle}</small>
+                  <strong>{promo.title}</strong>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -138,6 +196,28 @@ export default async function HomePage() {
                   <small>{collection.subtitle}</small>
                   <strong>{collection.title}</strong>
                 </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="content-section circle-category-section">
+        <div className="container">
+          <div className="section-head section-head-center">
+            <div>
+              <p className="eyebrow">Shop By Occasion</p>
+              <h2>Festival Categories</h2>
+            </div>
+          </div>
+
+          <div className="circle-category-grid">
+            {circularCategories.map((category) => (
+              <Link key={category.title} href={category.href} className="circle-category-card">
+                <span className="circle-category-image">
+                  <img src={category.image} alt={category.title} />
+                </span>
+                <strong>{category.title}</strong>
               </Link>
             ))}
           </div>

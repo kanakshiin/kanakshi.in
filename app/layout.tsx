@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Josefin_Sans, Manrope } from "next/font/google";
 
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
 import { getCategories, getSettings } from "../lib/api";
 import "./globals.css";
 
-const headingFont = Cormorant_Garamond({
+const headingFont = Josefin_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-heading"
