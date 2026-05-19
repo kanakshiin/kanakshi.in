@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
-import { getSettings } from "../lib/api";
+import { getCategories, getSettings } from "../lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,15 +15,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getSettings();
+  const [settings, categories] = await Promise.all([getSettings(), getCategories(8)]);
   const brandName = settings.site_name || "Ecommerce Frontend";
 
   return (
     <html lang="en">
       <body>
-        <SiteHeader brandName={brandName} />
+        <SiteHeader brandName={brandName} categories={categories} />
         {children}
-        <SiteFooter />
+        <SiteFooter categories={categories} settings={settings} />
       </body>
     </html>
   );
