@@ -3,17 +3,17 @@ import { Category, Product, ProductListResponse, SiteSettings } from "./types";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "http://127.0.0.1:8000/api/v1";
+  "https://ecombeckend.saaszo.in/api/v1";
 
 const BACKEND_SITE_URL =
   process.env.NEXT_PUBLIC_BACKEND_SITE_URL ||
   process.env.BACKEND_SITE_URL ||
-  "http://127.0.0.1:8000";
+  "https://ecombeckend.saaszo.in";
 
 const fallbackSettings: SiteSettings = {
-  site_name: "Premium Brass Artifacts Store",
-  site_tagline: "Curated decor, pooja accents, and gifting pieces with handcrafted warmth.",
-  site_currency_symbol: "Rs.",
+  site_name: "Little Divinity",
+  site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
+  site_currency_symbol: "₹",
   min_order_free_shipping: "499"
 };
 

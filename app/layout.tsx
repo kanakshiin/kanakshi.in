@@ -6,8 +6,8 @@ import { getCategories, getSettings } from "../lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ecommerce Frontend",
-  description: "Next.js storefront prepared for Vercel deployment."
+  title: "Little Divinity",
+  description: "Premium brass decor and gifting storefront powered by a reusable ecommerce API."
 };
 
 export default async function RootLayout({
@@ -16,7 +16,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [settings, categories] = await Promise.all([getSettings(), getCategories(8)]);
-  const brandName = settings.site_name || "Ecommerce Frontend";
+  const brandName = settings.site_name || "Little Divinity";
 
   return (
     <html lang="en">

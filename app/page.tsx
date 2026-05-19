@@ -5,11 +5,11 @@ import { formatPrice, getHomePageData, resolveAssetUrl } from "../lib/api";
 
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts } = await getHomePageData();
-  const brandName = settings.site_name || "Premium Brass Artifacts Store";
+  const brandName = settings.site_name || "Little Divinity";
   const tagline =
     settings.site_tagline ||
-    "Curated decor, pooja accents, and handcrafted gifting pieces with a category-first storefront.";
-  const currencySymbol = settings.site_currency_symbol || "Rs.";
+    "Handcrafted brass decor, pooja accents, and meaningful gifting pieces with a category-first storefront.";
+  const currencySymbol = settings.site_currency_symbol || "₹";
   const freeShipping = formatPrice(settings.min_order_free_shipping || "499", currencySymbol);
   const spotlightCategory = categories[0];
 
