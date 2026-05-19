@@ -35,11 +35,6 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             aria-hidden={index === activeIndex ? "false" : "true"}
           >
             <img src={slide.image} alt={slide.alt} />
-            {(slide.eyebrow || slide.title || slide.subtitle) ? (
-              <div className="hero-slide-copy">
-                {slide.title ? <strong className="hero-slide-title">{slide.title}</strong> : null}
-              </div>
-            ) : null}
           </div>
         ))}
       </div>
@@ -54,17 +49,11 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           ‹
         </button>
 
-        <div className="hero-slider-dots">
-          {slides.map((slide, index) => (
-            <button
-              key={`${slide.alt}-dot-${index}`}
-              type="button"
-              className={`hero-slider-dot ${index === activeIndex ? "active" : ""}`}
-              onClick={() => setActiveIndex(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        {slides[activeIndex]?.title ? (
+          <div className="hero-slide-copy">
+            <strong className="hero-slide-title">{slides[activeIndex].title}</strong>
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -75,6 +64,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           ›
         </button>
       </div>
+
     </div>
   );
 }

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 type SiteHeaderProps = {
   brandName: string;
@@ -10,13 +13,80 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
-  const navItems = categories.slice(0, 7);
+  const [offerVisible, setOfferVisible] = useState(true);
+  const fallbackMenu = [
+    {
+      id: 20001,
+      name: "Hindu Deities",
+      slug: "hindu-dieties",
+      submenu: ["Ganesha Idols", "Krishna Idols", "Ram Darbar"]
+    },
+    {
+      id: 20002,
+      name: "Home Kitchen",
+      slug: "home-kitchen",
+      submenu: ["Spice Boxes", "Serving Trays", "Utility Decor"]
+    },
+    {
+      id: 20003,
+      name: "Home Decor",
+      slug: "home-decor",
+      submenu: ["Wall Decor", "Table Decor", "Candle Stands"]
+    },
+    {
+      id: 20004,
+      name: "Pooja Decor",
+      slug: "pooja-decor",
+      submenu: [
+        "Brass Singhasan",
+        "Incense Stand",
+        "Brass Spoon",
+        "Diya",
+        "Brass Chowki",
+        "Bells",
+        "Pooja Thali",
+        "Wooden Mandir Decor"
+      ]
+    },
+    {
+      id: 20005,
+      name: "Mother's Day collection",
+      slug: "mothers-day-collection",
+      submenu: ["Gifting Picks", "Wall Decor", "Home Styling"]
+    },
+    {
+      id: 20006,
+      name: "More",
+      slug: "more",
+      submenu: ["New Arrivals", "Festival Categories", "All Collections"]
+    }
+  ];
+
+  const categoryMap = new Map(categories.map((category) => [category.slug, category]));
+  const fullNavItems = fallbackMenu.map((item) => {
+    const matchedCategory = categoryMap.get(item.slug);
+
+    return {
+      ...item,
+      slug: matchedCategory?.slug || item.slug
+    };
+  });
 
   return (
     <>
-      <div className="top-offer-bar">
-        Handcrafted brass decor, gifting accents, and pooja essentials with all-India delivery
-      </div>
+      {offerVisible ? (
+        <div className="top-offer-bar">
+          <span>Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders</span>
+          <button
+            type="button"
+            className="top-offer-close"
+            aria-label="Dismiss notification"
+            onClick={() => setOfferVisible(false)}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
 
       <header className="site-header">
         <div className="container header-shell">
@@ -27,14 +97,28 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
           </div>
 
           <nav className="header-nav">
-            {navItems.map((category) => (
-              <Link key={category.id} href={`/shop?category=${category.slug}`}>
-                {category.name}
-              </Link>
+            {fullNavItems.map((category) => (
+              <div key={category.id} className="nav-item-with-menu">
+                <Link href={`/shop?category=${category.slug}`} className="nav-link-with-icon">
+                  <span>{category.name}</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
+                    <path d="M7 10.5 12 15l5-4.5" />
+                  </svg>
+                </Link>
+
+                <div className="nav-submenu">
+                  {category.submenu.map((item) => (
+                    <Link
+                      key={`${category.slug}-${item}`}
+                      href={`/shop?category=${category.slug}`}
+                      className="nav-submenu-link"
+                    >
+                      {item}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
-            <Link href="/shop" className="nav-highlight">
-              Shop All
-            </Link>
           </nav>
 
           <div className="header-tools" aria-label="Store tools">
@@ -46,17 +130,19 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
             </Link>
             <span aria-label="Wishlist" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 20.2 4.9 13.3a4.9 4.9 0 0 1 6.9-7l.2.2l.2-.2a4.9 4.9 0 0 1 6.9 7L12 20.2Zm0-2.8 5.7-5.5a2.9 2.9 0 1 0-4.1-4.1L12 9.4l-1.6-1.6a2.9 2.9 0 1 0-4.1 4.1L12 17.4Z" />
+                <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
               </svg>
             </span>
             <span aria-label="Account" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 12a4 4 0 1 1 0-8a4 4 0 0 1 0 8Zm0 2c4.42 0 8 2.24 8 5v1H4v-1c0-2.76 3.58-5 8-5Zm0-2a2 2 0 1 0 0-4a2 2 0 0 0 0 4Zm0 4c-3.12 0-5.81 1.35-5.98 2H18c-.17-.65-2.86-2-6-2Z" />
+                <circle cx="12" cy="8.5" r="3.2" />
+                <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
               </svg>
             </span>
             <span aria-label="Cart" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 6V5a5 5 0 0 1 10 0v1h3v14H4V6h3Zm2 0h6V5a3 3 0 0 0-6 0v1Zm9 2H6v10h12V8Z" />
+                <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />
+                <path d="M9.5 8.5V7.3c0-1.4 1.1-2.6 2.5-2.6s2.5 1.2 2.5 2.6v1.2" />
               </svg>
             </span>
           </div>

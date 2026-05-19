@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ProductCard } from "../../components/product-card";
+import { referenceAssets } from "../../lib/reference-assets";
 import { getCategories, getProducts, getSettings } from "../../lib/api";
 
 type ShopPageProps = {
@@ -24,23 +25,35 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const products = await getProducts(query.toString());
   const currencySymbol = settings.site_currency_symbol || "₹";
   const activeCategory = categories.find((category) => category.slug === params.category);
+  const heroImage =
+    activeCategory?.image ||
+    referenceAssets.collections.homeDecor;
+  const shopItems = [
+    ...products.items.filter((product) => product.slug === "little-divinity-brass-decor-demo"),
+    ...products.items.filter((product) => product.slug !== "little-divinity-brass-decor-demo")
+  ];
+  const featuredCategories = categories.slice(0, 8);
+  const storePromises = [
+    "Handcrafted accents and idols",
+    "Festive gifting friendly picks",
+    `Free shipping over ${currencySymbol}${settings.min_order_free_shipping || "499"}`,
+    "Curated with warm brass styling"
+  ];
 
   return (
     <main className="page-shell">
       <section className="shop-hero">
         <div className="container">
           <div className="shop-hero-grid">
-            <div>
+            <div className="shop-hero-copy">
               <p className="eyebrow">Shop The Collection</p>
-              <h1 className="page-title">
-                {activeCategory ? activeCategory.name : "Premium Decor For Home, Ritual, And Gifting"}
-              </h1>
+              <h1 className="page-title">{activeCategory ? activeCategory.name : "Premium Decor For Home, Ritual, And Gifting"}</h1>
               <p className="shop-intro">
-                Browse handcrafted accents, statement idols, festive gifting picks, and home styling pieces in a calmer,
-                premium storefront flow.
+                Browse handcrafted idols, wall accents, pooja decor, gifting edits, and lifestyle pieces in a denser
+                handcrafted storefront flow inspired by the reference retail rhythm.
               </p>
               <div className="shop-chip-row">
-                {categories.slice(0, 6).map((category) => (
+                {featuredCategories.slice(0, 6).map((category) => (
                   <Link
                     key={category.id}
                     href={`/shop?category=${category.slug}`}
@@ -52,28 +65,67 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               </div>
             </div>
 
-            <div className="shop-summary-card">
-              <span>{products.pagination.total} products ready to browse</span>
-              <strong>Curated around festive display, sacred corners, and meaningful gifting.</strong>
+            <div className="shop-hero-visual">
+              <img src={heroImage} alt={activeCategory?.name || "Shop the collection"} />
+              <div className="shop-summary-card">
+                <span>{products.pagination.total} products ready to browse</span>
+                <strong>Curated around festive display, sacred corners, and meaningful gifting.</strong>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="content-section">
+      <section className="content-section shop-layout-section">
         <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Featured Listing</p>
-              <h2>{activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces"}</h2>
-            </div>
-            <span className="listing-meta">Sorted by popularity</span>
-          </div>
+          <div className="shop-layout">
+            <aside className="shop-sidebar">
+              <div className="shop-filter-card">
+                <p className="eyebrow">Browse By</p>
+                <h3>Categories</h3>
+                <div className="shop-filter-list">
+                  {featuredCategories.map((category) => (
+                    <Link
+                      key={category.id}
+                      href={`/shop?category=${category.slug}`}
+                      className={category.slug === params.category ? "shop-filter-link active" : "shop-filter-link"}
+                    >
+                      <span>{category.name}</span>
+                      <small>Explore</small>
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
-          <div className="product-grid">
-            {products.items.map((product) => (
-              <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
-            ))}
+              <div className="shop-filter-card">
+                <p className="eyebrow">Store Promise</p>
+                <h3>Why Browse Here</h3>
+                <ul className="shop-promise-list">
+                  {storePromises.map((promise) => (
+                    <li key={promise}>{promise}</li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
+
+            <div className="shop-results">
+              <div className="shop-results-toolbar">
+                <div>
+                  <p className="eyebrow">Featured Listing</p>
+                  <h2>{activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces"}</h2>
+                </div>
+                <div className="shop-results-meta">
+                  <span className="listing-meta">{shopItems.length} visible now</span>
+                  <span className="listing-meta">Sorted by popularity</span>
+                </div>
+              </div>
+
+              <div className="product-grid shop-product-grid">
+                {shopItems.map((product) => (
+                  <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

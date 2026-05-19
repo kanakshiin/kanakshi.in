@@ -29,6 +29,19 @@ const fallbackCategories: Category[] = [
 
 const fallbackProducts: Product[] = [
   {
+    id: 101,
+    name: "Little Divinity Brass Decor Demo",
+    slug: "little-divinity-brass-decor-demo",
+    price: 11999,
+    sale_price: 7999,
+    effective_price: 7999,
+    category_name: "Demo Product",
+    short_desc: "A real product photo from your local collection so the storefront card can be checked visually.",
+    description:
+      "This demo product is added only to preview how real Little Divinity photography looks inside the current shop and product page design.",
+    images: ["/demo-products/little-divinity-real-1.jpg"]
+  },
+  {
     id: 1,
     name: "Brass Protection Buddha",
     slug: "brass-protection-buddha",
@@ -65,7 +78,7 @@ const fallbackProducts: Product[] = [
     short_desc: "A symbolic wall piece crafted for dramatic living room and foyer styling.",
     description:
       "Its sculptural silhouette and deep finish help create a gallery-like wall story rooted in Indian craft vocabulary.",
-    images: [referenceAssets.productHighlights.peacock]
+    images: [referenceAssets.collections.homeDecor]
   },
   {
     id: 4,
@@ -79,6 +92,110 @@ const fallbackProducts: Product[] = [
     description:
       "Detailed yali forms, layered metalwork, and a compact display footprint make it ideal for festive arrangements.",
     images: [referenceAssets.productHighlights.throne]
+  },
+  {
+    id: 5,
+    name: "Superfine Shiva Idol",
+    slug: "superfine-shiva-idol",
+    price: 8999,
+    sale_price: 4699,
+    effective_price: 4699,
+    category_name: "God Idols",
+    short_desc: "A premium Shiva idol with denser carving and a display-ready antique brass finish.",
+    description:
+      "Crafted for sacred corners and statement consoles, this piece brings a stronger festive-storefront presence.",
+    images: [referenceAssets.productHighlights.superfineShiva]
+  },
+  {
+    id: 6,
+    name: "Peacock Brass Accent",
+    slug: "peacock-brass-accent",
+    price: 12999,
+    sale_price: 7899,
+    effective_price: 7899,
+    category_name: "Home Decor",
+    short_desc: "An ornate peacock sculpture designed for sideboards, foyers, and premium gifting moments.",
+    description:
+      "The jewel-toned detailing and elevated silhouette give this piece a richer handcrafted decor personality.",
+    images: [referenceAssets.productHighlights.peacock]
+  },
+  {
+    id: 7,
+    name: "Brass Candle Stand Pair",
+    slug: "brass-candle-stand-pair",
+    price: 9999,
+    sale_price: 6299,
+    effective_price: 6299,
+    category_name: "Table Decor",
+    short_desc: "Tall brass candle stands suited to festive dining tables and layered living-room styling.",
+    description:
+      "Balanced proportions and carved details make this pair feel giftable, decorative, and occasion-ready.",
+    images: [referenceAssets.productHighlights.candleStand]
+  },
+  {
+    id: 8,
+    name: "Brass Wall Elephant",
+    slug: "brass-wall-elephant",
+    price: 7599,
+    sale_price: 4899,
+    effective_price: 4899,
+    category_name: "Wall Decor",
+    short_desc: "A dramatic elephant wall accent for gallery walls, entryways, and conversation corners.",
+    description:
+      "Its carved texture and sculptural profile create a denser wall story without feeling overpowering.",
+    images: [referenceAssets.hero.wallDecor]
+  },
+  {
+    id: 9,
+    name: "Wooden Spice Box",
+    slug: "wooden-spice-box",
+    price: 5999,
+    sale_price: 3499,
+    effective_price: 3499,
+    category_name: "Home Kitchen",
+    short_desc: "A handcrafted wooden masala box that blends utility with gifting-led styling.",
+    description:
+      "Built for warm kitchens and heritage-inspired tabletops, it adds texture, function, and retail appeal.",
+    images: [referenceAssets.collections.homeKitchen]
+  },
+  {
+    id: 10,
+    name: "Brass Pooja Thali Set",
+    slug: "brass-pooja-thali-set",
+    price: 6999,
+    sale_price: 4299,
+    effective_price: 4299,
+    category_name: "Pooja Decor",
+    short_desc: "A coordinated pooja thali set for ceremonies, gifting hampers, and devotional styling.",
+    description:
+      "The curated set format makes it ideal for festive shopping pages and more complete ritual displays.",
+    images: [referenceAssets.collections.poojaDecor]
+  },
+  {
+    id: 11,
+    name: "Handcrafted Gift Hamper Accent",
+    slug: "handcrafted-gift-hamper-accent",
+    price: 8499,
+    sale_price: 5799,
+    effective_price: 5799,
+    category_name: "Gifting Edit",
+    short_desc: "A warm handcrafted decor piece selected for festive hampers and premium gifting bundles.",
+    description:
+      "Made to feel elevated yet versatile, this piece helps the shop grid look fuller and more curated.",
+    images: [referenceAssets.founderAndBrand.weddingGift]
+  },
+  {
+    id: 12,
+    name: "Wooden Mandir Decor Panel",
+    slug: "wooden-mandir-decor-panel",
+    price: 10999,
+    sale_price: 6999,
+    effective_price: 6999,
+    category_name: "Wooden Collection",
+    short_desc: "A wooden decorative panel with ceremonial warmth for pooja walls and gifting stories.",
+    description:
+      "The layered handcrafted finish helps balance spiritual styling with a stronger premium decor presence.",
+    images: [referenceAssets.founderAndBrand.woodenDecor]
   }
 ];
 
@@ -165,13 +282,20 @@ export async function getCategories(limit = 8): Promise<Category[]> {
 
 export async function getProducts(query = ""): Promise<ProductListResponse> {
   const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`);
+  const items = payload?.data?.items?.length ? payload.data.items : fallbackProducts;
+  const mergedItems =
+    items.length >= 8 ? items : [...items, ...fallbackProducts.filter((product) => !items.some((item) => item.slug === product.slug))];
+
   return (
-    payload?.data || {
-      items: fallbackProducts,
+    (payload?.data && {
+      ...payload.data,
+      items: mergedItems
+    }) || {
+      items: mergedItems,
       pagination: {
         current_page: 1,
-        per_page: fallbackProducts.length,
-        total: fallbackProducts.length,
+        per_page: mergedItems.length,
+        total: mergedItems.length,
         last_page: 1
       }
     }

@@ -319,29 +319,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section white-section">
-        <div className="container twin-promo-grid">
-          {twinPromos.map((promo) => (
-            <Link key={promo.title} href={promo.href} className="twin-promo-card">
-              <img src={promo.image} alt={promo.title} />
-              <div className="twin-promo-copy">
-                <small>Curated Promotion</small>
-                <strong>{promo.title}</strong>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section">
-        <div className="container">
-          <div className="section-head">
+      <section className="content-section white-section new-arrivals-showcase">
+        <div className="container new-arrivals-showcase-shell">
+          <div className="section-head new-arrivals-heading">
             <div>
               <p className="eyebrow">New Arrivals</p>
               <h2>Fresh Pieces Worth A First Look</h2>
             </div>
           </div>
 
+          <div className="twin-promo-grid new-arrivals-grid">
+            {twinPromos.map((promo) => (
+              <Link key={promo.title} href={promo.href} className="twin-promo-card">
+                <img src={promo.image} alt={promo.title} />
+                <div className="twin-promo-copy">
+                  <small>Curated Promotion</small>
+                  <strong>{promo.title}</strong>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="content-section new-arrivals-products">
+        <div className="container">
           <div className="product-grid">
             {newestProducts.map((product) => (
               <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
