@@ -40,7 +40,8 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
           <div className="header-tools" aria-label="Store tools">
             <Link href="/shop" aria-label="Search" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13Zm0-2a8.5 8.5 0 1 1 5.33 15.12l4.52 4.53l-1.41 1.41l-4.53-4.52A8.5 8.5 0 0 1 10.5 2Z" />
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="M16 16l4.5 4.5" />
               </svg>
             </Link>
             <span aria-label="Wishlist" className="header-tool-icon">

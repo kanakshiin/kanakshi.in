@@ -81,7 +81,7 @@ img {
   grid-template-columns: 210px minmax(0, 1fr) 180px;
   align-items: center;
   gap: 1rem;
-  min-height: 82px;
+  height: 80px;
 }
 
 .brand-mark,
@@ -95,6 +95,7 @@ h3,
 .brand-mark {
   display: inline-flex;
   align-items: center;
+  height: 100%;
 }
 
 .header-nav,
@@ -156,8 +157,10 @@ h3,
 }
 
 .brand-logo {
-  width: 170px;
-  height: auto;
+  width: auto;
+  max-width: 170px;
+  max-height: 58px;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -174,7 +177,11 @@ h3,
 .header-tool-icon svg {
   width: 1.3rem;
   height: 1.3rem;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .hero-section,
@@ -418,9 +425,19 @@ h3 {
   color: #fff;
 }
 
+.story-copy {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+}
+
 .hero-panel span,
 .story-copy p {
   color: rgba(255, 255, 255, 0.78);
+}
+
+.story-copy p {
+  max-width: 28rem;
 }
 
 .category-grid,
@@ -1292,6 +1309,7 @@ h3 {
 
   .header-shell {
     grid-template-columns: 1fr;
+    height: auto;
     padding: 1rem 0;
   }
 
