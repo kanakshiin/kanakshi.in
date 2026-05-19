@@ -37,9 +37,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             <img src={slide.image} alt={slide.alt} />
             {(slide.eyebrow || slide.title || slide.subtitle) ? (
               <div className="hero-slide-copy">
-                {slide.eyebrow ? <span className="hero-slide-eyebrow">{slide.eyebrow}</span> : null}
                 {slide.title ? <strong className="hero-slide-title">{slide.title}</strong> : null}
-                {slide.subtitle ? <span className="hero-slide-subtitle">{slide.subtitle}</span> : null}
               </div>
             ) : null}
           </div>

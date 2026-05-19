@@ -7,12 +7,7 @@ import { referenceAssets } from "../lib/reference-assets";
 
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts } = await getHomePageData();
-  const brandName = settings.site_name || "Little Divinity";
-  const tagline =
-    settings.site_tagline ||
-    "Handcrafted brass decor, pooja accents, and meaningful gifting pieces with a category-first storefront.";
   const currencySymbol = settings.site_currency_symbol || "₹";
-  const freeShipping = formatPrice(settings.min_order_free_shipping || "499", currencySymbol);
   const curatedCollections = [
     {
       title: "God Idols",
@@ -55,12 +50,6 @@ export default async function HomePage() {
       href: "/shop?category=wall-decor"
     },
     {
-      title: "Candle Stand Collection",
-      subtitle: "Explore our latest classics",
-      image: referenceAssets.hero.candleStand,
-      href: "/shop?category=table-decor"
-    },
-    {
       title: "Stonework Collection",
       subtitle: "Timeless pieces for every space",
       image: referenceAssets.hero.stonework,
@@ -71,37 +60,27 @@ export default async function HomePage() {
   const heroSlides = [
     {
       alt: "Mother's Day gifting collection",
-      eyebrow: "A Curated Edit",
-      title: "Mother's Day Gifting Collection",
-      subtitle: "Warm brass decor and meaningful gifting pieces",
+      title: "Mother's Day Collection",
       image: referenceAssets.hero.primary
     },
     {
       alt: "Brass English watch collection",
-      eyebrow: "Best Seller",
       title: "Brass English Watch",
-      subtitle: "A statement piece for every corner",
       image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_2/screen.png"
     },
     {
       alt: "Sacred incense decor",
-      eyebrow: "Pooja Decor",
       title: "Ritual Essentials",
-      subtitle: "Temple-style accents for daily devotion",
       image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_whatsapp_image_2026_02_20_at_2/screen.png"
     },
     {
       alt: "Buddha collection",
-      eyebrow: "Spiritual Decor",
       title: "Buddha Collection",
-      subtitle: "Calming statement idols with handcrafted detailing",
       image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_your_paragraph_text_2025_10_2/screen.png"
     },
     {
       alt: "Wooden collection",
-      eyebrow: "Home Kitchen",
       title: "Wooden Collection",
-      subtitle: "Texture-rich utility and gifting favourites",
       image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_whatsapp_image_2026_02_20_at_3/screen.png"
     }
   ];
