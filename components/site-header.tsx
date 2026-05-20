@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -14,7 +15,7 @@ type SiteHeaderProps = {
     name: string;
     slug: string;
   }>;
-  menuItems?: NavigationItem[];
+  menuItems: NavigationItem[];
 };
 
 type NavDisplayItem = {
@@ -27,62 +28,8 @@ type NavDisplayItem = {
 
 export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
-  const fallbackMenu = [
-    {
-      id: 20001,
-      name: "Hindu Deities",
-      slug: "hindu-dieties",
-      href: "/shop?category=hindu-dieties",
-      submenu: ["Ganesha Idols", "Krishna Idols", "Ram Darbar"]
-    },
-    {
-      id: 20002,
-      name: "Home Kitchen",
-      slug: "home-kitchen",
-      href: "/shop?category=home-kitchen",
-      submenu: ["Spice Boxes", "Serving Trays", "Utility Decor"]
-    },
-    {
-      id: 20003,
-      name: "Home Decor",
-      slug: "home-decor",
-      href: "/shop?category=home-decor",
-      submenu: ["Wall Decor", "Table Decor", "Candle Stands"]
-    },
-    {
-      id: 20004,
-      name: "Pooja Decor",
-      slug: "pooja-decor",
-      href: "/shop?category=pooja-decor",
-      submenu: [
-        "Brass Singhasan",
-        "Incense Stand",
-        "Brass Spoon",
-        "Diya",
-        "Brass Chowki",
-        "Bells",
-        "Pooja Thali",
-        "Wooden Mandir Decor"
-      ]
-    },
-    {
-      id: 20005,
-      name: "Mother's Day collection",
-      slug: "mothers-day-collection",
-      href: "/shop?category=mothers-day-collection",
-      submenu: ["Gifting Picks", "Wall Decor", "Home Styling"]
-    },
-    {
-      id: 20006,
-      name: "More",
-      slug: "more",
-      href: "/shop",
-      submenu: ["New Arrivals", "Festival Categories", "All Collections"]
-    }
-  ];
-
   const categoryMap = new Map(categories.map((category) => [category.slug, category]));
-  const menuSeed: NavDisplayItem[] = menuItems?.length
+  const menuSeed: NavDisplayItem[] = menuItems.length
     ? menuItems.map((item, index) => ({
         id: item.id || index,
         name: item.title,
@@ -92,7 +39,13 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHe
           item.children?.map((child) => child.title) ||
           (((item.config as { submenu?: string[] } | undefined)?.submenu) ?? [])
       }))
-    : fallbackMenu;
+    : categories.slice(0, 6).map((category) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        href: `/shop?category=${category.slug}`,
+        submenu: []
+      }));
   const fullNavItems: NavDisplayItem[] = menuSeed.map((item) => {
     const matchedCategory = categoryMap.get(item.slug);
     return {
@@ -123,7 +76,15 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHe
         <div className="container header-shell">
           <div className="brand-lockup">
             <Link href="/" className="brand-mark">
-              <img src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"} alt={brandName} className="brand-logo" />
+              <Image
+                src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"}
+                alt={brandName}
+                className="brand-logo"
+                width={170}
+                height={58}
+                priority
+                sizes="170px"
+              />
             </Link>
           </div>
 

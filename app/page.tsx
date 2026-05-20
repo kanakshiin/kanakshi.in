@@ -1,13 +1,16 @@
 import Link from "next/link";
 
+import { StructuredData } from "../components/structured-data";
 import { HeroSlider } from "../components/hero-slider";
 import { ProductCard } from "../components/product-card";
-import { formatPrice, getHomePageData, resolveAssetUrl } from "../lib/api";
+import { getHomePageData, resolveAssetUrl } from "../lib/api";
 import { referenceAssets } from "../lib/reference-assets";
+import { getCanonicalUrl, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
 
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";
+  const siteName = getSiteName(settings);
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const curatedCollections = [
     {
@@ -197,9 +200,26 @@ export default async function HomePage() {
     referenceAssets.hero.candleStand,
     referenceAssets.collections.godIdols
   ];
+  const homePageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: siteName,
+    description: getSiteDescription(settings),
+    url: getCanonicalUrl("/", settings),
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: featuredProducts.slice(0, 8).map((product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: getCanonicalUrl(`/product/${product.slug}`, settings),
+        name: product.name
+      }))
+    }
+  };
 
   return (
     <main>
+      <StructuredData data={homePageJsonLd} />
       <section className="hero-section">
         <div className="container hero-grid">
           <div className="hero-visual">
@@ -307,7 +327,7 @@ export default async function HomePage() {
 
           <div className="product-grid">
             {featuredProducts.map((product) => (
-              <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
+              <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
             ))}
           </div>
         </div>
@@ -391,7 +411,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="product-grid">
             {newestProducts.map((product) => (
-              <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
+              <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
             ))}
           </div>
         </div>

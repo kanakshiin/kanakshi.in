@@ -83,6 +83,9 @@ export type Product = {
   effective_price?: number | string;
   category_name?: string | null;
   category_slug?: string | null;
+  meta_title?: string | null;
+  meta_desc?: string | null;
+  custom_schema?: string | null;
   avg_rating?: number | string | null;
   review_count?: number | string | null;
   is_featured?: boolean;

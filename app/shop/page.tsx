@@ -1,14 +1,41 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
+import { StructuredData } from "../../components/structured-data";
 import { ProductCard } from "../../components/product-card";
-import { referenceAssets } from "../../lib/reference-assets";
 import { getCategories, getProducts, getSettings } from "../../lib/api";
+import { getCanonicalUrl, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
+import { referenceAssets } from "../../lib/reference-assets";
 
 type ShopPageProps = {
   searchParams: Promise<{
     category?: string;
   }>;
 };
+
+export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const [settings, categories] = await Promise.all([getSettings(), getCategories(24)]);
+  const activeCategory = categories.find((category) => category.slug === params.category);
+  const siteName = getSiteName(settings);
+  const description = activeCategory
+    ? `Shop ${activeCategory.name.toLowerCase()} from ${siteName}. ${getSiteDescription(settings)}`
+    : getSiteDescription(settings);
+
+  return {
+    title: activeCategory ? `${activeCategory.name} Collection` : "Shop",
+    description,
+    alternates: {
+      canonical: activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop"
+    },
+    openGraph: {
+      title: activeCategory ? `${activeCategory.name} Collection | ${siteName}` : `${siteName} Shop`,
+      description,
+      url: getCanonicalUrl(activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop", settings)
+    }
+  };
+}
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const params = await searchParams;
@@ -30,15 +57,35 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     referenceAssets.collections.homeDecor;
   const shopItems = products.items;
   const featuredCategories = categories.slice(0, 8);
+  const pageTitle = activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces";
   const storePromises = [
     "Handcrafted accents and idols",
     "Festive gifting friendly picks",
     `Free shipping over ${currencySymbol}${settings.min_order_free_shipping || "499"}`,
     "Curated with warm brass styling"
   ];
+  const shopPageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: activeCategory ? `${activeCategory.name} Collection` : `${getSiteName(settings)} Shop`,
+    url: getCanonicalUrl(activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop", settings),
+    description: activeCategory
+      ? `Browse ${activeCategory.name.toLowerCase()} and handcrafted gifting pieces from ${getSiteName(settings)}.`
+      : getSiteDescription(settings),
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: shopItems.slice(0, 24).map((product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: getCanonicalUrl(`/product/${product.slug}`, settings),
+        name: product.name
+      }))
+    }
+  };
 
   return (
     <main className="page-shell">
+      <StructuredData data={shopPageJsonLd} />
       <section className="shop-hero">
         <div className="container">
           <div className="shop-hero-grid">
@@ -63,7 +110,13 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             </div>
 
             <div className="shop-hero-visual">
-              <img src={heroImage} alt={activeCategory?.name || "Shop the collection"} />
+              <Image
+                src={heroImage}
+                alt={activeCategory?.name || "Shop the collection"}
+                fill
+                priority
+                sizes="(max-width: 900px) 100vw, 40vw"
+              />
               <div className="shop-summary-card">
                 <span>{products.pagination.total} products ready to browse</span>
                 <strong>Curated around festive display, sacred corners, and meaningful gifting.</strong>
@@ -109,7 +162,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               <div className="shop-results-toolbar">
                 <div>
                   <p className="eyebrow">Featured Listing</p>
-                  <h2>{activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces"}</h2>
+                  <h2>{pageTitle}</h2>
                 </div>
                 <div className="shop-results-meta">
                   <span className="listing-meta">{shopItems.length} visible now</span>
@@ -119,7 +172,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
               <div className="product-grid shop-product-grid">
                 {shopItems.map((product) => (
-                  <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
+                  <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
                 ))}
               </div>
             </div>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { discountPercent, formatPrice, getPrimaryImage } from "../lib/api";
@@ -19,7 +20,12 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
   return (
     <article className="product-card">
       <Link href={`/product/${product.slug}`} className="product-media">
-        <img src={getPrimaryImage(product)} alt={product.name} />
+        <Image
+          src={getPrimaryImage(product)}
+          alt={product.name}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 25vw"
+        />
         <div className="product-corner-actions">
           <span className="product-icon-button">♡</span>
           <span className="product-icon-button">◌</span>

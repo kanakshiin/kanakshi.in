@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
 import { Josefin_Sans } from "next/font/google";
 
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
+import { StructuredData } from "../components/structured-data";
 import { getLayoutData } from "../lib/api";
+import { buildStoreMetadata, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
 import "./globals.css";
 
 const headingFont = Josefin_Sans({
@@ -18,10 +19,10 @@ const bodyFont = Josefin_Sans({
   variable: "--font-body"
 });
 
-export const metadata: Metadata = {
-  title: "Little Divinity",
-  description: "Premium brass decor and gifting storefront powered by a reusable ecommerce API."
-};
+export async function generateMetadata() {
+  const { settings } = await getLayoutData();
+  return buildStoreMetadata(settings);
+}
 
 export default async function RootLayout({
   children
@@ -29,11 +30,39 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const { settings, categories, headerMenu, footerMenu, socialLinks } = await getLayoutData();
-  const brandName = settings.site_name || "Little Divinity";
+  const brandName = getSiteName(settings);
+  const siteUrl = getSiteUrl(settings);
+  const siteDescription = getSiteDescription(settings);
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: brandName,
+    url: siteUrl,
+    logo: settings.logo_url
+      ? `${siteUrl}${settings.logo_url.startsWith("/") ? settings.logo_url : `/${settings.logo_url}`}`
+      : `${siteUrl}/logo.jpg`,
+    email: settings.site_email || undefined,
+    telephone: settings.site_phone || undefined,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: settings.address_line1 || undefined,
+      addressLocality: settings.city || undefined,
+      postalCode: settings.pincode || undefined,
+      addressCountry: settings.country || "IN"
+    }
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: brandName,
+    url: siteUrl,
+    description: siteDescription
+  };
 
   return (
     <html lang="en">
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
+        <StructuredData data={[organizationJsonLd, websiteJsonLd]} />
         <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} />
         {children}
         <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />

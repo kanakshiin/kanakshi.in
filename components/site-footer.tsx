@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type SiteFooterProps = {
   categories: Array<{
     id: number;
@@ -12,29 +14,12 @@ type SiteFooterProps = {
     pincode?: string;
     site_name?: string;
   };
-  footerMenu?: Array<{ id: number; title: string; url: string }>;
-  socialLinks?: Array<{ id: number; platform: string; url?: string | null }>;
+  footerMenu: Array<{ id: number; title: string; url: string }>;
+  socialLinks: Array<{ id: number; platform: string; url?: string | null }>;
 };
 
 export function SiteFooter({ categories, settings, footerMenu, socialLinks }: SiteFooterProps) {
   const footerCategories = categories.slice(0, 8);
-  const footerNav = footerMenu?.length
-    ? footerMenu
-    : [
-        { id: 1, title: "About Us", url: "#" },
-        { id: 2, title: "Contact", url: "#" },
-        { id: 3, title: "Privacy Policy", url: "#" },
-        { id: 4, title: "Terms & Conditions", url: "#" },
-        { id: 5, title: "Track Your Order", url: "#" }
-      ];
-  const socials = socialLinks?.length
-    ? socialLinks
-    : [
-        { id: 1, platform: "facebook", url: "#" },
-        { id: 2, platform: "instagram", url: "#" },
-        { id: 3, platform: "youtube", url: "#" },
-        { id: 4, platform: "linkedin", url: "#" }
-      ];
 
   const socialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -87,19 +72,19 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
 
         <div className="footer-column">
           <h3>Information</h3>
-          {footerNav.map((item) => (
-            <a key={item.id} href={item.url}>
+          {footerMenu.map((item) => (
+            <Link key={item.id} href={item.url}>
               {item.title}
-            </a>
+            </Link>
           ))}
         </div>
 
         <div className="footer-column">
           <h3>Categories</h3>
           {footerCategories.map((category) => (
-            <a key={category.id} href={`/shop?category=${category.slug}`}>
+            <Link key={category.id} href={`/shop?category=${category.slug}`}>
               {category.name}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -111,7 +96,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
             <button type="button">Join</button>
           </form>
           <div className="footer-socials">
-            {socials.map((social) => (
+            {socialLinks.map((social) => (
               <a key={social.id} href={social.url || "#"} aria-label={social.platform} className="footer-social-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   {socialIcon(social.platform)}

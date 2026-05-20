@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type HeroSlide = {
@@ -34,7 +35,13 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             className={`hero-slide ${index === activeIndex ? "active" : ""}`}
             aria-hidden={index === activeIndex ? "false" : "true"}
           >
-            <img src={slide.image} alt={slide.alt} />
+            <Image
+              src={slide.image}
+              alt={slide.alt}
+              fill
+              priority={index === 0}
+              sizes="(max-width: 900px) 100vw, 70vw"
+            />
           </div>
         ))}
       </div>

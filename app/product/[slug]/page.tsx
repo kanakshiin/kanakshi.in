@@ -1,14 +1,67 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { formatPrice, getPrimaryImage, getProduct, getSettings, parseProductImages } from "../../../lib/api";
+import { StructuredData } from "../../../components/structured-data";
+import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl } from "../../../lib/api";
 import { referenceAssets } from "../../../lib/reference-assets";
+import { getCanonicalUrl, getSiteDescription, getSiteName } from "../../../lib/site";
 
 type ProductPageProps = {
   params: Promise<{
     slug: string;
   }>;
 };
+
+export async function generateStaticParams() {
+  const products = await getProducts("per_page=24&sort=popular");
+  return products.items.slice(0, 24).map((product) => ({
+    slug: product.slug
+  }));
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const [settings, product] = await Promise.all([getSettings(), getProduct(slug)]);
+  const siteName = getSiteName(settings);
+  const fallbackDescription = getSiteDescription(settings);
+
+  if (!product) {
+    return {
+      title: "Product Not Found",
+      description: fallbackDescription
+    };
+  }
+
+  const description = product.meta_desc || product.short_desc || product.description || fallbackDescription;
+  const image = getPrimaryImage(product);
+
+  return {
+    title: product.meta_title || product.name,
+    description,
+    alternates: {
+      canonical: `/product/${product.slug}`
+    },
+    openGraph: {
+      title: `${product.name} | ${siteName}`,
+      description,
+      url: getCanonicalUrl(`/product/${product.slug}`, settings),
+      images: [
+        {
+          url: image,
+          alt: product.name
+        }
+      ]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | ${siteName}`,
+      description,
+      images: [image]
+    }
+  };
+}
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
@@ -21,8 +74,37 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const currencySymbol = settings.site_currency_symbol || "₹";
   const gallery = parseProductImages(product.images);
   const images = gallery.length
-    ? gallery
+    ? gallery.map((image) => resolveAssetUrl(image))
     : [getPrimaryImage(product), referenceAssets.productHighlights.candleStand, referenceAssets.productHighlights.frame];
+  const description = product.meta_desc || product.short_desc || product.description || getSiteDescription(settings);
+  let productJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.meta_title || product.name,
+    description,
+    image: images,
+    category: product.category_name || undefined,
+    sku: product.slug,
+    brand: {
+      "@type": "Brand",
+      name: getSiteName(settings)
+    },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: settings.site_currency || "INR",
+      price: Number(product.effective_price ?? product.price ?? 0),
+      availability: "https://schema.org/InStock",
+      url: getCanonicalUrl(`/product/${product.slug}`, settings)
+    }
+  };
+
+  if (product.custom_schema) {
+    try {
+      productJsonLd = JSON.parse(product.custom_schema) as Record<string, unknown>;
+    } catch {
+      // Ignore invalid custom schema and fall back to generated JSON-LD.
+    }
+  }
 
   const relatedMoments = [
     {
@@ -39,13 +121,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="page-shell">
+      <StructuredData data={productJsonLd} />
       <section className="product-hero">
         <div className="container product-detail-grid">
           <div className="product-detail-media">
-            <img src={getPrimaryImage(product)} alt={product.name} className="product-detail-main" />
+            <Image
+              src={getPrimaryImage(product)}
+              alt={product.name}
+              className="product-detail-main"
+              width={1200}
+              height={1344}
+              priority
+              sizes="(max-width: 900px) 100vw, 50vw"
+            />
             <div className="product-thumb-row">
               {images.slice(0, 4).map((image, index) => (
-                <img key={`${product.slug}-${index}`} src={image} alt={`${product.name} ${index + 1}`} />
+                <Image
+                  key={`${product.slug}-${index}`}
+                  src={image}
+                  alt={`${product.name} ${index + 1}`}
+                  width={320}
+                  height={320}
+                  sizes="(max-width: 900px) 25vw, 12vw"
+                />
               ))}
             </div>
           </div>
@@ -98,7 +196,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="product-story-grid">
             {relatedMoments.map((moment) => (
               <article key={moment.title} className="product-story-card">
-                <img src={moment.image} alt={moment.title} />
+                <Image src={moment.image} alt={moment.title} width={800} height={800} sizes="(max-width: 900px) 100vw, 33vw" />
                 <div>
                   <h3>{moment.title}</h3>
                   <p>{moment.copy}</p>
