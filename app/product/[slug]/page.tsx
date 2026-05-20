@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StructuredData } from "../../../components/structured-data";
+import { ProductDetailActions } from "../../../components/product-detail-actions";
 import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl } from "../../../lib/api";
 import { referenceAssets } from "../../../lib/reference-assets";
 import { getCanonicalUrl, getSiteDescription, getSiteName } from "../../../lib/site";
@@ -170,14 +171,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </p>
             </div>
 
-            <div className="hero-actions">
-              <Link href="/shop" className="primary-button">
-                Shop Similar Pieces
-              </Link>
-              <button type="button" className="secondary-button">
-                Add To Wishlist
-              </button>
-            </div>
+            <ProductDetailActions product={product} />
           </div>
         </div>
       </section>

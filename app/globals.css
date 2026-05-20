@@ -278,6 +278,7 @@ h3,
   height: 2.5rem;
   border-radius: 50%;
   color: var(--accent-deep);
+  position: relative;
 }
 
 .header-tool-icon svg {
@@ -288,6 +289,23 @@ h3,
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.header-cart-count {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.1rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #f1a720;
+  color: #191919;
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero-section,
@@ -975,6 +993,8 @@ h3 {
 }
 
 .product-card-action {
+  border: 0;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -992,6 +1012,104 @@ h3 {
   background: rgba(255, 255, 255, 0.66);
   color: var(--accent-deep);
   border: 1px solid var(--line);
+}
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 1.2rem;
+}
+
+.cart-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.cart-item-card,
+.cart-summary-card,
+.cart-empty-state {
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 20px 40px rgba(25, 25, 25, 0.08);
+}
+
+.cart-item-card {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.cart-item-media {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.cart-item-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cart-item-copy h2,
+.cart-summary-card h2 {
+  margin: 0.2rem 0 0.5rem;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.cart-item-controls label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cart-item-controls input {
+  width: 88px;
+  min-height: 2.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  padding: 0.7rem 0.95rem;
+  font: inherit;
+}
+
+.cart-summary-card,
+.cart-empty-state {
+  padding: 1.4rem;
+}
+
+.cart-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cart-summary-actions {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.1rem;
+}
+
+.cart-empty-state {
+  text-align: center;
+  display: grid;
+  gap: 0.9rem;
+  justify-items: center;
+  padding-block: 3rem;
 }
 
 .product-category {

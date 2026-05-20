@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { resolveAssetUrl } from "../lib/api";
 import { NavigationItem } from "../lib/types";
+import { useCart } from "./cart-provider";
 
 type SiteHeaderProps = {
   brandName: string;
@@ -28,6 +29,7 @@ type NavDisplayItem = {
 
 export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
+  const { count } = useCart();
   const categoryMap = new Map(categories.map((category) => [category.slug, category]));
   const menuSeed: NavDisplayItem[] = menuItems.length
     ? menuItems.map((item, index) => ({
@@ -131,12 +133,13 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHe
                 <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
               </svg>
             </span>
-            <span aria-label="Cart" className="header-tool-icon">
+            <Link href="/cart" aria-label="Cart" className="header-tool-icon header-cart-link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />
                 <path d="M9.5 8.5V7.3c0-1.4 1.1-2.6 2.5-2.6s2.5 1.2 2.5 2.6v1.2" />
               </svg>
-            </span>
+              {count > 0 ? <span className="header-cart-count">{count}</span> : null}
+            </Link>
           </div>
         </div>
       </header>

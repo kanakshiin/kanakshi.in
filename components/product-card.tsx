@@ -1,8 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import { discountPercent, formatPrice, getPrimaryImage } from "../lib/api";
 import { Product } from "../lib/types";
+import { AddToCartButton } from "./add-to-cart-button";
 
 type ProductCardProps = {
   product: Product;
@@ -47,7 +50,7 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
           {comparePrice ? <span>{comparePrice}</span> : null}
         </div>
         <div className="product-card-actions">
-          <span className="product-card-action">Add To Cart</span>
+          <AddToCartButton product={product} />
           <span className="product-card-action muted">Wishlist</span>
         </div>
       </div>

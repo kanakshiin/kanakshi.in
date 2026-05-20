@@ -3,6 +3,7 @@ import { Josefin_Sans } from "next/font/google";
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
 import { StructuredData } from "../components/structured-data";
+import { CartProvider } from "../components/cart-provider";
 import { getLayoutData } from "../lib/api";
 import { buildStoreMetadata, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
 import "./globals.css";
@@ -62,10 +63,12 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
-        <StructuredData data={[organizationJsonLd, websiteJsonLd]} />
-        <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} />
-        {children}
-        <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
+        <CartProvider>
+          <StructuredData data={[organizationJsonLd, websiteJsonLd]} />
+          <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} />
+          {children}
+          <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
+        </CartProvider>
       </body>
     </html>
   );
