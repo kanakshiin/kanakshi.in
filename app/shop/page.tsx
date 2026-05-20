@@ -119,7 +119,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
               <div className="product-grid shop-product-grid">
                 {shopItems.map((product) => (
-                  <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
+                  <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
                 ))}
               </div>
             </div>

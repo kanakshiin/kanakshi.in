@@ -3,40 +3,57 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { resolveAssetUrl } from "../lib/api";
+import { NavigationItem } from "../lib/types";
+
 type SiteHeaderProps = {
   brandName: string;
+  logoUrl?: string | null;
   categories: Array<{
     id: number;
     name: string;
     slug: string;
   }>;
+  menuItems?: NavigationItem[];
 };
 
-export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
+type NavDisplayItem = {
+  id: number;
+  name: string;
+  slug: string;
+  href: string;
+  submenu: string[];
+};
+
+export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
   const fallbackMenu = [
     {
       id: 20001,
       name: "Hindu Deities",
       slug: "hindu-dieties",
+      href: "/shop?category=hindu-dieties",
       submenu: ["Ganesha Idols", "Krishna Idols", "Ram Darbar"]
     },
     {
       id: 20002,
       name: "Home Kitchen",
       slug: "home-kitchen",
+      href: "/shop?category=home-kitchen",
       submenu: ["Spice Boxes", "Serving Trays", "Utility Decor"]
     },
     {
       id: 20003,
       name: "Home Decor",
       slug: "home-decor",
+      href: "/shop?category=home-decor",
       submenu: ["Wall Decor", "Table Decor", "Candle Stands"]
     },
     {
       id: 20004,
       name: "Pooja Decor",
       slug: "pooja-decor",
+      href: "/shop?category=pooja-decor",
       submenu: [
         "Brass Singhasan",
         "Incense Stand",
@@ -52,23 +69,37 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
       id: 20005,
       name: "Mother's Day collection",
       slug: "mothers-day-collection",
+      href: "/shop?category=mothers-day-collection",
       submenu: ["Gifting Picks", "Wall Decor", "Home Styling"]
     },
     {
       id: 20006,
       name: "More",
       slug: "more",
+      href: "/shop",
       submenu: ["New Arrivals", "Festival Categories", "All Collections"]
     }
   ];
 
   const categoryMap = new Map(categories.map((category) => [category.slug, category]));
-  const fullNavItems = fallbackMenu.map((item) => {
+  const menuSeed: NavDisplayItem[] = menuItems?.length
+    ? menuItems.map((item, index) => ({
+        id: item.id || index,
+        name: item.title,
+        slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
+        href: typeof item.url === "string" ? item.url : "/shop",
+        submenu:
+          item.children?.map((child) => child.title) ||
+          (((item.config as { submenu?: string[] } | undefined)?.submenu) ?? [])
+      }))
+    : fallbackMenu;
+  const fullNavItems: NavDisplayItem[] = menuSeed.map((item) => {
     const matchedCategory = categoryMap.get(item.slug);
-
     return {
       ...item,
-      slug: matchedCategory?.slug || item.slug
+      submenu: item.submenu || [],
+      slug: matchedCategory?.slug || item.slug,
+      href: item.href || `/shop?category=${matchedCategory?.slug || item.slug}`
     };
   });
 
@@ -92,14 +123,14 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
         <div className="container header-shell">
           <div className="brand-lockup">
             <Link href="/" className="brand-mark">
-              <img src="/logo.jpg" alt={brandName} className="brand-logo" />
+              <img src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"} alt={brandName} className="brand-logo" />
             </Link>
           </div>
 
           <nav className="header-nav">
             {fullNavItems.map((category) => (
               <div key={category.id} className="nav-item-with-menu">
-                <Link href={`/shop?category=${category.slug}`} className="nav-link-with-icon">
+                <Link href={category.href} className="nav-link-with-icon">
                   <span>{category.name}</span>
                   <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
                     <path d="M7 10.5 12 15l5-4.5" />
@@ -110,7 +141,7 @@ export function SiteHeader({ brandName, categories }: SiteHeaderProps) {
                   {category.submenu.map((item) => (
                     <Link
                       key={`${category.slug}-${item}`}
-                      href={`/shop?category=${category.slug}`}
+                      href={category.href}
                       className="nav-submenu-link"
                     >
                       {item}

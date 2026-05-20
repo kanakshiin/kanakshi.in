@@ -3,7 +3,7 @@ import { Josefin_Sans } from "next/font/google";
 
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
-import { getCategories, getSettings } from "../lib/api";
+import { getLayoutData } from "../lib/api";
 import "./globals.css";
 
 const headingFont = Josefin_Sans({
@@ -28,15 +28,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, categories] = await Promise.all([getSettings(), getCategories(8)]);
+  const { settings, categories, headerMenu, footerMenu, socialLinks } = await getLayoutData();
   const brandName = settings.site_name || "Little Divinity";
 
   return (
     <html lang="en">
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
-        <SiteHeader brandName={brandName} categories={categories} />
+        <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} />
         {children}
-        <SiteFooter categories={categories} settings={settings} />
+        <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
       </body>
     </html>
   );

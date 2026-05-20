@@ -6,8 +6,9 @@ import { formatPrice, getHomePageData, resolveAssetUrl } from "../lib/api";
 import { referenceAssets } from "../lib/reference-assets";
 
 export default async function HomePage() {
-  const { settings, categories, featuredProducts, newestProducts } = await getHomePageData();
+  const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";
+  const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const curatedCollections = [
     {
       title: "God Idols",
@@ -85,6 +86,37 @@ export default async function HomePage() {
     }
   ];
 
+  const heroSection = sectionMap.get("hero");
+  const bestSellerSection = sectionMap.get("best-sellers");
+  const newArrivalsSection = sectionMap.get("new-arrivals");
+
+  const heroConfig = (heroSection?.config as {
+    slides?: Array<{ title?: string; image?: string; alt?: string }>;
+    promos?: Array<{ title?: string; subtitle?: string; image?: string; href?: string }>;
+  } | null) || { slides: [], promos: [] };
+
+  const resolvedHeroSlides =
+    heroConfig.slides?.filter((slide) => slide.image).map((slide, index) => ({
+      alt: slide.alt || slide.title || `Hero slide ${index + 1}`,
+      title: slide.title,
+      image: resolveAssetUrl(slide.image || "")
+    })) || [];
+
+  const resolvedHeroPromos =
+    heroConfig.promos?.filter((promo) => promo.image).map((promo) => ({
+      title: promo.title || "",
+      subtitle: promo.subtitle || "",
+      image: resolveAssetUrl(promo.image || ""),
+      href: promo.href || "/shop"
+    })) || [];
+
+  const finalHeroSlides = resolvedHeroSlides.length
+    ? resolvedHeroSlides
+    : heroSlides.map((slide) => ({ ...slide, image: resolveAssetUrl(slide.image) }));
+  const finalHeroPromos = resolvedHeroPromos.length
+    ? resolvedHeroPromos
+    : heroPromos.map((promo) => ({ ...promo, image: resolveAssetUrl(promo.image) }));
+
   const circularCategories = [
     {
       title: "Ganesh Chaturthi",
@@ -126,6 +158,19 @@ export default async function HomePage() {
     }
   ];
 
+  const finalNewArrivalPromos = [
+    {
+      title: (newArrivalsSection?.config as { left_title?: string } | null)?.left_title || twinPromos[0].title,
+      image: resolveAssetUrl(newArrivalsSection?.image_url || twinPromos[0].image),
+      href: (newArrivalsSection?.config as { left_href?: string } | null)?.left_href || twinPromos[0].href
+    },
+    {
+      title: (newArrivalsSection?.config as { right_title?: string } | null)?.right_title || twinPromos[1].title,
+      image: resolveAssetUrl(newArrivalsSection?.side_image_url || twinPromos[1].image),
+      href: (newArrivalsSection?.config as { right_href?: string } | null)?.right_href || twinPromos[1].href
+    }
+  ];
+
   const testimonials = [
     {
       title: "Excellent Quality",
@@ -158,11 +203,11 @@ export default async function HomePage() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div className="hero-visual">
-            <HeroSlider slides={heroSlides} />
+            <HeroSlider slides={finalHeroSlides} />
           </div>
 
           <div className="hero-promo-stack">
-            {heroPromos.map((promo) => (
+            {finalHeroPromos.map((promo) => (
               <Link key={promo.title} href={promo.href} className="hero-promo-card">
                 <img src={promo.image} alt={promo.title} />
                 <div className="hero-promo-copy">
@@ -252,17 +297,17 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Best Sellers</p>
-              <h2>Most Loved Across The Storefront</h2>
+              <p className="eyebrow">{bestSellerSection?.subtitle || "Best Sellers"}</p>
+              <h2>{bestSellerSection?.title || "Most Loved Across The Storefront"}</h2>
             </div>
-            <Link href="/shop" className="text-link">
-              Shop all
+            <Link href={bestSellerSection?.button_url || "/shop"} className="text-link">
+              {bestSellerSection?.button_text || "Shop all"}
             </Link>
           </div>
 
           <div className="product-grid">
             {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
+              <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
             ))}
           </div>
         </div>
@@ -323,13 +368,13 @@ export default async function HomePage() {
         <div className="container new-arrivals-showcase-shell">
           <div className="section-head new-arrivals-heading">
             <div>
-              <p className="eyebrow">New Arrivals</p>
-              <h2>Fresh Pieces Worth A First Look</h2>
+              <p className="eyebrow">{newArrivalsSection?.subtitle || "New Arrivals"}</p>
+              <h2>{newArrivalsSection?.title || "Fresh Pieces Worth A First Look"}</h2>
             </div>
           </div>
 
           <div className="twin-promo-grid new-arrivals-grid">
-            {twinPromos.map((promo) => (
+            {finalNewArrivalPromos.map((promo) => (
               <Link key={promo.title} href={promo.href} className="twin-promo-card">
                 <img src={promo.image} alt={promo.title} />
                 <div className="twin-promo-copy">
@@ -346,7 +391,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="product-grid">
             {newestProducts.map((product) => (
-              <ProductCard key={product.id} product={product} currencySymbol={currencySymbol} />
+              <ProductCard key={product.slug} product={product} currencySymbol={currencySymbol} />
             ))}
           </div>
         </div>
@@ -435,7 +480,7 @@ export default async function HomePage() {
           <div className="occasion-grid">
             {festiveMoments.map((moment) => (
               <article key={moment.title} className="occasion-card">
-                <img src={moment.image} alt={moment.title} />
+                <img src={resolveAssetUrl(moment.image)} alt={moment.title} />
                 <div>
                   <small>Curated Edit</small>
                   <strong>{moment.title}</strong>

@@ -1,5 +1,5 @@
 import { referenceAssets } from "./reference-assets";
-import { Category, Product, ProductListResponse, SiteSettings } from "./types";
+import { Category, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -15,8 +15,37 @@ const fallbackSettings: SiteSettings = {
   site_name: "Little Divinity",
   site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
   site_currency_symbol: "₹",
-  min_order_free_shipping: "499"
+  min_order_free_shipping: "499",
+  site_email: "noreply@saaszo.in",
+  site_phone: "+91 9910212007",
+  address_line1: "E-3, Ground Floor Sector -3",
+  city: "Noida",
+  pincode: "201301"
 };
+
+const fallbackHeaderMenu: NavigationItem[] = [
+  { id: 20001, title: "Hindu Deities", url: "/shop?category=hindu-dieties", children: [{ id: 21001, title: "Ganesha Idols", url: "/shop?category=hindu-dieties" }, { id: 21002, title: "Krishna Idols", url: "/shop?category=hindu-dieties" }, { id: 21003, title: "Ram Darbar", url: "/shop?category=hindu-dieties" }] },
+  { id: 20002, title: "Home Kitchen", url: "/shop?category=home-kitchen", children: [{ id: 22001, title: "Spice Boxes", url: "/shop?category=home-kitchen" }, { id: 22002, title: "Serving Trays", url: "/shop?category=home-kitchen" }, { id: 22003, title: "Utility Decor", url: "/shop?category=home-kitchen" }] },
+  { id: 20003, title: "Home Decor", url: "/shop?category=home-decor", children: [{ id: 23001, title: "Wall Decor", url: "/shop?category=home-decor" }, { id: 23002, title: "Table Decor", url: "/shop?category=home-decor" }, { id: 23003, title: "Candle Stands", url: "/shop?category=home-decor" }] },
+  { id: 20004, title: "Pooja Decor", url: "/shop?category=pooja-decor", children: [{ id: 24001, title: "Brass Singhasan", url: "/shop?category=pooja-decor" }, { id: 24002, title: "Incense Stand", url: "/shop?category=pooja-decor" }, { id: 24003, title: "Pooja Thali", url: "/shop?category=pooja-decor" }] },
+  { id: 20005, title: "Mother's Day collection", url: "/shop?category=mothers-day-collection", children: [{ id: 25001, title: "Gifting Picks", url: "/shop?category=mothers-day-collection" }] },
+  { id: 20006, title: "More", url: "/shop", children: [{ id: 26001, title: "New Arrivals", url: "/shop" }, { id: 26002, title: "Festival Categories", url: "/shop" }] }
+];
+
+const fallbackFooterMenu: NavigationItem[] = [
+  { id: 30001, title: "About Us", url: "#" },
+  { id: 30002, title: "Contact", url: "#" },
+  { id: 30003, title: "Privacy Policy", url: "#" },
+  { id: 30004, title: "Terms & Conditions", url: "#" },
+  { id: 30005, title: "Track Your Order", url: "#" }
+];
+
+const fallbackSocialLinks: SocialLink[] = [
+  { id: 40001, platform: "facebook", url: "https://www.facebook.com/uniquebrasscollection" },
+  { id: 40002, platform: "instagram", url: "https://www.instagram.com/the_advitya/" },
+  { id: 40003, platform: "youtube", url: "https://www.youtube.com/@the_advitya" },
+  { id: 40004, platform: "linkedin", url: "https://www.linkedin.com/company/theadvitya/" }
+];
 
 const fallbackCategories: Category[] = [
   { id: 1, parent_id: null, name: "God Idols", slug: "god-idols", image: referenceAssets.collections.godIdols },
@@ -220,6 +249,14 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   }
 }
 
+type PublicSettingsPayload = {
+  data?: SiteSettings & {
+    header_menu?: NavigationItem[];
+    footer_menu?: NavigationItem[];
+    social_links?: SocialLink[];
+  };
+};
+
 export function resolveAssetUrl(path?: string | null): string {
   if (!path) {
     return "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80";
@@ -275,8 +312,30 @@ export function discountPercent(product: Product): number | null {
 }
 
 export async function getSettings(): Promise<SiteSettings> {
-  const payload = await fetchJson<{ data?: SiteSettings }>("/settings/public");
+  const payload = await fetchJson<PublicSettingsPayload>("/settings/public");
   return payload?.data && Object.keys(payload.data).length > 0 ? payload.data : fallbackSettings;
+}
+
+export async function getLayoutData() {
+  const [settingsPayload, categories] = await Promise.all([
+    fetchJson<PublicSettingsPayload>("/settings/public"),
+    getCategories(8)
+  ]);
+
+  const data = settingsPayload?.data || {};
+
+  return {
+    settings: Object.keys(data).length > 0 ? (data as SiteSettings) : fallbackSettings,
+    categories,
+    headerMenu: data.header_menu?.length ? data.header_menu : fallbackHeaderMenu,
+    footerMenu: data.footer_menu?.length ? data.footer_menu : fallbackFooterMenu,
+    socialLinks: data.social_links?.length ? data.social_links : fallbackSocialLinks
+  };
+}
+
+export async function getHomepageSections(): Promise<HomepageSection[]> {
+  const payload = await fetchJson<{ data?: HomepageSection[] }>("/settings/homepage-sections");
+  return payload?.data?.length ? payload.data : [];
 }
 
 export async function getCategories(limit = 8): Promise<Category[]> {
@@ -287,8 +346,11 @@ export async function getCategories(limit = 8): Promise<Category[]> {
 export async function getProducts(query = ""): Promise<ProductListResponse> {
   const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`);
   const items = payload?.data?.items?.length ? payload.data.items : fallbackProducts;
-  const mergedItems =
-    items.length >= 8 ? items : [...items, ...fallbackProducts.filter((product) => !items.some((item) => item.slug === product.slug))];
+  const mergedItems = (
+    items.length >= 8
+      ? items
+      : [...items, ...fallbackProducts.filter((product) => !items.some((item) => item.slug === product.slug))]
+  ).filter((product, index, list) => list.findIndex((item) => item.slug === product.slug) === index);
 
   return (
     (payload?.data && {
@@ -312,17 +374,19 @@ export async function getProduct(slug: string): Promise<Product | null> {
 }
 
 export async function getHomePageData() {
-  const [settings, categories, featuredProducts, newestProducts] = await Promise.all([
+  const [settings, categories, featuredProducts, newestProducts, homepageSections] = await Promise.all([
     getSettings(),
     getCategories(8),
     getProducts("featured=1&per_page=8&sort=popular"),
-    getProducts("per_page=4&sort=newest")
+    getProducts("per_page=4&sort=newest"),
+    getHomepageSections()
   ]);
 
   return {
     settings,
     categories,
     featuredProducts: featuredProducts.items,
-    newestProducts: newestProducts.items
+    newestProducts: newestProducts.items,
+    homepageSections
   };
 }
