@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { resolveAssetUrl } from "../lib/api";
-import { NavigationItem } from "../lib/types";
+import { NavigationItem, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
 
 type SiteHeaderProps = {
@@ -17,6 +17,7 @@ type SiteHeaderProps = {
     slug: string;
   }>;
   menuItems: NavigationItem[];
+  settings: SiteSettings;
 };
 
 type NavDisplayItem = {
@@ -27,9 +28,14 @@ type NavDisplayItem = {
   submenu: string[];
 };
 
-export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHeaderProps) {
+export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
+  const [offerIndex, setOfferIndex] = useState(0);
   const { count } = useCart();
+  const offers = useMemo(() => {
+    const list = settings.topbar_offers?.filter((offer) => typeof offer === "string" && offer.trim().length > 0) ?? [];
+    return list.length ? list : ["Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders"];
+  }, [settings.topbar_offers]);
   const categoryMap = new Map(categories.map((category) => [category.slug, category]));
   const menuSeed: NavDisplayItem[] = menuItems.length
     ? menuItems.map((item, index) => ({
@@ -58,11 +64,31 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHe
     };
   });
 
+  useEffect(() => {
+    if (offers.length <= 1 || !offerVisible) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setOfferIndex((current) => (current + 1) % offers.length);
+    }, 3200);
+
+    return () => window.clearInterval(intervalId);
+  }, [offers, offerVisible]);
+
   return (
     <>
-      {offerVisible ? (
-        <div className="top-offer-bar">
-          <span>Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders</span>
+      {offerVisible && settings.show_topbar !== false ? (
+        <div
+          className="top-offer-bar"
+          style={{
+            background: settings.topbar_bg_color || "#0f0f0f",
+            color: settings.topbar_text_color || "#ffffff"
+          }}
+        >
+          <span key={`${offerIndex}-${offers[offerIndex]}`} className="top-offer-text">
+            {offers[offerIndex]}
+          </span>
           <button
             type="button"
             className="top-offer-close"
@@ -127,12 +153,12 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems }: SiteHe
                 <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
               </svg>
             </span>
-            <span aria-label="Account" className="header-tool-icon">
+            <Link href="/account" aria-label="Account" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="8.5" r="3.2" />
                 <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
               </svg>
-            </span>
+            </Link>
             <Link href="/cart" aria-label="Cart" className="header-tool-icon header-cart-link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />

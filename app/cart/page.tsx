@@ -1,14 +1,14 @@
 import { CartView } from "../../components/cart-view";
-import { getSettings } from "../../lib/api";
+import { getActiveCoupons, getSettings } from "../../lib/api";
 
 export default async function CartPage() {
-  const settings = await getSettings();
+  const [settings, offers] = await Promise.all([getSettings(), getActiveCoupons()]);
 
   return (
     <main className="page-shell">
       <section className="content-section">
         <div className="container">
-          <CartView settings={settings} />
+          <CartView settings={settings} offers={offers} />
         </div>
       </section>
     </main>

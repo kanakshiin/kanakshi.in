@@ -35,6 +35,14 @@ export function getCanonicalUrl(pathname = "/", settings?: SiteSettings | null):
   return `${getSiteUrl(settings)}${path}`;
 }
 
+export function getProductPath(product: Pick<Product, "slug" | "category_slug">): string {
+  if (product.category_slug) {
+    return `/shop/${product.category_slug}/${product.slug}`;
+  }
+
+  return `/product/${product.slug}`;
+}
+
 export function getProductRenderKey(product: Product): string {
   return product.slug || `${product.id}-${product.name}`;
 }

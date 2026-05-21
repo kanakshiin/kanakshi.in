@@ -13,6 +13,7 @@ type SiteFooterProps = {
     city?: string;
     pincode?: string;
     site_name?: string;
+    footer_copyright_text?: string | null;
   };
   footerMenu: Array<{ id: number; title: string; url: string }>;
   socialLinks: Array<{ id: number; platform: string; url?: string | null }>;
@@ -108,7 +109,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
       </div>
 
       <div className="container footer-bottom">
-        <span>© Little Divinity 2026. All Rights Reserved</span>
+        <span>{settings.footer_copyright_text || "© Little Divinity 2026. All Rights Reserved"}</span>
         <span>MasterCard · Visa · RuPay · Paytm · PayPal</span>
       </div>
     </footer>

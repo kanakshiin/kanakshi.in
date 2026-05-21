@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { formatPrice, resolveAssetUrl } from "../lib/api";
-import { SiteSettings } from "../lib/types";
+import { Coupon, SiteSettings } from "../lib/types";
 import { CartQuantityControl } from "./cart-quantity-control";
 import { useCart } from "./cart-provider";
 
-export function CartView({ settings }: { settings: SiteSettings }) {
+export function CartView({ settings, offers }: { settings: SiteSettings; offers: Coupon[] }) {
   const { items, subtotal, clearCart } = useCart();
   const currencySymbol = settings.site_currency_symbol || "₹";
   const whatsappNumber = (settings.site_phone || settings.site_email || "").replace(/[^\d+]/g, "");
@@ -84,6 +84,27 @@ export function CartView({ settings }: { settings: SiteSettings }) {
             Clear Cart
           </button>
         </div>
+
+        {offers.length ? (
+          <div className="cart-offers-panel">
+            <p className="eyebrow">Available Offers</p>
+            <div className="cart-offers-list">
+              {offers.map((offer) => (
+                <article key={offer.id} className="cart-offer-card">
+                  <div className="cart-offer-head">
+                    <strong>{offer.title}</strong>
+                    <span>{offer.badge_text || offer.code}</span>
+                  </div>
+                  <p>{offer.description || `${offer.code} can be applied on eligible orders.`}</p>
+                  <small>
+                    Code: {offer.code}
+                    {offer.min_order_amount ? ` · Min order ${formatPrice(offer.min_order_amount, currencySymbol)}` : ""}
+                  </small>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </aside>
     </div>
   );

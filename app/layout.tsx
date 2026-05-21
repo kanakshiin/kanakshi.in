@@ -65,7 +65,7 @@ export default async function RootLayout({
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
         <CartProvider>
           <StructuredData data={[organizationJsonLd, websiteJsonLd]} />
-          <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} />
+          <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} settings={settings} />
           {children}
           <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
         </CartProvider>

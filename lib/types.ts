@@ -15,6 +15,11 @@ export type SiteSettings = {
   custom_domain?: string;
   logo_url?: string | null;
   favicon_url?: string | null;
+  footer_copyright_text?: string | null;
+  show_topbar?: boolean;
+  topbar_bg_color?: string | null;
+  topbar_text_color?: string | null;
+  topbar_offers?: string[];
 };
 
 export type NavigationItem = {
@@ -99,4 +104,37 @@ export type ProductListResponse = {
     total: number;
     last_page: number;
   };
+};
+
+export type Coupon = {
+  id: number;
+  title: string;
+  code: string;
+  type: string;
+  value: number | string;
+  min_order_amount?: number | string | null;
+  description?: string | null;
+  badge_text?: string | null;
+};
+
+export type CustomerUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  email_verified_at?: string | null;
+  role?: string;
+};
+
+export type CustomerAuthConfig = {
+  email_verification_enabled: boolean;
+  mobile_verification_enabled: boolean;
+  email_otp_enabled: boolean;
+  sms_otp_enabled: boolean;
+  whatsapp_otp_enabled: boolean;
+  default_otp_channel: "email" | "sms" | "whatsapp";
+  otp_length: number;
+  otp_expiry_minutes: number;
+  resend_wait_seconds: number;
+  customer_email_active: boolean;
 };

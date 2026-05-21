@@ -1,5 +1,5 @@
 import { referenceAssets } from "./reference-assets";
-import { Category, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink } from "./types";
+import { Category, Coupon, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -257,6 +257,10 @@ type PublicSettingsPayload = {
   };
 };
 
+type PublicCouponsPayload = {
+  data?: Coupon[];
+};
+
 export function resolveAssetUrl(path?: string | null): string {
   if (!path) {
     return "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80";
@@ -373,20 +377,58 @@ export async function getProduct(slug: string): Promise<Product | null> {
   return payload?.data || fallbackProducts.find((product) => product.slug === slug) || null;
 }
 
+export async function getActiveCoupons(): Promise<Coupon[]> {
+  const payload = await fetchJson<PublicCouponsPayload>("/marketing/coupons");
+  return payload?.data?.length ? payload.data : [];
+}
+
+async function resolveProductRail(section: HomepageSection | undefined, fallbackQuery: string): Promise<Product[]> {
+  if (!section) {
+    return (await getProducts(fallbackQuery)).items;
+  }
+
+  const config = (section.config as {
+    source_type?: "featured" | "newest" | "manual" | "category";
+    product_count?: number;
+    product_ids?: number[];
+    category_slug?: string | null;
+  } | null) || { source_type: "featured", product_count: 8, product_ids: [] };
+
+  const count = Math.min(Math.max(Number(config.product_count || 8), 1), 24);
+
+  if (config.source_type === "manual" && config.product_ids?.length) {
+    return (await getProducts(`ids=${config.product_ids.join(",")}&per_page=${count}`)).items.slice(0, count);
+  }
+
+  if (config.source_type === "category" && config.category_slug) {
+    return (await getProducts(`category=${encodeURIComponent(config.category_slug)}&per_page=${count}&sort=newest`)).items.slice(0, count);
+  }
+
+  if (config.source_type === "newest") {
+    return (await getProducts(`per_page=${count}&sort=newest`)).items.slice(0, count);
+  }
+
+  return (await getProducts(`featured=1&per_page=${count}&sort=popular`)).items.slice(0, count);
+}
+
 export async function getHomePageData() {
-  const [settings, categories, featuredProducts, newestProducts, homepageSections] = await Promise.all([
+  const [settings, categories, homepageSections] = await Promise.all([
     getSettings(),
     getCategories(8),
-    getProducts("featured=1&per_page=8&sort=popular"),
-    getProducts("per_page=4&sort=newest"),
     getHomepageSections()
+  ]);
+
+  const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
+  const [featuredProducts, newestProducts] = await Promise.all([
+    resolveProductRail(sectionMap.get("best-sellers"), "featured=1&per_page=8&sort=popular"),
+    resolveProductRail(sectionMap.get("new-arrivals-products"), "per_page=4&sort=newest"),
   ]);
 
   return {
     settings,
     categories,
-    featuredProducts: featuredProducts.items,
-    newestProducts: newestProducts.items,
+    featuredProducts,
+    newestProducts,
     homepageSections
   };
 }

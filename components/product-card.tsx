@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { discountPercent, formatPrice, getPrimaryImage } from "../lib/api";
+import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { AddToCartButton } from "./add-to-cart-button";
 
@@ -15,6 +16,7 @@ type ProductCardProps = {
 export function ProductCard({ product, currencySymbol }: ProductCardProps) {
   const discount = discountPercent(product);
   const currentPrice = formatPrice(product.effective_price ?? product.price, currencySymbol);
+  const productPath = getProductPath(product);
   const comparePrice =
     Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price)
       ? formatPrice(product.price, currencySymbol)
@@ -22,7 +24,7 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
 
   return (
     <article className="product-card">
-      <Link href={`/product/${product.slug}`} className="product-media">
+      <Link href={productPath} className="product-media">
         <Image
           src={getPrimaryImage(product)}
           alt={product.name}
@@ -41,7 +43,7 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
 
       <div className="product-copy">
         <p className="product-category">{product.category_name || "Signature Edit"}</p>
-        <Link href={`/product/${product.slug}`} className="product-title">
+        <Link href={productPath} className="product-title">
           {product.name}
         </Link>
         {product.short_desc ? <p className="product-snippet">{product.short_desc}</p> : null}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { StructuredData } from "../../components/structured-data";
 import { ProductCard } from "../../components/product-card";
 import { getCategories, getProducts, getSettings } from "../../lib/api";
-import { getCanonicalUrl, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
+import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
 type ShopPageProps = {
@@ -77,7 +77,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       itemListElement: shopItems.slice(0, 24).map((product, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: getCanonicalUrl(`/product/${product.slug}`, settings),
+        url: getCanonicalUrl(getProductPath(product), settings),
         name: product.name
       }))
     }

@@ -5,7 +5,7 @@ import { HeroSlider } from "../components/hero-slider";
 import { ProductCard } from "../components/product-card";
 import { getHomePageData, resolveAssetUrl } from "../lib/api";
 import { referenceAssets } from "../lib/reference-assets";
-import { getCanonicalUrl, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
+import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
 
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
@@ -50,12 +50,14 @@ export default async function HomePage() {
     {
       title: "Wall Decor Collection",
       subtitle: "Designed for thoughtful spaces",
+      show_text: true,
       image: referenceAssets.hero.wallDecor,
       href: "/shop?category=wall-decor"
     },
     {
       title: "Stonework Collection",
       subtitle: "Timeless pieces for every space",
+      show_text: true,
       image: referenceAssets.hero.stonework,
       href: "/shop?category=home-decor"
     }
@@ -92,23 +94,27 @@ export default async function HomePage() {
   const heroSection = sectionMap.get("hero");
   const bestSellerSection = sectionMap.get("best-sellers");
   const newArrivalsSection = sectionMap.get("new-arrivals");
+  const newArrivalsProductsSection = sectionMap.get("new-arrivals-products");
 
   const heroConfig = (heroSection?.config as {
-    slides?: Array<{ title?: string; image?: string; alt?: string }>;
-    promos?: Array<{ title?: string; subtitle?: string; image?: string; href?: string }>;
+    slider_settings?: { show_text?: boolean; show_dots?: boolean; show_arrows?: boolean; autoplay_ms?: number; nav_gap?: number };
+    slides?: Array<{ title?: string; image?: string; alt?: string; href?: string; is_active?: boolean }>;
+    promos?: Array<{ title?: string; subtitle?: string; image?: string; href?: string; show_text?: boolean; is_active?: boolean }>;
   } | null) || { slides: [], promos: [] };
 
   const resolvedHeroSlides =
-    heroConfig.slides?.filter((slide) => slide.image).map((slide, index) => ({
+    heroConfig.slides?.filter((slide) => slide.image && slide.is_active !== false).map((slide, index) => ({
       alt: slide.alt || slide.title || `Hero slide ${index + 1}`,
       title: slide.title,
+      href: slide.href,
       image: resolveAssetUrl(slide.image || "")
     })) || [];
 
   const resolvedHeroPromos =
-    heroConfig.promos?.filter((promo) => promo.image).map((promo) => ({
+    heroConfig.promos?.filter((promo) => promo.image && promo.is_active !== false).map((promo) => ({
       title: promo.title || "",
       subtitle: promo.subtitle || "",
+      show_text: promo.show_text !== false,
       image: resolveAssetUrl(promo.image || ""),
       href: promo.href || "/shop"
     })) || [];
@@ -211,7 +217,7 @@ export default async function HomePage() {
       itemListElement: featuredProducts.slice(0, 8).map((product, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: getCanonicalUrl(`/product/${product.slug}`, settings),
+        url: getCanonicalUrl(getProductPath(product), settings),
         name: product.name
       }))
     }
@@ -223,17 +229,26 @@ export default async function HomePage() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div className="hero-visual">
-            <HeroSlider slides={finalHeroSlides} />
+            <HeroSlider
+              slides={finalHeroSlides}
+              autoplayMs={heroConfig.slider_settings?.autoplay_ms || 3500}
+              navGap={heroConfig.slider_settings?.nav_gap || 34}
+              showArrows={heroConfig.slider_settings?.show_arrows !== false}
+              showDots={heroConfig.slider_settings?.show_dots === true}
+              showText={heroConfig.slider_settings?.show_text !== false}
+            />
           </div>
 
           <div className="hero-promo-stack">
             {finalHeroPromos.map((promo) => (
               <Link key={promo.title} href={promo.href} className="hero-promo-card">
                 <img src={promo.image} alt={promo.title} />
-                <div className="hero-promo-copy">
-                  <small>{promo.subtitle}</small>
-                  <strong>{promo.title}</strong>
-                </div>
+                {promo.show_text !== false ? (
+                  <div className="hero-promo-copy">
+                    <small>{promo.subtitle}</small>
+                    <strong>{promo.title}</strong>
+                  </div>
+                ) : null}
               </Link>
             ))}
           </div>
@@ -409,6 +424,15 @@ export default async function HomePage() {
 
       <section className="content-section new-arrivals-products">
         <div className="container">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">{newArrivalsProductsSection?.subtitle || "New Arrivals"}</p>
+              <h2>{newArrivalsProductsSection?.title || "Latest From The Craft Table"}</h2>
+            </div>
+            <Link href={newArrivalsProductsSection?.button_url || "/shop"} className="text-link">
+              {newArrivalsProductsSection?.button_text || "Explore all"}
+            </Link>
+          </div>
           <div className="product-grid">
             {newestProducts.map((product) => (
               <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
