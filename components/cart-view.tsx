@@ -5,10 +5,11 @@ import Link from "next/link";
 
 import { formatPrice, resolveAssetUrl } from "../lib/api";
 import { SiteSettings } from "../lib/types";
+import { CartQuantityControl } from "./cart-quantity-control";
 import { useCart } from "./cart-provider";
 
 export function CartView({ settings }: { settings: SiteSettings }) {
-  const { items, subtotal, removeItem, updateQuantity, clearCart } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const currencySymbol = settings.site_currency_symbol || "₹";
   const whatsappNumber = (settings.site_phone || settings.site_email || "").replace(/[^\d+]/g, "");
   const whatsappMessage = encodeURIComponent(
@@ -52,18 +53,7 @@ export function CartView({ settings }: { settings: SiteSettings }) {
               <p className="detail-price">{formatPrice(item.price, currencySymbol)}</p>
 
               <div className="cart-item-controls">
-                <label>
-                  Qty
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(event) => updateQuantity(item.slug, Number(event.target.value || 1))}
-                  />
-                </label>
-                <button type="button" className="text-link" onClick={() => removeItem(item.slug)}>
-                  Remove
-                </button>
+                <CartQuantityControl slug={item.slug} />
               </div>
             </div>
           </article>

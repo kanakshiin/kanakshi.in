@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
 import { Product } from "../lib/types";
 import { useCart } from "./cart-provider";
+import { CartQuantityControl } from "./cart-quantity-control";
 
 type AddToCartButtonProps = {
   product: Product;
@@ -12,8 +11,12 @@ type AddToCartButtonProps = {
 };
 
 export function AddToCartButton({ product, className = "product-card-action", label = "Add To Cart" }: AddToCartButtonProps) {
-  const { addItem } = useCart();
-  const [added, setAdded] = useState(false);
+  const { addItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(product.slug);
+
+  if (quantity > 0) {
+    return <CartQuantityControl slug={product.slug} className="product-card-quantity-wrap" compact />;
+  }
 
   return (
     <button
@@ -21,11 +24,9 @@ export function AddToCartButton({ product, className = "product-card-action", la
       className={className}
       onClick={() => {
         addItem(product, 1);
-        setAdded(true);
-        window.setTimeout(() => setAdded(false), 1500);
       }}
     >
-      {added ? "Added" : label}
+      {label}
     </button>
   );
 }

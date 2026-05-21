@@ -22,6 +22,7 @@ type CartContextValue = {
   count: number;
   subtotal: number;
   addItem: (product: Product, quantity?: number) => void;
+  getItemQuantity: (slug: string) => number;
   removeItem: (slug: string) => void;
   updateQuantity: (slug: string, quantity: number) => void;
   clearCart: () => void;
@@ -105,6 +106,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         writeCart(nextItems);
         setItems(nextItems);
+      },
+      getItemQuantity(slug) {
+        return items.find((item) => item.slug === slug)?.quantity ?? 0;
       },
       removeItem(slug) {
         const nextItems = readCart().filter((item) => item.slug !== slug);
