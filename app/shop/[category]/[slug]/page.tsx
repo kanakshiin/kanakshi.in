@@ -8,6 +8,9 @@ import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, par
 import { referenceAssets } from "../../../../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName } from "../../../../lib/site";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type ProductPageProps = {
   params: Promise<{
     category: string;

@@ -7,6 +7,9 @@ import { getHomePageData, resolveAssetUrl } from "../lib/api";
 import { referenceAssets } from "../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";

@@ -8,6 +8,9 @@ import { getCategories, getProducts, getSettings } from "../../lib/api";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type ShopPageProps = {
   searchParams: Promise<{
     category?: string;
@@ -43,7 +46,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const query = new URLSearchParams();
 
   query.set("per_page", "24");
-  query.set("sort", "popular");
+  query.set("sort", "newest");
 
   if (params.category) {
     query.set("category", params.category);
