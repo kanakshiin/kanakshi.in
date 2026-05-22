@@ -32,8 +32,27 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
       ? formatPrice(product.price, currencySymbol)
       : null;
 
+  // Savings calculations
+  const parsedPrice = Number(product.price || 0);
+  const parsedEffectivePrice = Number((product.effective_price ?? product.price) || 0);
+  const savingsAmount = parsedPrice > parsedEffectivePrice ? parsedPrice - parsedEffectivePrice : 0;
+  const savingsText = savingsAmount > 0 ? formatPrice(savingsAmount, currencySymbol) : null;
+
   const productPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveImageIndex((prev) => (prev === 0 ? parsedImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveImageIndex((prev) => (prev === parsedImages.length - 1 ? 0 : prev + 1));
+  };
+
 
   // Set mounted state
   useEffect(() => {
@@ -113,6 +132,32 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
               className="quickview-active-image"
             />
             {discount ? <span className="product-badge">Sale {discount}%</span> : null}
+            
+            {/* Gallery Floating Navigation Chevron Controls */}
+            {parsedImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="quickview-nav-btn prev"
+                  onClick={handlePrevImage}
+                  aria-label="Previous image"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="nav-chevron-icon">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="quickview-nav-btn next"
+                  onClick={handleNextImage}
+                  aria-label="Next image"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="nav-chevron-icon">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Thumbnail Slider / Selector Strip */}
@@ -144,22 +189,30 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             <p className="product-category">{product.category_name || "Signature Edit"}</p>
             <h2 id="qv-title" className="quickview-title">{product.name}</h2>
             
-            <div className="price-row" style={{ margin: "0.5rem 0 1rem" }}>
+            <div className="price-row" style={{ margin: "0.5rem 0 1rem", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
               <strong className="quickview-price">{currentPrice}</strong>
               {comparePrice ? <span className="quickview-compare-price">{comparePrice}</span> : null}
+              {savingsText && (
+                <span className="quickview-savings-tag">
+                  Save {savingsText} ({discount}% off)
+                </span>
+              )}
             </div>
 
             <hr className="quickview-divider" />
             
-            {product.short_desc ? (
-              <p className="quickview-snippet">{product.short_desc}</p>
-            ) : product.description ? (
-              <p className="quickview-snippet" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {product.description}
-              </p>
-            ) : (
-              <p className="quickview-snippet">Handcrafted heirloom accent created to elevate your spaces with spiritual warmth and curated boutique styling.</p>
-            )}
+            {/* Elegant Brand Editorial Callout Box */}
+            <div className="quickview-quote-box">
+              {product.short_desc ? (
+                <p className="quickview-snippet">{product.short_desc}</p>
+              ) : product.description ? (
+                <p className="quickview-snippet" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {product.description}
+                </p>
+              ) : (
+                <p className="quickview-snippet">Handcrafted heirloom accent created to elevate your spaces with spiritual warmth and curated boutique styling.</p>
+              )}
+            </div>
 
             {/* Premium Bullet Points Checklist */}
             {bulletPoints.length > 0 && (
@@ -167,8 +220,8 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
                 <ul className="bullet-list">
                   {bulletPoints.map((point, index) => (
                     <li key={index} className="bullet-item">
-                      <svg className="bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="20 6 9 17 4 12" />
+                      <svg className="bullet-icon-star" viewBox="0 0 24 24" fill="var(--accent, #f1a720)">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                       </svg>
                       <span className="bullet-text">{point}</span>
                     </li>
