@@ -36,6 +36,15 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
   const [openMobileSectionId, setOpenMobileSectionId] = useState<number | null>(null);
   const pathname = usePathname();
   const { count } = useCart();
+  const [cartPop, setCartPop] = useState(false);
+
+  useEffect(() => {
+    if (count > 0) {
+      setCartPop(true);
+      const timer = setTimeout(() => setCartPop(false), 450);
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
   const offers = useMemo(() => {
     const list = settings.topbar_offers?.filter((offer) => typeof offer === "string" && offer.trim().length > 0) ?? [];
     return list.length ? list : ["Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders"];
@@ -181,7 +190,11 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                 <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />
                 <path d="M9.5 8.5V7.3c0-1.4 1.1-2.6 2.5-2.6s2.5 1.2 2.5 2.6v1.2" />
               </svg>
-              {count > 0 ? <span className="header-cart-count">{count}</span> : null}
+              {count > 0 ? (
+                <span className={`header-cart-count${cartPop ? " cart-pop-animate" : ""}`}>
+                  {count}
+                </span>
+              ) : null}
             </Link>
             <button
               type="button"

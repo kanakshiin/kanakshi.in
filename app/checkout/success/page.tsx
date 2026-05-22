@@ -47,12 +47,23 @@ function SuccessReceiptContent() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "3rem",
           margin: "0 auto 1.5rem",
           boxShadow: "0 10px 25px -5px rgba(45, 123, 76, 0.2)",
           animation: "scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
         }}>
-          ✓
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="success-draw-checkmark"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
         <p className="eyebrow" style={{ color: "#2d7b4c" }}>Order Confirmed</p>
         <h1 className="page-title" style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>Thank you for your purchase!</h1>
@@ -169,6 +180,15 @@ function SuccessReceiptContent() {
             transform: scale(1);
             opacity: 1;
           }
+        }
+        @keyframes drawCheckmark {
+          from { stroke-dashoffset: 100; }
+          to { stroke-dashoffset: 0; }
+        }
+        .success-draw-checkmark polyline {
+          stroke-dasharray: 100;
+          stroke-dashoffset: 100;
+          animation: drawCheckmark 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.25s;
         }
       `}</style>
     </div>
