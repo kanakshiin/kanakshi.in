@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { discountPercent, formatPrice, parseProductImages, resolveAssetUrl } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useWishlist } from "./wishlist-provider";
+import { useCart } from "./cart-provider";
 
 type QuickViewModalProps = {
   product: Product;
@@ -18,6 +21,9 @@ type QuickViewModalProps = {
 };
 
 export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: QuickViewModalProps) {
+  const router = useRouter();
+  const { addItem } = useCart();
+  const [mounted, setMounted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const parsedImages = parseProductImages(product.images);
   const discount = discountPercent(product);
@@ -32,9 +38,14 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
   const isWishlisted = hasItem(product.slug);
   const productPath = getProductPath(product);
 
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock body scroll when the modal is open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && mounted) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -42,14 +53,14 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, mounted]);
 
   // Reset active image index when product changes
   useEffect(() => {
     setActiveImageIndex(0);
   }, [product]);
 
-  if (!isOpen) {
+  if (!isOpen || !mounted) {
     return null;
   }
 
@@ -57,7 +68,8 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
     ? resolveAssetUrl(parsedImages[activeImageIndex])
     : "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80";
 
-  return (
+  // Use React Portal to mount under body to avoid relative stacking contexts/transforms and flickering
+  return createPortal(
     <div className="quickview-overlay" onClick={onClose}>
       <div 
         className="quickview-modal" 
@@ -137,15 +149,38 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             )}
           </div>
 
+          {/* Luxury Action Deck: Buy Now, Add to Cart (syncing), and Wishlist */}
           <div className="quickview-details-footer">
-            <div className="product-card-actions" style={{ marginTop: "2rem" }}>
-              <AddToCartButton product={product} />
+            <div className="quickview-actions-wrap" style={{ marginTop: "2rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem", width: "100%", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ width: "100%", minHeight: "2.85rem", padding: "0 1.25rem", margin: 0, border: "0" }}
+                  onClick={() => {
+                    addItem(product, 1);
+                    onClose();
+                    router.push("/cart");
+                  }}
+                >
+                  Buy Now
+                </button>
+                <div style={{ width: "100%" }}>
+                  <AddToCartButton 
+                    product={product} 
+                    className="secondary-button" 
+                    label="Add To Cart"
+                  />
+                </div>
+              </div>
+              
               <button
                 type="button"
                 className={`product-card-action ${isWishlisted ? "wishlisted-active" : "muted"}`}
+                style={{ width: "100%", marginTop: "0.8rem", minHeight: "2.85rem" }}
                 onClick={() => toggleItem(product)}
               >
-                {isWishlisted ? "Wishlisted" : "Wishlist"}
+                {isWishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
               </button>
             </div>
             
@@ -161,6 +196,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
