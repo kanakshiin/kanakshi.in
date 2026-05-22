@@ -460,11 +460,13 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
     payment_status: string;
     ship_name: string;
     ship_email: string;
+    ship_phone: string;
     estimated_delivery: string;
     gateway_config?: {
       public_key: string | null;
       merchant_id: string | null;
       is_test_mode: boolean;
+      provider_order_id: string | null;
     } | null;
   };
 }> {
@@ -498,6 +500,7 @@ export async function verifyPayment(
   data: {
     order_number: string;
     payment_method: "razorpay" | "phonepe";
+    order_contact?: string;
     razorpay_payment_id?: string;
     razorpay_order_id?: string;
     razorpay_signature?: string;
@@ -531,7 +534,7 @@ export async function verifyPayment(
   }
 }
 
-export async function cancelOrder(orderNumber: string, token?: string): Promise<{ success: boolean; message: string }> {
+export async function cancelOrder(orderNumber: string, token?: string, orderContact?: string): Promise<{ success: boolean; message: string }> {
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -544,7 +547,7 @@ export async function cancelOrder(orderNumber: string, token?: string): Promise<
     const response = await fetch(`${API_BASE_URL}/checkout/cancel-order`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ order_number: orderNumber }),
+      body: JSON.stringify({ order_number: orderNumber, order_contact: orderContact }),
       cache: "no-store"
     });
 

@@ -181,6 +181,7 @@ export default function CheckoutPage() {
       const verifyRes = await verifyPayment({
         order_number: activeSimulation.orderNumber,
         payment_method: activeSimulation.method,
+        order_contact: shipEmail || shipPhone,
         razorpay_payment_id: activeSimulation.method === "razorpay" ? "pay_simulated_" + Math.random().toString(36).substring(7) : undefined,
         transaction_id: activeSimulation.method === "phonepe" ? "txn_simulated_" + Math.random().toString(36).substring(7) : undefined,
       }, token);
@@ -206,7 +207,7 @@ export default function CheckoutPage() {
     const token = getStoredCustomerToken() || undefined;
 
     try {
-      await cancelOrder(activeSimulation.orderNumber, token);
+      await cancelOrder(activeSimulation.orderNumber, token, shipEmail || shipPhone);
       setError("Payment cancelled. Your reserved items have been restored to stock.");
     } catch (err) {
       console.error("Order cancellation failed:", err);
@@ -258,7 +259,12 @@ export default function CheckoutPage() {
         const config = res.data.gateway_config;
         
         // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
-        if (paymentMethod === "razorpay" && config?.public_key && !config.is_test_mode) {
+        if (
+          paymentMethod === "razorpay" &&
+          config?.public_key &&
+          config?.provider_order_id &&
+          !config.is_test_mode
+        ) {
           const loaded = await loadRazorpayScript();
           if (loaded) {
             try {
@@ -268,11 +274,13 @@ export default function CheckoutPage() {
                 currency: "INR",
                 name: "Little Divinity",
                 description: `Order #${res.data.order_number}`,
+                order_id: config.provider_order_id,
                 handler: async function (response: any) {
                   setIsSubmitting(true);
                   const verifyRes = await verifyPayment({
                     order_number: res.data!.order_number,
                     payment_method: "razorpay",
+                    order_contact: res.data!.ship_email || res.data!.ship_phone,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_signature: response.razorpay_signature,
@@ -289,7 +297,11 @@ export default function CheckoutPage() {
                 modal: {
                   ondismiss: async function () {
                     setIsSubmitting(true);
-                    await cancelOrder(res.data!.order_number, token);
+                    await cancelOrder(
+                      res.data!.order_number,
+                      token,
+                      res.data!.ship_email || res.data!.ship_phone
+                    );
                     setError("Payment cancelled. Your reserved items have been restored to stock.");
                     setIsSubmitting(false);
                   }
