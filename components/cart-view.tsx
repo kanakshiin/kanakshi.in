@@ -71,16 +71,22 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
           <span>Subtotal</span>
           <strong>{formatPrice(subtotal, currencySymbol)}</strong>
         </div>
-        <div className="cart-summary-actions">
+        <div className="cart-summary-actions" style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)", width: "100%" }}>
+          <Link href="/checkout" className="primary-button" style={{ textAlign: "center", textDecoration: "none", width: "100%" }}>
+            Proceed to Secure Checkout
+          </Link>
+
           <a
             href={whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/^\+/, "")}?text=${whatsappMessage}` : "/shop"}
-            className="primary-button"
+            className="secondary-button"
+            style={{ textAlign: "center", textDecoration: "none", display: "inline-flex", justifyContent: "center", alignItems: "center", gap: "var(--space-xs)", width: "100%" }}
             target="_blank"
             rel="noreferrer"
           >
             Order on WhatsApp
           </a>
-          <button type="button" className="secondary-button" onClick={clearCart}>
+
+          <button type="button" className="secondary-button" style={{ border: "none", background: "transparent", color: "rgba(var(--rgb-text), 0.5)", textDecoration: "underline", padding: "var(--space-xs) 0", cursor: "pointer", fontSize: "0.875rem" }} onClick={clearCart}>
             Clear Cart
           </button>
         </div>

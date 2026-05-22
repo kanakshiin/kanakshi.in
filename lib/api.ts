@@ -438,3 +438,222 @@ export async function getHomePageData() {
     homepageSections
   };
 }
+
+export interface PlaceOrderInput {
+  ship_name: string;
+  ship_email: string;
+  ship_phone: string;
+  ship_address: string;
+  ship_city: string;
+  ship_state: string;
+  ship_pincode: string;
+  payment_method: "cod" | "razorpay" | "phonepe";
+  payment_id?: string;
+  coupon_code?: string;
+  notes?: string;
+  items: Array<{
+    product_id: number;
+    variant_id?: number | null;
+    quantity: number;
+  }>;
+}
+
+export async function placeOrder(data: PlaceOrderInput, token?: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    order_number: string;
+    total_amount: number;
+    payment_method: string;
+    payment_status: string;
+    ship_name: string;
+    ship_email: string;
+    estimated_delivery: string;
+  };
+}> {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/checkout`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+      cache: "no-store"
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Something went wrong while placing order."
+    };
+  }
+}
+
+export async function trackOrder(orderNumber: string, contact: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    order_number: string;
+    status: string;
+    ship_name: string;
+    ship_city: string;
+    ship_state: string;
+    created_at: string;
+    tracking_number: string | null;
+    tracking_url: string | null;
+    payment_method: string;
+    payment_status: string;
+    total_amount: number;
+    items: Array<{
+      name: string;
+      price: number;
+      quantity: number;
+      image: string | null;
+      size: string | null;
+      color: string | null;
+      variant_details: string | null;
+    }>;
+    tracking_milestones: Array<{
+      id: number;
+      status: string;
+      location: string | null;
+      message: string | null;
+      created_at: string;
+    }>;
+  };
+}> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/orders/track?number=${encodeURIComponent(orderNumber)}&contact=${encodeURIComponent(contact)}`,
+      {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
+      }
+    );
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Something went wrong while fetching tracking information."
+    };
+  }
+}
+
+export async function getCustomerOrders(token: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: Array<{
+    id: number;
+    order_number: string;
+    status: string;
+    subtotal: number;
+    discount: number;
+    tax: number;
+    shipping_cost: number;
+    total_amount: number;
+    payment_method: string;
+    payment_status: string;
+    ship_name: string;
+    created_at: string;
+    items_count: number;
+    first_item_image: string | null;
+    first_item_name: string | null;
+  }>;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/customer/orders`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      cache: "no-store"
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve order history."
+    };
+  }
+}
+
+export async function getCustomerOrderDetail(token: string, orderNumber: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    id: number;
+    order_number: string;
+    status: string;
+    subtotal: number;
+    discount: number;
+    tax: number;
+    shipping_cost: number;
+    total_amount: number;
+    payment_method: string;
+    payment_status: string;
+    payment_id: string | null;
+    ship_name: string;
+    ship_email: string;
+    ship_phone: string;
+    ship_address: string;
+    ship_city: string;
+    ship_state: string;
+    ship_pincode: string;
+    notes: string | null;
+    tracking_number: string | null;
+    tracking_url: string | null;
+    created_at: string;
+    items: Array<{
+      id: number;
+      product_id: number;
+      variant_id: number | null;
+      name: string;
+      price: number;
+      quantity: number;
+      image: string | null;
+      size: string | null;
+      color: string | null;
+      variant_details: string | null;
+      line_total: number;
+      sku: string | null;
+    }>;
+    tracking: Array<{
+      id: number;
+      status: string;
+      location: string | null;
+      message: string | null;
+      created_at: string;
+    }>;
+  };
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/customer/orders/${orderNumber}`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      cache: "no-store"
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve order details."
+    };
+  }
+}
+
