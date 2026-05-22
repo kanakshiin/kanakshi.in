@@ -22,6 +22,87 @@ async function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+const INDIAN_STATES_AND_CITIES: Record<string, string[]> = {
+  "Andhra Pradesh": [
+    "Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool",
+    "Tirupati", "Rajamahendravaram", "Kakinada", "Kadapa", "Anantapur",
+    "Eluru", "Vizianagaram", "Other"
+  ],
+  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Namsai", "Other"],
+  "Assam": [
+    "Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon",
+    "Tinsukia", "Bongaigaon", "Tezpur", "Other"
+  ],
+  "Bihar": [
+    "Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia",
+    "Darbhanga", "Bihar Sharif", "Arrah", "Begusarai", "Katihar", "Other"
+  ],
+  "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Jagdalpur", "Ambikapur", "Other"],
+  "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Other"],
+  "Gujarat": [
+    "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar",
+    "Jamnagar", "Junagadh", "Gandhinagar", "Anand", "Morbi", "Nadiad", "Other"
+  ],
+  "Haryana": [
+    "Gurugram", "Faridabad", "Panipat", "Ambala", "Yamunanagar",
+    "Rohtak", "Hisar", "Karnal", "Sonipat", "Panchkula", "Other"
+  ],
+  "Himachal Pradesh": ["Shimla", "Dharamshala", "Solan", "Mandi", "Bilaspur", "Kullu", "Other"],
+  "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro Steel City", "Deoghar", "Hazaribagh", "Giridih", "Other"],
+  "Karnataka": [
+    "Bengaluru", "Mysuru", "Hubballi-Dharwad", "Mangaluru", "Belagavi",
+    "Davanagere", "Ballari", "Tumakuru", "Shivamogga", "Kalaburagi", "Udupi", "Other"
+  ],
+  "Kerala": [
+    "Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam",
+    "Alappuzha", "Palakkad", "Kannur", "Kottayam", "Other"
+  ],
+  "Madhya Pradesh": [
+    "Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain",
+    "Sagar", "Dewas", "Satna", "Ratlam", "Rewa", "Other"
+  ],
+  "Maharashtra": [
+    "Mumbai", "Pune", "Nagpur", "Thane", "Pimpri-Chinchwad",
+    "Nashik", "Kalyan-Dombivli", "Vasai-Virar", "Aurangabad", "Navi Mumbai",
+    "Solapur", "Kolhapur", "Amravati", "Other"
+  ],
+  "Manipur": ["Imphal", "Thoubal", "Kakching", "Other"],
+  "Meghalaya": ["Shillong", "Tura", "Nongpoh", "Other"],
+  "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Other"],
+  "Nagaland": ["Dimapur", "Kohima", "Mokokchung", "Other"],
+  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Brahmapur", "Sambalpur", "Puri", "Balasore", "Other"],
+  "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda", "Mohali", "Hoshiarpur", "Pathankot", "Other"],
+  "Rajasthan": [
+    "Jaipur", "Jodhpur", "Kota", "Bikaner", "Ajmer",
+    "Udaipur", "Bhilwara", "Alwar", "Sikar", "Bharatpur", "Other"
+  ],
+  "Sikkim": ["Gangtok", "Namchi", "Geyzing", "Other"],
+  "Tamil Nadu": [
+    "Chennai", "Coimbatore", "Madurai", "Trichy", "Salem",
+    "Tiruppur", "Erode", "Vellore", "Thoothukudi", "Tirunelveli", "Other"
+  ],
+  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Ramagundam", "Khammam", "Other"],
+  "Tripura": ["Agartala", "Dharmanagar", "Udaipur", "Other"],
+  "Uttar Pradesh": [
+    "Lucknow", "Kanpur", "Ghaziabad", "Agra", "Meerut",
+    "Varanasi", "Prayagraj", "Bareilly", "Aligarh", "Moradabad",
+    "Noida", "Greater Noida", "Gorakhpur", "Jhansi", "Firozabad", "Other"
+  ],
+  "Uttarakhand": ["Dehradun", "Haridwar", "Haldwani", "Roorkee", "Rudrapur", "Kashipur", "Other"],
+  "West Bengal": [
+    "Kolkata", "Howrah", "Siliguri", "Asansol", "Durgapur",
+    "Bardhaman", "Malda", "Kharagpur", "Jalmaiguri", "Other"
+  ],
+  "Andaman and Nicobar Islands": ["Port Blair", "Other"],
+  "Chandigarh": ["Chandigarh", "Other"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa", "Other"],
+  "Delhi": ["New Delhi", "Delhi", "Noida (NCR)", "Gurugram (NCR)", "Ghaziabad (NCR)", "Faridabad (NCR)", "Other"],
+  "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Other"],
+  "Ladakh": ["Leh", "Kargil", "Other"],
+  "Lakshadweep": ["Kavaratti", "Other"],
+  "Puducherry": ["Puducherry", "Karaikal", "Mahe", "Yanam", "Other"]
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
@@ -49,6 +130,34 @@ export default function CheckoutPage() {
   const [shipPincode, setShipPincode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "phonepe">("cod");
   const [notes, setNotes] = useState("");
+
+  // Dropdown list helper states
+  const [customCityActive, setCustomCityActive] = useState(false);
+  const [customCityValue, setCustomCityValue] = useState("");
+
+  const handleStateChange = (stateVal: string) => {
+    setShipState(stateVal);
+    setShipCity("");
+    setCustomCityActive(false);
+    setCustomCityValue("");
+  };
+
+  const handleCityChange = (cityVal: string) => {
+    if (cityVal === "Other") {
+      setCustomCityActive(true);
+      setShipCity("");
+      setCustomCityValue("");
+    } else {
+      setCustomCityActive(false);
+      setShipCity(cityVal);
+      setCustomCityValue("");
+    }
+  };
+
+  const handleCustomCityChange = (val: string) => {
+    setCustomCityValue(val);
+    setShipCity(val);
+  };
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -414,26 +523,53 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="auth-field">
-                  <span>City *</span>
-                  <input
-                    type="text"
+                  <span>State *</span>
+                  <select
                     required
-                    value={shipCity}
-                    onChange={(e) => setShipCity(e.target.value)}
-                    placeholder="e.g. Mumbai"
-                  />
+                    value={shipState}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                  >
+                    <option value="" disabled hidden>Select State</option>
+                    {Object.keys(INDIAN_STATES_AND_CITIES).map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="auth-field">
-                  <span>State *</span>
-                  <input
-                    type="text"
+                  <span>City *</span>
+                  <select
                     required
-                    value={shipState}
-                    onChange={(e) => setShipState(e.target.value)}
-                    placeholder="e.g. Maharashtra"
-                  />
+                    disabled={!shipState}
+                    value={customCityActive ? "Other" : shipCity}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                  >
+                    <option value="" disabled hidden>
+                      {shipState ? "Select City" : "Select State first"}
+                    </option>
+                    {shipState &&
+                      INDIAN_STATES_AND_CITIES[shipState]?.map((ct) => (
+                        <option key={ct} value={ct}>
+                          {ct}
+                        </option>
+                      ))}
+                  </select>
                 </div>
+
+                {customCityActive && (
+                  <div className="auth-field" style={{ gridColumn: "1 / -1", animation: "fadeIn 0.2s ease" }}>
+                    <span>Specify Custom City *</span>
+                    <input
+                      type="text"
+                      required
+                      value={customCityValue}
+                      onChange={(e) => handleCustomCityChange(e.target.value)}
+                      placeholder="Type your city/town name"
+                    />
+                  </div>
+                )}
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Pincode *</span>

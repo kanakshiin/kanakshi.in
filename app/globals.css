@@ -2674,6 +2674,43 @@ h3 {
   box-shadow: 0 0 0 4px rgba(241, 167, 32, 0.12);
 }
 
+.auth-field select {
+  min-height: 54px;
+  padding: 0 2.5rem 0 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23191919' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(241, 167, 32, 0.12);
+}
+
+.auth-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f7f2ea;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .auth-field-note {
   align-content: start;
   padding: 0.2rem 0;
