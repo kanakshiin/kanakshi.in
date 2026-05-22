@@ -11,14 +11,6 @@ import { useCart } from "./cart-provider";
 export function CartView({ settings, offers }: { settings: SiteSettings; offers: Coupon[] }) {
   const { items, subtotal, clearCart } = useCart();
   const currencySymbol = settings.site_currency_symbol || "₹";
-  const whatsappNumber = (settings.site_phone || settings.site_email || "").replace(/[^\d+]/g, "");
-  const whatsappMessage = encodeURIComponent(
-    items.length
-      ? `Hello Little Divinity, I want to order these items:\n${items
-          .map((item) => `- ${item.name} x ${item.quantity}`)
-          .join("\n")}`
-      : "Hello Little Divinity"
-  );
 
   if (!items.length) {
     return (
@@ -39,12 +31,17 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
         {items.map((item) => (
           <article key={item.slug} className="cart-item-card">
             <div className="cart-item-media">
-              <Image
-                src={resolveAssetUrl(item.image)}
-                alt={item.name}
-                fill
-                sizes="(max-width: 900px) 100vw, 18vw"
-              />
+              <div className="cart-item-media-shell">
+                <div className="cart-item-media-inner">
+                  <Image
+                    src={resolveAssetUrl(item.image)}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 900px) 100vw, 22vw"
+                    className="cart-item-image"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="cart-item-copy">
@@ -75,16 +72,6 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
           <Link href="/checkout" className="primary-button" style={{ textAlign: "center", textDecoration: "none", width: "100%" }}>
             Proceed to Secure Checkout
           </Link>
-
-          <a
-            href={whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/^\+/, "")}?text=${whatsappMessage}` : "/shop"}
-            className="secondary-button"
-            style={{ textAlign: "center", textDecoration: "none", display: "inline-flex", justifyContent: "center", alignItems: "center", gap: "var(--space-xs)", width: "100%" }}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Order on WhatsApp
-          </a>
 
           <button type="button" className="secondary-button" style={{ border: "none", background: "transparent", color: "rgba(var(--rgb-text), 0.5)", textDecoration: "underline", padding: "var(--space-xs) 0", cursor: "pointer", fontSize: "0.875rem" }} onClick={clearCart}>
             Clear Cart

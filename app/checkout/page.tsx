@@ -357,7 +357,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "2.5rem" }} className="auth-two-column">
+        <form onSubmit={handleSubmit} className="auth-two-column checkout-layout" style={{ display: "grid", gap: "2.5rem" }}>
           
           {/* LEFT COLUMN: SHIPPING & PAYMENT */}
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
@@ -368,7 +368,7 @@ export default function CheckoutPage() {
                 <span>1.</span> Shipping Details
               </h2>
               
-              <div className="auth-grid-form" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "1.2rem" }}>
+              <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1.2rem" }}>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Full Name *</span>
                   <input

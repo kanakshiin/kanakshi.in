@@ -100,7 +100,7 @@ function SuccessReceiptContent() {
           </div>
 
           {/* Delivery & Method */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+          <div style={{ display: "grid", gap: "1.5rem" }} className="success-detail-grid">
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ESTIMATED DELIVERY</span>
               <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>{deliveryEstimate}</strong>
@@ -111,7 +111,7 @@ function SuccessReceiptContent() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1rem" }}>
+          <div style={{ display: "grid", gap: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1rem" }} className="success-detail-grid">
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>PAYMENT PARAMETER</span>
               <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>COD / Online Gateway</strong>

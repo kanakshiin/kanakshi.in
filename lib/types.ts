@@ -3,6 +3,9 @@ export type SiteSettings = {
   site_tagline?: string;
   site_email?: string;
   site_phone?: string;
+  privacy_policy?: string | null;
+  terms_conditions?: string | null;
+  return_policy?: string | null;
   site_currency_symbol?: string;
   site_currency?: string;
   min_order_free_shipping?: string;

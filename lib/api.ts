@@ -1,4 +1,5 @@
 import { referenceAssets } from "./reference-assets";
+import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveTermsHtml } from "./legal-content";
 import { Category, Coupon, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink } from "./types";
 
 const API_BASE_URL =
@@ -16,11 +17,16 @@ const fallbackSettings: SiteSettings = {
   site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
   site_currency_symbol: "₹",
   min_order_free_shipping: "499",
-  site_email: "noreply@saaszo.in",
-  site_phone: "+91 9910212007",
-  address_line1: "E-3, Ground Floor Sector -3",
-  city: "Noida",
-  pincode: "201301"
+  site_email: liveContactDefaults.email,
+  site_phone: liveContactDefaults.phone,
+  address_line1: liveContactDefaults.addressLine1,
+  city: liveContactDefaults.city,
+  state: liveContactDefaults.state,
+  pincode: liveContactDefaults.pincode,
+  country: liveContactDefaults.country,
+  privacy_policy: livePrivacyPolicyHtml,
+  terms_conditions: liveTermsHtml,
+  return_policy: liveRefundPolicyHtml,
 };
 
 const fallbackHeaderMenu: NavigationItem[] = [
@@ -33,11 +39,12 @@ const fallbackHeaderMenu: NavigationItem[] = [
 ];
 
 const fallbackFooterMenu: NavigationItem[] = [
-  { id: 30001, title: "About Us", url: "#" },
-  { id: 30002, title: "Contact", url: "#" },
-  { id: 30003, title: "Privacy Policy", url: "#" },
-  { id: 30004, title: "Terms & Conditions", url: "#" },
-  { id: 30005, title: "Track Your Order", url: "#" }
+  { id: 30001, title: "About Us", url: "/pages/about-us" },
+  { id: 30002, title: "Contact", url: "/pages/contact" },
+  { id: 30003, title: "Privacy Policy", url: "/pages/privacy-policy" },
+  { id: 30004, title: "Terms & Conditions", url: "/pages/terms-conditions" },
+  { id: 30005, title: "Refund Policy", url: "/pages/refund-policy" },
+  { id: 30006, title: "Track Your Order", url: "/track-order" }
 ];
 
 const fallbackSocialLinks: SocialLink[] = [

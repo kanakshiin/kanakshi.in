@@ -171,10 +171,10 @@ export default function AccountPage() {
       <div className="container" style={{ maxWidth: selectedOrder ? "1200px" : "1100px" }}>
         
         {/* Main account wrapper */}
-        <div style={{ display: "grid", gridTemplateColumns: user ? "0.35fr 0.65fr" : "1fr", gap: "2.5rem" }} className="auth-two-column">
+        <div style={{ display: "grid", gap: "2.5rem" }} className={`auth-two-column account-layout${user ? "" : " account-layout--guest"}`}>
           
           {/* PROFILE SUMMARY COLUMN */}
-          <section className="auth-card" style={{ width: "100%", margin: 0, height: "fit-content", position: "sticky", top: "2rem" }}>
+          <section className="auth-card account-profile-card" style={{ width: "100%", margin: 0, height: "fit-content" }}>
             <small className="eyebrow">Customer Account</small>
             <h1 className="auth-title" style={{ fontSize: "2.2rem" }}>Profile</h1>
             {loading ? <p className="auth-muted">Loading your account…</p> : null}
@@ -238,6 +238,7 @@ export default function AccountPage() {
                     return (
                       <div
                         key={order.order_number}
+                        className="account-order-row"
                         style={{
                           border: "1px solid var(--line)",
                           borderRadius: "24px",
@@ -251,7 +252,7 @@ export default function AccountPage() {
                         }}
                       >
                         {/* Left Info: Product first item thumbnail & metadata */}
-                        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                        <div className="account-order-meta" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
                           <div style={{ width: "55px", height: "55px", borderRadius: "12px", overflow: "hidden", position: "relative", border: "1px solid var(--line)" }}>
                             {order.first_item_image ? (
                               <img
@@ -278,7 +279,7 @@ export default function AccountPage() {
                         </div>
 
                         {/* Right Action: Total cost & view details button */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                        <div className="account-order-action" style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
                           <div style={{ textAlign: "right" }}>
                             <span style={{ fontSize: "0.75rem", color: "var(--muted)", display: "block" }}>TOTAL PAID</span>
                             <strong style={{ fontSize: "1.1rem", color: "var(--accent-deep)" }}>
@@ -444,7 +445,7 @@ export default function AccountPage() {
               </div>
 
               {/* Address & Tracking Layout */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1.2rem" }}>
+              <div style={{ display: "grid", gap: "1.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1.2rem" }} className="account-detail-grid">
                 
                 {/* Shipping Details */}
                 <div>
@@ -595,4 +596,3 @@ export default function AccountPage() {
     </main>
   );
 }
-

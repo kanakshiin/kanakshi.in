@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { resolveAssetUrl } from "../lib/api";
@@ -31,6 +32,9 @@ type NavDisplayItem = {
 export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
   const [offerIndex, setOfferIndex] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openMobileSectionId, setOpenMobileSectionId] = useState<number | null>(null);
+  const pathname = usePathname();
   const { count } = useCart();
   const offers = useMemo(() => {
     const list = settings.topbar_offers?.filter((offer) => typeof offer === "string" && offer.trim().length > 0) ?? [];
@@ -75,6 +79,19 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
 
     return () => window.clearInterval(intervalId);
   }, [offers, offerVisible]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setOpenMobileSectionId(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <>
@@ -166,6 +183,76 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
               </svg>
               {count > 0 ? <span className="header-cart-count">{count}</span> : null}
             </Link>
+            <button
+              type="button"
+              className="mobile-nav-toggle"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((current) => !current)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+
+        <div className={`mobile-nav-panel${mobileMenuOpen ? " is-open" : ""}`}>
+          <div className="container mobile-nav-inner">
+            <div className="mobile-nav-shortcuts">
+              <Link href="/shop" className="mobile-nav-shortcut">
+                Search
+              </Link>
+              <Link href="/account" className="mobile-nav-shortcut">
+                Account
+              </Link>
+              <Link href="/cart" className="mobile-nav-shortcut">
+                Cart {count > 0 ? `(${count})` : ""}
+              </Link>
+            </div>
+
+            <div className="mobile-nav-list">
+              {fullNavItems.map((item) => {
+                const hasSubmenu = item.submenu.length > 0;
+                const isOpen = openMobileSectionId === item.id;
+
+                return (
+                  <div key={item.id} className="mobile-nav-entry">
+                    <div className="mobile-nav-row">
+                      <Link href={item.href} className="mobile-nav-link">
+                        {item.name}
+                      </Link>
+
+                      {hasSubmenu ? (
+                        <button
+                          type="button"
+                          className={`mobile-submenu-toggle${isOpen ? " is-open" : ""}`}
+                          aria-label={`Toggle ${item.name} submenu`}
+                          aria-expanded={isOpen}
+                          onClick={() =>
+                            setOpenMobileSectionId((current) => (current === item.id ? null : item.id))
+                          }
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
+                            <path d="M7 10.5 12 15l5-4.5" />
+                          </svg>
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {hasSubmenu ? (
+                      <div className={`mobile-nav-submenu${isOpen ? " is-open" : ""}`}>
+                        {item.submenu.map((submenuItem) => (
+                          <Link key={`${item.slug}-${submenuItem}`} href={item.href} className="mobile-nav-submenu-link">
+                            {submenuItem}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </header>

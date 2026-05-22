@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { FooterNewsletterForm } from "./footer-newsletter-form";
+import { liveContactDefaults } from "../lib/legal-content";
 
 type SiteFooterProps = {
   categories: Array<{
@@ -47,7 +49,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
           </div>
           <div className="footer-usp-item">
             <strong>Talk To Us</strong>
-            <span>{settings.site_phone || "+91 9910212007"}</span>
+            <span>{settings.site_phone || liveContactDefaults.phone}</span>
           </div>
           <div className="footer-usp-item">
             <strong>Festive Gifting Ready</strong>
@@ -66,9 +68,18 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
           <p className="footer-copy">
             Crafted for homes that want warmth, symbolism, and gifting pieces that feel memorable.
           </p>
-          <p>Address: {settings.address_line1 || "E-3, Ground Floor Sector -3"}, {settings.city || "Noida"} {settings.pincode || "201301"}</p>
-          <p>Phone: {settings.site_phone || "+91 9910212007"}</p>
-          <p>E-mail: {settings.site_email || "hello@littledivinity.com"}</p>
+          <p>
+            Address:{" "}
+            <Link href="/pages/contact">
+              {settings.address_line1 || liveContactDefaults.addressLine1}, {settings.city || liveContactDefaults.city} {settings.pincode || liveContactDefaults.pincode}
+            </Link>
+          </p>
+          <p>
+            Phone: <a href={`tel:${(settings.site_phone || liveContactDefaults.phone).replace(/\s+/g, "")}`}>{settings.site_phone || liveContactDefaults.phone}</a>
+          </p>
+          <p>
+            E-mail: <a href={`mailto:${settings.site_email || liveContactDefaults.email}`}>{settings.site_email || liveContactDefaults.email}</a>
+          </p>
         </div>
 
         <div className="footer-column">
@@ -92,13 +103,17 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
         <div className="footer-column footer-newsletter">
           <h3>Join The List</h3>
           <p>Get new arrivals, festive edits, and gifting ideas in your inbox.</p>
-          <form className="footer-newsletter-form">
-            <input type="email" placeholder="Enter your e-mail" />
-            <button type="button">Join</button>
-          </form>
+          <FooterNewsletterForm email={settings.site_email || liveContactDefaults.email} />
           <div className="footer-socials">
             {socialLinks.map((social) => (
-              <a key={social.id} href={social.url || "#"} aria-label={social.platform} className="footer-social-icon">
+              <a
+                key={social.id}
+                href={social.url || "/pages/contact"}
+                aria-label={social.platform}
+                className="footer-social-icon"
+                target={social.url ? "_blank" : undefined}
+                rel={social.url ? "noreferrer" : undefined}
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   {socialIcon(social.platform)}
                 </svg>

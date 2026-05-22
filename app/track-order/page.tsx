@@ -130,7 +130,7 @@ function LiveTrackerContent() {
         boxShadow: "var(--shadow)",
         marginBottom: "3rem"
       }}>
-        <form onSubmit={handleFormSubmit} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 0.6fr", gap: "1.5rem", alignItems: "end" }} className="auth-grid-form">
+        <form onSubmit={handleFormSubmit} style={{ display: "grid", gap: "1.5rem", alignItems: "end" }} className="auth-grid-form tracking-search-form">
           <div className="auth-field" style={{ gridColumn: "span 1" }}>
             <span>Order Number *</span>
             <input
@@ -274,7 +274,7 @@ function LiveTrackerContent() {
           </div>
 
           {/* Grid: Left - Courier & Logs activity, Right - Items summary receipt */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "2.5rem" }} className="auth-two-column">
+          <div style={{ display: "grid", gap: "2.5rem" }} className="auth-two-column tracking-results-layout">
             
             {/* LEFT: Courier details and activity logs */}
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getSettings } from "../../../lib/api";
+import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveTermsHtml } from "../../../lib/legal-content";
 import { getCanonicalUrl, getSiteName } from "../../../lib/site";
 
 export const dynamic = "force-dynamic";
@@ -21,26 +22,30 @@ const pageContent = {
     eyebrow: "Contact",
     title: "Reach the Little Divinity team.",
     body: [
-      "For product questions, order help, gifting support, or wholesale conversations, customers can contact the store using the details below.",
-      "If you want, we can next connect this page to a real contact form with backend submission storage and admin notifications."
+      "For product questions, order help, gifting support, or wholesale conversations, customers can contact the store using the details below."
     ]
   },
   "privacy-policy": {
     eyebrow: "Privacy Policy",
     title: "How store information is handled.",
-    body: [
-      "We only use customer information for order processing, account access, customer support, and essential communication related to the storefront.",
-      "Payment processing, delivery updates, and account verification may require sharing limited information with payment gateways, couriers, and verification providers strictly for service delivery."
-    ]
+    body: []
   },
   "terms-conditions": {
     eyebrow: "Terms & Conditions",
     title: "Store use, ordering, and service terms.",
-    body: [
-      "Product pricing, availability, and delivery estimates may change based on stock, logistics, and store updates. Orders are confirmed only after successful processing by the storefront system.",
-      "Customers are expected to provide accurate shipping, contact, and payment details. Fraudulent or abusive use of the storefront may lead to cancellation, account blocking, or service refusal."
-    ]
-  }
+    body: []
+  },
+  "refund-policy": {
+    eyebrow: "Refund Policy",
+    title: "Returns, exchanges, and refunds.",
+    body: []
+  },
+} as const;
+
+const policyDescriptions = {
+  "privacy-policy": "Read how Little Divinity collects, uses, and protects your personal information.",
+  "terms-conditions": "Read the store use, ordering, billing, and service terms for Little Divinity.",
+  "refund-policy": "Read the return, exchange, and refund process for Little Divinity orders.",
 } as const;
 
 type ContentPageProps = {
@@ -62,13 +67,13 @@ export async function generateMetadata({ params }: ContentPageProps): Promise<Me
 
   return {
     title: content.eyebrow,
-    description: content.body[0],
+    description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Little Divinity.",
     alternates: {
       canonical: `/pages/${slug}`
     },
     openGraph: {
       title: `${content.eyebrow} | ${getSiteName(settings)}`,
-      description: content.body[0],
+      description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Little Divinity.",
       url: getCanonicalUrl(`/pages/${slug}`, settings)
     }
   };
@@ -83,23 +88,54 @@ export default async function ContentPage({ params }: ContentPageProps) {
     notFound();
   }
 
+  const configuredPolicyHtml =
+    slug === "privacy-policy"
+      ? settings.privacy_policy
+      : slug === "terms-conditions"
+        ? settings.terms_conditions
+        : slug === "refund-policy"
+          ? settings.return_policy
+          : null;
+
+  const policyFallbackHtml =
+    slug === "privacy-policy"
+      ? livePrivacyPolicyHtml
+      : slug === "terms-conditions"
+        ? liveTermsHtml
+        : slug === "refund-policy"
+          ? liveRefundPolicyHtml
+          : null;
+
+  const policyHtml =
+    configuredPolicyHtml && configuredPolicyHtml.replace(/<[^>]+>/g, "").trim().length > 500
+      ? configuredPolicyHtml
+      : policyFallbackHtml;
+
   return (
     <main className="page-shell">
       <section className="content-section white-section">
         <div className="container" style={{ maxWidth: "960px" }}>
           <p className="eyebrow">{content.eyebrow}</p>
           <h1 className="page-title" style={{ maxWidth: "14ch" }}>{content.title}</h1>
-          <div style={{ display: "grid", gap: "1rem", maxWidth: "52rem", color: "var(--muted)", fontSize: "1.02rem", lineHeight: 1.8 }}>
-            {content.body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
+          {policyHtml ? (
+            <div
+              style={{ display: "grid", gap: "1rem", maxWidth: "52rem", color: "var(--muted)", fontSize: "1.02rem", lineHeight: 1.8 }}
+              dangerouslySetInnerHTML={{ __html: policyHtml }}
+            />
+          ) : (
+            <div style={{ display: "grid", gap: "1rem", maxWidth: "52rem", color: "var(--muted)", fontSize: "1.02rem", lineHeight: 1.8 }}>
+              {content.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          )}
 
           {slug === "contact" ? (
             <div style={{ display: "grid", gap: "0.8rem", marginTop: "2rem", padding: "1.4rem 1.5rem", border: "1px solid var(--line)", borderRadius: "28px", background: "rgba(255,255,255,0.74)", maxWidth: "34rem" }}>
-              <p><strong>Email:</strong> {settings.site_email || "hello@littledivinity.com"}</p>
-              <p><strong>Phone:</strong> {settings.site_phone || "+91 9910212007"}</p>
-              <p><strong>Address:</strong> {settings.address_line1 || "E-3, Ground Floor Sector -3"}, {settings.city || "Noida"} {settings.pincode || "201301"}</p>
+              <p><strong>Trade name:</strong> {settings.site_name || liveContactDefaults.tradeName}</p>
+              <p><strong>Email:</strong> {settings.site_email || liveContactDefaults.email}</p>
+              <p><strong>Phone:</strong> {settings.site_phone || liveContactDefaults.phone}</p>
+              <p><strong>Address:</strong> {settings.address_line1 || liveContactDefaults.addressLine1}, {settings.city || liveContactDefaults.city} {settings.pincode || liveContactDefaults.pincode}, {settings.country || liveContactDefaults.country}</p>
             </div>
           ) : null}
 
