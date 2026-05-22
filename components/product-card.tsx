@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -7,6 +8,7 @@ import { discountPercent, formatPrice, getPrimaryImage } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { AddToCartButton } from "./add-to-cart-button";
+import { QuickViewModal } from "./quick-view-modal";
 
 import { useWishlist } from "./wishlist-provider";
 
@@ -16,6 +18,7 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, currencySymbol }: ProductCardProps) {
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const discount = discountPercent(product);
   const currentPrice = formatPrice(product.effective_price ?? product.price, currencySymbol);
   const productPath = getProductPath(product);
@@ -29,13 +32,15 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
 
   return (
     <article className="product-card">
-      <Link href={productPath} className="product-media">
-        <Image
-          src={getPrimaryImage(product)}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 25vw"
-        />
+      <div className="product-media">
+        <Link href={productPath} className="product-media-link" style={{ display: "block", width: "100%", height: "100%", position: "relative" }}>
+          <Image
+            src={getPrimaryImage(product)}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
+        </Link>
         <div className="product-corner-actions">
           <button
             type="button"
@@ -52,11 +57,20 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
           </button>
           <span className="product-icon-button">◌</span>
         </div>
-        <div className="product-overlay-actions">
-          <span>Quick View</span>
-        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsQuickViewOpen(true);
+          }}
+          className="product-overlay-actions"
+          style={{ border: "none", cursor: "pointer" }}
+        >
+          Quick View
+        </button>
         {discount ? <span className="product-badge">Sale {discount}%</span> : null}
-      </Link>
+      </div>
 
       <div className="product-copy">
         <p className="product-category">{product.category_name || "Signature Edit"}</p>
@@ -83,6 +97,15 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
           </button>
         </div>
       </div>
+
+      {/* Quick View Popup Modal */}
+      <QuickViewModal
+        product={product}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+        currencySymbol={currencySymbol}
+      />
     </article>
   );
 }
+
