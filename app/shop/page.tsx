@@ -40,6 +40,15 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
   };
 }
 
+const categorySubtitles: Record<string, string> = {
+  "god-idols": "Sacred deities handcrafted in heavy antique brass to center meditation spaces and home altars.",
+  "wall-decor": "Detailed brass plates, hanging lamps, and vintage brackets that weave structural stories.",
+  "table-decor": "Fine-art frames, ornate candle holders, and intricate showpieces curated for focal consoles.",
+  "pooja-decor": "Ritual singhasans, bells, incense holders, and brass vessels designed for peaceful ceremonies.",
+  "home-kitchen": "Ornate spice jars, serving trays, and heritage vessels blending luxury and utility.",
+  "gifting-edit": "Thoughtfully bundled brass coordinates, ideal for housewarmings, weddings, and milestones."
+};
+
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const params = await searchParams;
   const [settings, categories] = await Promise.all([getSettings(), getCategories(12)]);
@@ -86,6 +95,10 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     }
   };
 
+  const subtitleText = activeCategory && categorySubtitles[activeCategory.slug]
+    ? categorySubtitles[activeCategory.slug]
+    : "Browse handcrafted idols, wall accents, pooja decor, gifting edits, and lifestyle pieces in a denser handcrafted storefront flow inspired by the reference retail rhythm.";
+
   return (
     <main className="page-shell">
       <StructuredData data={shopPageJsonLd} />
@@ -95,11 +108,14 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             <div className="shop-hero-copy">
               <p className="eyebrow">Shop The Collection</p>
               <h1 className="page-title">{activeCategory ? activeCategory.name : "Premium Decor For Home, Ritual, And Gifting"}</h1>
-              <p className="shop-intro">
-                Browse handcrafted idols, wall accents, pooja decor, gifting edits, and lifestyle pieces in a denser
-                handcrafted storefront flow inspired by the reference retail rhythm.
-              </p>
+              <p className="shop-intro">{subtitleText}</p>
               <div className="shop-chip-row">
+                <Link
+                  href="/shop"
+                  className={!params.category ? "shop-chip active" : "shop-chip"}
+                >
+                  All Pieces
+                </Link>
                 {featuredCategories.slice(0, 6).map((category) => (
                   <Link
                     key={category.id}
@@ -112,17 +128,20 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               </div>
             </div>
 
-            <div className="shop-hero-visual">
-              <Image
-                src={heroImage}
-                alt={activeCategory?.name || "Shop the collection"}
-                fill
-                priority
-                sizes="(max-width: 900px) 100vw, 40vw"
-              />
-              <div className="shop-summary-card">
-                <span>{products.pagination.total} products ready to browse</span>
-                <strong>Curated around festive display, sacred corners, and meaningful gifting.</strong>
+            <div className="shop-hero-visual-frame">
+              <div className="shop-hero-visual-inner">
+                <Image
+                  src={heroImage}
+                  alt={activeCategory?.name || "Shop the collection"}
+                  fill
+                  priority
+                  sizes="(max-width: 900px) 100vw, 40vw"
+                  className="shop-hero-img"
+                />
+                <div className="shop-summary-card">
+                  <span>{products.pagination.total} products ready to browse</span>
+                  <strong>Curated around festive display, sacred corners, and meaningful gifting.</strong>
+                </div>
               </div>
             </div>
           </div>

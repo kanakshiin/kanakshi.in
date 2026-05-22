@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-import { discountPercent, formatPrice, parseProductImages, resolveAssetUrl } from "../lib/api";
+import { discountPercent, formatPrice, parseProductImages, resolveAssetUrl, parseBulletPoints, getProducts } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
-import { AddToCartButton } from "./add-to-cart-button";
-import { useWishlist } from "./wishlist-provider";
-import { useCart } from "./cart-provider";
+import { ProductDetailActions } from "./product-detail-actions";
+import { OffersWidget } from "./offers-widget";
 
 type QuickViewModalProps = {
   product: Product;
@@ -21,10 +19,10 @@ type QuickViewModalProps = {
 };
 
 export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: QuickViewModalProps) {
-  const router = useRouter();
-  const { addItem } = useCart();
   const [mounted, setMounted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [relatedAccents, setRelatedAccents] = useState<Product[]>([]);
+  
   const parsedImages = parseProductImages(product.images);
   const discount = discountPercent(product);
   const currentPrice = formatPrice(product.effective_price ?? product.price, currencySymbol);
@@ -34,9 +32,8 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
       ? formatPrice(product.price, currencySymbol)
       : null;
 
-  const { toggleItem, hasItem } = useWishlist();
-  const isWishlisted = hasItem(product.slug);
   const productPath = getProductPath(product);
+  const bulletPoints = parseBulletPoints(product.bullet_points);
 
   // Set mounted state
   useEffect(() => {
@@ -55,10 +52,26 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
     };
   }, [isOpen, mounted]);
 
-  // Reset active image index when product changes
+  // Reset active image index and fetch related products when product changes
   useEffect(() => {
     setActiveImageIndex(0);
-  }, [product]);
+    
+    if (!isOpen || !product.category_slug) return;
+    
+    let active = true;
+    getProducts(`category=${encodeURIComponent(product.category_slug)}&per_page=5`)
+      .then((res) => {
+        if (active && res?.items) {
+          const filtered = res.items.filter((item) => item.id !== product.id).slice(0, 4);
+          setRelatedAccents(filtered);
+        }
+      })
+      .catch((err) => console.error("Error fetching related accents", err));
+
+    return () => {
+      active = false;
+    };
+  }, [product, isOpen]);
 
   if (!isOpen || !mounted) {
     return null;
@@ -131,7 +144,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             <p className="product-category">{product.category_name || "Signature Edit"}</p>
             <h2 id="qv-title" className="quickview-title">{product.name}</h2>
             
-            <div className="price-row" style={{ margin: "1rem 0" }}>
+            <div className="price-row" style={{ margin: "0.5rem 0 1rem" }}>
               <strong className="quickview-price">{currentPrice}</strong>
               {comparePrice ? <span className="quickview-compare-price">{comparePrice}</span> : null}
             </div>
@@ -141,50 +154,72 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             {product.short_desc ? (
               <p className="quickview-snippet">{product.short_desc}</p>
             ) : product.description ? (
-              <p className="quickview-snippet" style={{ display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              <p className="quickview-snippet" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                 {product.description}
               </p>
             ) : (
               <p className="quickview-snippet">Handcrafted heirloom accent created to elevate your spaces with spiritual warmth and curated boutique styling.</p>
             )}
+
+            {/* Premium Bullet Points Checklist */}
+            {bulletPoints.length > 0 && (
+              <div className="product-bullets-container quickview-bullets">
+                <ul className="bullet-list">
+                  {bulletPoints.map((point, index) => (
+                    <li key={index} className="bullet-item">
+                      <svg className="bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span className="bullet-text">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Exclusive Offers Widget */}
+            <div className="quickview-offers-wrap" style={{ marginTop: "1rem" }}>
+              <OffersWidget />
+            </div>
           </div>
 
-          {/* Luxury Action Deck: Buy Now, Add to Cart (syncing), and Wishlist */}
           <div className="quickview-details-footer">
-            <div className="quickview-actions-wrap" style={{ marginTop: "2rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem", width: "100%", alignItems: "center" }}>
-                <button
-                  type="button"
-                  className="primary-button"
-                  style={{ width: "100%", minHeight: "2.85rem", padding: "0 1.25rem", margin: 0, border: "0" }}
-                  onClick={() => {
-                    addItem(product, 1);
-                    onClose();
-                    router.push("/cart");
-                  }}
-                >
-                  Buy Now
-                </button>
-                <div style={{ width: "100%" }}>
-                  <AddToCartButton 
-                    product={product} 
-                    className="secondary-button" 
-                    label="Add To Cart"
-                  />
+            {/* Unified Luxury Action Deck */}
+            <div className="quickview-actions-container" style={{ marginTop: "1.25rem" }}>
+              <ProductDetailActions product={product} />
+            </div>
+
+            {/* Compact Related Accents Preview Strip */}
+            {relatedAccents.length > 0 && (
+              <div className="related-accents-strip" style={{ marginTop: "1.25rem" }}>
+                <p className="related-accents-title">Related Accents</p>
+                <div className="related-accents-row">
+                  {relatedAccents.map((item) => {
+                    const [firstImage] = parseProductImages(item.images);
+                    return (
+                      <Link
+                        key={item.id}
+                        href={getProductPath(item)}
+                        className="related-accent-thumb-link"
+                        onClick={onClose}
+                        title={item.name}
+                      >
+                        <div className="related-accent-thumb-image-wrap">
+                          <Image
+                            src={resolveAssetUrl(firstImage || null)}
+                            alt={item.name}
+                            fill
+                            sizes="40px"
+                          />
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
-              
-              <button
-                type="button"
-                className={`product-card-action ${isWishlisted ? "wishlisted-active" : "muted"}`}
-                style={{ width: "100%", marginTop: "0.8rem", minHeight: "2.85rem" }}
-                onClick={() => toggleItem(product)}
-              >
-                {isWishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
-              </button>
-            </div>
+            )}
             
-            <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+            <div style={{ marginTop: "1.25rem", textAlign: "center" }}>
               <Link 
                 href={productPath} 
                 className="quickview-view-more"

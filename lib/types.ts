@@ -86,6 +86,7 @@ export type Product = {
   description?: string | null;
   short_desc?: string | null;
   images?: string[] | string | null;
+  bullet_points?: string[] | string | null;
   price: number | string;
   sale_price?: number | string | null;
   effective_price?: number | string;

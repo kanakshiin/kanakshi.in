@@ -307,6 +307,37 @@ export function parseProductImages(images?: Product["images"]): string[] {
   return [];
 }
 
+export function parseBulletPoints(bullets?: Product["bullet_points"]): string[] {
+  let list: string[] = [];
+
+  if (Array.isArray(bullets)) {
+    list = bullets.map(String).filter(Boolean);
+  } else if (typeof bullets === "string" && bullets.trim() !== "") {
+    const trimmed = bullets.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          list = parsed.map(String).filter(Boolean);
+        }
+      } catch {
+        // Not valid JSON array, fallback to newline split
+        list = trimmed.split(/\r?\n/).filter(Boolean);
+      }
+    } else {
+      // Split by newlines or list tags
+      list = trimmed.split(/\r?\n/).filter(Boolean);
+    }
+  }
+
+  // Clean, limit characters to 150, and slice to max 10 bullet points
+  return list
+    .map(item => item.trim())
+    .filter(item => item.length > 0)
+    .map(item => item.slice(0, 150))
+    .slice(0, 10);
+}
+
 export function getPrimaryImage(product: Product): string {
   const [firstImage] = parseProductImages(product.images);
   return resolveAssetUrl(firstImage || null);
