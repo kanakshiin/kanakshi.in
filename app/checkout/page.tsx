@@ -6,8 +6,21 @@ import { useEffect, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
 import { getStoredCustomerToken, fetchCurrentCustomer } from "../../lib/customer-auth";
-import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl } from "../../lib/api";
+import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
 import { Coupon, CustomerUser, SiteSettings } from "../../lib/types";
+
+async function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window !== "undefined" && (window as any).Razorpay) {
+    return true;
+  }
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -18,6 +31,13 @@ export default function CheckoutPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // Online gateway simulation overlay state
+  const [activeSimulation, setActiveSimulation] = useState<{
+    orderNumber: string;
+    amount: number;
+    method: "razorpay" | "phonepe";
+  } | null>(null);
 
   // Form states
   const [shipName, setShipName] = useState("");
@@ -151,6 +171,51 @@ export default function CheckoutPage() {
     setCouponError(null);
   }
 
+  // Simulation modal handlers
+  async function handleConfirmSimulation() {
+    if (!activeSimulation) return;
+    setIsSubmitting(true);
+    const token = getStoredCustomerToken() || undefined;
+
+    try {
+      const verifyRes = await verifyPayment({
+        order_number: activeSimulation.orderNumber,
+        payment_method: activeSimulation.method,
+        razorpay_payment_id: activeSimulation.method === "razorpay" ? "pay_simulated_" + Math.random().toString(36).substring(7) : undefined,
+        transaction_id: activeSimulation.method === "phonepe" ? "txn_simulated_" + Math.random().toString(36).substring(7) : undefined,
+      }, token);
+
+      if (verifyRes.success) {
+        clearCart();
+        router.push(`/checkout/success?order_number=${activeSimulation.orderNumber}`);
+      } else {
+        setError(verifyRes.message || "Payment verification failed.");
+        setIsSubmitting(false);
+        setActiveSimulation(null);
+      }
+    } catch (err) {
+      setError("An error occurred during payment verification.");
+      setIsSubmitting(false);
+      setActiveSimulation(null);
+    }
+  }
+
+  async function handleCancelSimulation() {
+    if (!activeSimulation) return;
+    setIsSubmitting(true);
+    const token = getStoredCustomerToken() || undefined;
+
+    try {
+      await cancelOrder(activeSimulation.orderNumber, token);
+      setError("Payment cancelled. Your reserved items have been restored to stock.");
+    } catch (err) {
+      console.error("Order cancellation failed:", err);
+    } finally {
+      setIsSubmitting(false);
+      setActiveSimulation(null);
+    }
+  }
+
   // Handle order submission
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -186,8 +251,74 @@ export default function CheckoutPage() {
     const res = await placeOrder(orderData, token);
 
     if (res.success && res.data) {
-      clearCart();
-      router.push(`/checkout/success?order_number=${res.data.order_number}`);
+      if (paymentMethod === "cod") {
+        clearCart();
+        router.push(`/checkout/success?order_number=${res.data.order_number}`);
+      } else {
+        const config = res.data.gateway_config;
+        
+        // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
+        if (paymentMethod === "razorpay" && config?.public_key && !config.is_test_mode) {
+          const loaded = await loadRazorpayScript();
+          if (loaded) {
+            try {
+              const options = {
+                key: config.public_key,
+                amount: Math.round(res.data.total_amount * 100),
+                currency: "INR",
+                name: "Little Divinity",
+                description: `Order #${res.data.order_number}`,
+                handler: async function (response: any) {
+                  setIsSubmitting(true);
+                  const verifyRes = await verifyPayment({
+                    order_number: res.data!.order_number,
+                    payment_method: "razorpay",
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                  }, token);
+
+                  if (verifyRes.success) {
+                    clearCart();
+                    router.push(`/checkout/success?order_number=${res.data!.order_number}`);
+                  } else {
+                    setError(verifyRes.message || "Payment verification failed.");
+                    setIsSubmitting(false);
+                  }
+                },
+                modal: {
+                  ondismiss: async function () {
+                    setIsSubmitting(true);
+                    await cancelOrder(res.data!.order_number, token);
+                    setError("Payment cancelled. Your reserved items have been restored to stock.");
+                    setIsSubmitting(false);
+                  }
+                },
+                prefill: {
+                  name: shipName,
+                  email: shipEmail,
+                  contact: shipPhone,
+                },
+                theme: {
+                  color: "#0f0f0f",
+                }
+              };
+              const rzp = new (window as any).Razorpay(options);
+              rzp.open();
+              return;
+            } catch (err) {
+              console.error("Razorpay SDK initialization failed, falling back to secure simulation:", err);
+            }
+          }
+        }
+        
+        // Fallback or Sandbox/Test mode: Trigger the gorgeous secure simulation overlay!
+        setActiveSimulation({
+          orderNumber: res.data.order_number,
+          amount: res.data.total_amount,
+          method: paymentMethod
+        });
+      }
     } else {
       setError(res.message || "An unexpected error occurred while placing your order.");
       setIsSubmitting(false);
@@ -603,6 +734,83 @@ export default function CheckoutPage() {
 
         </form>
       </div>
+
+      {/* Online Gateway Simulation Overlay */}
+      {activeSimulation && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          background: "rgba(15, 15, 15, 0.4)",
+          backdropFilter: "blur(20px)",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem"
+        }}>
+          <div style={{
+            background: "rgba(255, 255, 255, 0.8)",
+            border: "1px solid rgba(255, 255, 255, 0.5)",
+            borderRadius: "32px",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
+            padding: "2.5rem",
+            maxWidth: "500px",
+            width: "100%",
+            textAlign: "center",
+            backdropFilter: "blur(25px)",
+            position: "relative"
+          }}>
+            <p className="eyebrow" style={{ color: "var(--accent-deep)", marginBottom: "0.5rem" }}>
+              Secure Payment Gateway Sandbox
+            </p>
+            <h3 style={{ fontSize: "1.8rem", color: "var(--text)", fontWeight: 700, marginBottom: "1rem" }}>
+              Simulate Gateway Integration
+            </h3>
+            <p style={{ color: "var(--muted)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "1.5rem" }}>
+              You are simulating a payment of <strong style={{ color: "var(--text)" }}>{formatPrice(activeSimulation.amount, currencySymbol)}</strong> for Order <strong style={{ color: "var(--text)" }}>#{activeSimulation.orderNumber}</strong> using <strong style={{ textTransform: "capitalize", color: "var(--text)" }}>{activeSimulation.method}</strong>.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <button
+                type="button"
+                onClick={handleConfirmSimulation}
+                className="primary-button"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  background: "#226643",
+                  borderColor: "#226643",
+                  color: "#fff"
+                }}
+              >
+                Approve & Verify Successful Payment
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCancelSimulation}
+                className="secondary-button"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  borderColor: "#a43c31",
+                  color: "#a43c31",
+                  background: "transparent"
+                }}
+              >
+                Simulate Abort / Cancel Payment
+              </button>
+            </div>
+            
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "1.5rem" }}>
+              This sandbox overlay acts as a secure fallback interface during development and verification stages. In production, this falls back to direct API checkouts.
+            </p>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes spin {

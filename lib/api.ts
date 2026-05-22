@@ -355,27 +355,19 @@ export async function getCategories(limit = 8): Promise<Category[]> {
 
 export async function getProducts(query = ""): Promise<ProductListResponse> {
   const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`);
-  const items = payload?.data?.items?.length ? payload.data.items : fallbackProducts;
-  const mergedItems = (
-    items.length >= 8
-      ? items
-      : [...items, ...fallbackProducts.filter((product) => !items.some((item) => item.slug === product.slug))]
-  ).filter((product, index, list) => list.findIndex((item) => item.slug === product.slug) === index);
+  if (payload?.data) {
+    return payload.data;
+  }
 
-  return (
-    (payload?.data && {
-      ...payload.data,
-      items: mergedItems
-    }) || {
-      items: mergedItems,
-      pagination: {
-        current_page: 1,
-        per_page: mergedItems.length,
-        total: mergedItems.length,
-        last_page: 1
-      }
+  return {
+    items: fallbackProducts,
+    pagination: {
+      current_page: 1,
+      per_page: fallbackProducts.length,
+      total: fallbackProducts.length,
+      last_page: 1
     }
-  );
+  };
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
@@ -469,6 +461,11 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
     ship_name: string;
     ship_email: string;
     estimated_delivery: string;
+    gateway_config?: {
+      public_key: string | null;
+      merchant_id: string | null;
+      is_test_mode: boolean;
+    } | null;
   };
 }> {
   try {
@@ -493,6 +490,69 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
     return {
       success: false,
       message: error?.message || "Something went wrong while placing order."
+    };
+  }
+}
+
+export async function verifyPayment(
+  data: {
+    order_number: string;
+    payment_method: "razorpay" | "phonepe";
+    razorpay_payment_id?: string;
+    razorpay_order_id?: string;
+    razorpay_signature?: string;
+    transaction_id?: string;
+    provider_reference_id?: string;
+  },
+  token?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/checkout/verify-payment`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+      cache: "no-store"
+    });
+
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Failed to verify payment."
+    };
+  }
+}
+
+export async function cancelOrder(orderNumber: string, token?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/checkout/cancel-order`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ order_number: orderNumber }),
+      cache: "no-store"
+    });
+
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Failed to cancel order."
     };
   }
 }
@@ -656,4 +716,3 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
     };
   }
 }
-
