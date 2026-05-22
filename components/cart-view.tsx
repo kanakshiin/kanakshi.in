@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { formatPrice, resolveAssetUrl } from "../lib/api";
+import { getProductPath } from "../lib/site";
 import { Coupon, SiteSettings } from "../lib/types";
 import { CartQuantityControl } from "./cart-quantity-control";
 import { useCart } from "./cart-provider";
@@ -31,26 +32,33 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
         {items.map((item) => (
           <article key={item.slug} className="cart-item-card">
             <div className="cart-item-media">
-              <div className="cart-item-media-shell">
+              <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="cart-item-media-shell">
                 <div className="cart-item-media-inner">
                   <Image
                     src={resolveAssetUrl(item.image)}
                     alt={item.name}
                     fill
-                    sizes="(max-width: 900px) 100vw, 22vw"
+                    sizes="(max-width: 900px) 100vw, 160px"
                     className="cart-item-image"
                   />
                 </div>
-              </div>
+              </Link>
             </div>
 
             <div className="cart-item-copy">
-              <p className="product-category">{item.categoryName || "Signature Edit"}</p>
-              <h2>{item.name}</h2>
-              <p className="detail-price">{formatPrice(item.price, currencySymbol)}</p>
+              <div className="cart-item-head">
+                <div>
+                  <p className="product-category">{item.categoryName || "Signature Edit"}</p>
+                  <h2>{item.name}</h2>
+                </div>
+                <p className="detail-price">{formatPrice(item.price, currencySymbol)}</p>
+              </div>
 
-              <div className="cart-item-controls">
-                <CartQuantityControl slug={item.slug} />
+              <div className="cart-item-foot">
+                <CartQuantityControl slug={item.slug} compact />
+                <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="text-link">
+                  View product
+                </Link>
               </div>
             </div>
           </article>
