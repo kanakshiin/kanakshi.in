@@ -6,6 +6,8 @@ import { StructuredData } from "../../../../components/structured-data";
 import { ProductDetailActions } from "../../../../components/product-detail-actions";
 import { ProductCard } from "../../../../components/product-card";
 import { OffersWidget } from "../../../../components/offers-widget";
+import { ProductGallery } from "../../../../components/product-gallery";
+import { UrgencyTimer } from "../../../../components/urgency-timer";
 import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons } from "../../../../lib/api";
 import { referenceAssets } from "../../../../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getProductRenderKey } from "../../../../lib/site";
@@ -148,35 +150,57 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <StructuredData data={productJsonLd} />
       <section className="product-hero">
         <div className="container product-detail-grid">
-          <div className="product-detail-media">
-            <Image
-              src={getPrimaryImage(product)}
-              alt={product.name}
-              className="product-detail-main"
-              width={1200}
-              height={1344}
-              priority
-              sizes="(max-width: 900px) 100vw, 50vw"
-            />
-            <div className="product-thumb-row">
-              {images.slice(0, 4).map((image, index) => (
-                <Image
-                  key={`${product.slug}-${index}`}
-                  src={image}
-                  alt={`${product.name} ${index + 1}`}
-                  width={320}
-                  height={320}
-                  sizes="(max-width: 900px) 25vw, 12vw"
-                />
-              ))}
-            </div>
-          </div>
+          {/* Interactive Multi-Image Gallery component with fullscreen lightbox option */}
+          <ProductGallery images={images} productName={product.name} />
 
           <div className="product-detail-copy">
             <p className="eyebrow">{product.category_name || "Signature Product"}</p>
             <h1 className="page-title">{product.name}</h1>
             <p className="detail-price">{formatPrice(product.effective_price ?? product.price, currencySymbol)}</p>
             {product.short_desc ? <p className="detail-lead">{product.short_desc}</p> : null}
+
+            {/* Boutique Trust Stamps / Badges Strip */}
+            <div className="luxury-trust-badges">
+              <div className="trust-badge-card">
+                <div className="badge-stamp-wrapper">
+                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  </svg>
+                  <span className="badge-stamp-ring"></span>
+                </div>
+                <div className="badge-label-stack">
+                  <span className="badge-title">Pure Solid Brass</span>
+                  <span className="badge-subtitle">Authentic & Everlasting</span>
+                </div>
+              </div>
+
+              <div className="trust-badge-card">
+                <div className="badge-stamp-wrapper">
+                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <span className="badge-stamp-ring"></span>
+                </div>
+                <div className="badge-label-stack">
+                  <span className="badge-title">Artisan Handcrafted</span>
+                  <span className="badge-subtitle">Generational Legacy</span>
+                </div>
+              </div>
+
+              <div className="trust-badge-card">
+                <div className="badge-stamp-wrapper">
+                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zm0 0h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                  </svg>
+                  <span className="badge-stamp-ring"></span>
+                </div>
+                <div className="badge-label-stack">
+                  <span className="badge-title">Premium Gift Box</span>
+                  <span className="badge-subtitle">Festive Ready Presentation</span>
+                </div>
+              </div>
+            </div>
 
             <div className="detail-meta-strip">
               <span>Hand-finished aesthetic</span>
@@ -217,6 +241,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             <ProductDetailActions product={product} />
+            
+            {/* Scarcity Ticking Countdown Timer */}
+            <UrgencyTimer />
           </div>
         </div>
       </section>
