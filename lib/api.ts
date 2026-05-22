@@ -268,6 +268,14 @@ export function resolveAssetUrl(path?: string | null): string {
     return path;
   }
 
+  if (path.startsWith("/storage/")) {
+    return `${BACKEND_SITE_URL}${path}`;
+  }
+
+  if (path.startsWith("storage/")) {
+    return `${BACKEND_SITE_URL}/${path}`;
+  }
+
   if (path.startsWith("/")) {
     return path;
   }
