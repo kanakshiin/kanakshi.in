@@ -8,6 +8,8 @@ import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { AddToCartButton } from "./add-to-cart-button";
 
+import { useWishlist } from "./wishlist-provider";
+
 type ProductCardProps = {
   product: Product;
   currencySymbol: string;
@@ -22,6 +24,9 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
       ? formatPrice(product.price, currencySymbol)
       : null;
 
+  const { toggleItem, hasItem } = useWishlist();
+  const isWishlisted = hasItem(product.slug);
+
   return (
     <article className="product-card">
       <Link href={productPath} className="product-media">
@@ -32,7 +37,19 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
           sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 25vw"
         />
         <div className="product-corner-actions">
-          <span className="product-icon-button">♡</span>
+          <button
+            type="button"
+            className={`product-icon-button${isWishlisted ? " wishlisted-active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleItem(product);
+            }}
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem" }}
+          >
+            {isWishlisted ? "♥" : "♡"}
+          </button>
           <span className="product-icon-button">◌</span>
         </div>
         <div className="product-overlay-actions">
@@ -53,7 +70,17 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
         </div>
         <div className="product-card-actions">
           <AddToCartButton product={product} />
-          <span className="product-card-action muted">Wishlist</span>
+          <button
+            type="button"
+            className={`product-card-action ${isWishlisted ? "wishlisted-active" : "muted"}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleItem(product);
+            }}
+          >
+            {isWishlisted ? "Wishlisted" : "Wishlist"}
+          </button>
         </div>
       </div>
     </article>

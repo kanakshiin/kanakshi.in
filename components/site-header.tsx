@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { resolveAssetUrl } from "../lib/api";
 import { NavigationItem, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
+import { useWishlist } from "./wishlist-provider";
 
 type SiteHeaderProps = {
   brandName: string;
@@ -36,6 +37,7 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
   const [openMobileSectionId, setOpenMobileSectionId] = useState<number | null>(null);
   const pathname = usePathname();
   const { count } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const [cartPop, setCartPop] = useState(false);
 
   useEffect(() => {
@@ -174,11 +176,16 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                 <path d="M16 16l4.5 4.5" />
               </svg>
             </Link>
-            <span aria-label="Wishlist" className="header-tool-icon">
+            <Link href="/wishlist" aria-label="Wishlist" className="header-tool-icon header-wishlist-link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
               </svg>
-            </span>
+              {wishlistCount > 0 ? (
+                <span className="header-cart-count header-wishlist-count">
+                  {wishlistCount}
+                </span>
+              ) : null}
+            </Link>
             <Link href="/account" aria-label="Account" className="header-tool-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="8.5" r="3.2" />
@@ -216,8 +223,8 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
               <Link href="/shop" className="mobile-nav-shortcut">
                 Search
               </Link>
-              <Link href="/account" className="mobile-nav-shortcut">
-                Account
+              <Link href="/wishlist" className="mobile-nav-shortcut">
+                Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ""}
               </Link>
               <Link href="/cart" className="mobile-nav-shortcut">
                 Cart {count > 0 ? `(${count})` : ""}

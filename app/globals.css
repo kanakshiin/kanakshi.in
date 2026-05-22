@@ -3091,3 +3091,14 @@ h3 {
 .cart-pop-animate {
   animation: cartBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+
+/* Active Wishlist Button Styling */
+.product-card-action.wishlisted-active {
+  background: linear-gradient(135deg, #a87f43, #d4af37) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.product-icon-button.wishlisted-active {
+  color: #d4af37 !important;
+}
