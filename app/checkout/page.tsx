@@ -373,13 +373,6 @@ export default function CheckoutPage() {
         const config = res.data.gateway_config;
         const orderContact = res.data.ship_email || res.data.ship_phone;
 
-        if (paymentMethod === "phonepe" && !config?.is_test_mode) {
-          await cancelOrder(res.data.order_number, token, orderContact);
-          setError("PhonePe live checkout is not available right now. Please choose Cash on Delivery or Razorpay.");
-          setIsSubmitting(false);
-          return;
-        }
-        
         // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
         if (
           paymentMethod === "razorpay" &&
@@ -456,6 +449,15 @@ export default function CheckoutPage() {
           await cancelOrder(res.data.order_number, token, orderContact);
           setError("Razorpay checkout could not load right now. Please try again or choose Cash on Delivery.");
           setIsSubmitting(false);
+          return;
+        }
+
+        if (
+          paymentMethod === "phonepe" &&
+          config?.checkout_url &&
+          !config.is_test_mode
+        ) {
+          window.location.href = config.checkout_url;
           return;
         }
         
@@ -673,7 +675,7 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                {/* Razorpay Simulated */}
+                {/* Razorpay */}
                 <label
                   style={{
                     display: "flex",
@@ -698,13 +700,13 @@ export default function CheckoutPage() {
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>Razorpay (Cards / UPI / NetBanking)</strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>Simulation</span>
+                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>Secure</span>
                     </div>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay securely via Credit Card, Debit Card, NetBanking, or wallets. Will simulate successful completion.</span>
+                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay securely via Credit Card, Debit Card, NetBanking, UPI, or wallets. Test mode will use a safe simulation automatically.</span>
                   </div>
                 </label>
 
-                {/* PhonePe Simulated */}
+                {/* PhonePe */}
                 <label
                   style={{
                     display: "flex",
@@ -729,9 +731,9 @@ export default function CheckoutPage() {
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>PhonePe UPI Gateway</strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>Simulation</span>
+                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>UPI</span>
                     </div>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay directly via PhonePe app or UPI account. Will simulate successful completion.</span>
+                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay through PhonePe checkout. In test mode the order uses a safe prepaid simulation.</span>
                   </div>
                 </label>
               </div>

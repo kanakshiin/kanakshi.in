@@ -58,8 +58,9 @@ export function ProductDetailActions({ product }: { product: Product }) {
             if (quantity === 0) {
               addItem(product, 1);
             }
-            router.push("/cart");
+            router.push("/checkout");
           }}
+
         >
           Buy Now
         </button>

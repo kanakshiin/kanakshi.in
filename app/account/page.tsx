@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { clearCustomerToken, fetchCurrentCustomer, getStoredCustomerToken, logoutCustomer } from "../../lib/customer-auth";
-import { getCustomerOrders, getCustomerOrderDetail, formatPrice, resolveAssetUrl } from "../../lib/api";
+import { getCustomerOrders, getCustomerOrderDetail, formatPrice, requestCustomerOrderReturn, resolveAssetUrl } from "../../lib/api";
 import { CustomerUser } from "../../lib/types";
 
 // Type definitions matching CustomerOrderController responses
@@ -70,6 +70,16 @@ interface OrderDetail {
     message: string | null;
     created_at: string;
   }>;
+  returns: Array<{
+    id: number;
+    return_number: string;
+    status: string;
+    reason: string;
+    requested_amount: number;
+    approved_amount: number;
+    requested_at: string | null;
+    resolved_at: string | null;
+  }>;
 }
 
 export default function AccountPage() {
@@ -82,6 +92,12 @@ export default function AccountPage() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [loadingOrderDetail, setLoadingOrderDetail] = useState<string | null>(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnNotes, setReturnNotes] = useState("");
+  const [returnImages, setReturnImages] = useState("");
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+  const [returnFeedback, setReturnFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getStoredCustomerToken();
@@ -139,6 +155,18 @@ export default function AccountPage() {
       const res = await getCustomerOrderDetail(token, orderNumber);
       if (res && res.success && res.data) {
         setSelectedOrder(res.data);
+        setReturnReason("");
+        setReturnNotes("");
+        setReturnImages("");
+        setReturnFeedback(null);
+        setReturnQuantities(
+          Object.fromEntries(
+            res.data.items.map((item) => [
+              `${item.product_id}:${item.variant_id ?? 0}`,
+              item.quantity > 0 ? 1 : 0,
+            ])
+          )
+        );
       } else {
         alert(res.message || "Failed to load order details.");
       }
@@ -165,6 +193,61 @@ export default function AccountPage() {
         return { bg: "rgba(var(--rgb-text), 0.06)", text: "var(--text)" };
     }
   };
+
+  const canRequestReturn = selectedOrder
+    ? ["delivered", "shipped"].includes(selectedOrder.status.toLowerCase())
+    : false;
+
+  async function handleSubmitReturn() {
+    if (!selectedOrder) return;
+
+    const token = getStoredCustomerToken();
+    if (!token) {
+      setReturnFeedback("Please log in again before submitting a return request.");
+      return;
+    }
+
+    if (!returnReason.trim()) {
+      setReturnFeedback("Please enter a return reason.");
+      return;
+    }
+
+    const items = selectedOrder.items
+      .map((item) => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id,
+        quantity: Number(returnQuantities[`${item.product_id}:${item.variant_id ?? 0}`] || 0),
+      }))
+      .filter((item) => item.quantity > 0);
+
+    if (items.length === 0) {
+      setReturnFeedback("Select at least one item quantity to return.");
+      return;
+    }
+
+    setIsSubmittingReturn(true);
+    setReturnFeedback(null);
+
+    const result = await requestCustomerOrderReturn(token, selectedOrder.order_number, {
+      reason: returnReason.trim(),
+      customer_notes: returnNotes.trim() || undefined,
+      items,
+      images: returnImages
+        .split(/\r?\n/)
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    });
+
+    if (!result.success) {
+      setReturnFeedback(result.message || "Could not submit the return request.");
+      setIsSubmittingReturn(false);
+      return;
+    }
+
+    await handleViewOrderDetail(selectedOrder.order_number);
+    setReturnFeedback(`Return request ${result.data?.return_number || ""} submitted successfully.`.trim());
+    setIsSubmittingReturn(false);
+  }
 
   return (
     <main className="content-section auth-page" style={{ padding: "4rem 0", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)" }}>
@@ -528,6 +611,115 @@ export default function AccountPage() {
                   </div>
                 </div>
               )}
+
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.2rem", marginBottom: "1rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.8rem" }}>Returns & Refunds</h4>
+
+                {selectedOrder.returns.length > 0 ? (
+                  <div style={{ display: "grid", gap: "0.8rem", marginBottom: "1rem" }}>
+                    {selectedOrder.returns.map((request) => (
+                      <div key={request.id} style={{ border: "1px solid var(--line)", borderRadius: "18px", padding: "0.9rem 1rem", background: "rgba(255,255,255,0.6)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                          <div>
+                            <strong>{request.return_number}</strong>
+                            <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: "2px" }}>{request.reason}</div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)", display: "block" }}>STATUS</span>
+                            <strong style={{ textTransform: "capitalize" }}>{request.status}</strong>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", marginTop: "0.6rem", fontSize: "0.85rem" }}>
+                          <span>Requested: {formatPrice(request.requested_amount, "₹")}</span>
+                          <span>Approved: {request.approved_amount > 0 ? formatPrice(request.approved_amount, "₹") : "Pending"}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {canRequestReturn ? (
+                  <div style={{ border: "1px solid var(--line)", borderRadius: "22px", padding: "1rem", background: "rgba(255,255,255,0.7)" }}>
+                    <p style={{ margin: "0 0 0.85rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+                      Submit a return request for shipped or delivered items. Choose only the quantities you want to send back.
+                    </p>
+                    <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1rem" }}>
+                      {selectedOrder.items.map((item) => {
+                        const key = `${item.product_id}:${item.variant_id ?? 0}`;
+                        return (
+                          <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 92px", gap: "0.75rem", alignItems: "center" }}>
+                            <div>
+                              <strong style={{ display: "block", fontSize: "0.92rem" }}>{item.name}</strong>
+                              <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                                Ordered qty: {item.quantity}
+                              </span>
+                            </div>
+                            <input
+                              type="number"
+                              min={0}
+                              max={item.quantity}
+                              value={returnQuantities[key] ?? 0}
+                              onChange={(e) =>
+                                setReturnQuantities((current) => ({
+                                  ...current,
+                                  [key]: Math.max(0, Math.min(item.quantity, Number(e.target.value || 0))),
+                                }))
+                              }
+                              style={{
+                                padding: "0.75rem 0.8rem",
+                                borderRadius: "14px",
+                                border: "1px solid var(--line)",
+                                background: "white",
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "grid", gap: "0.8rem" }}>
+                      <input
+                        type="text"
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        placeholder="Reason for return (wrong item, damaged, not as expected...)"
+                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)" }}
+                      />
+                      <textarea
+                        rows={3}
+                        value={returnNotes}
+                        onChange={(e) => setReturnNotes(e.target.value)}
+                        placeholder="Extra notes for the return team (optional)"
+                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)", resize: "vertical" }}
+                      />
+                      <textarea
+                        rows={2}
+                        value={returnImages}
+                        onChange={(e) => setReturnImages(e.target.value)}
+                        placeholder="Optional proof image URLs, one per line"
+                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)", resize: "vertical" }}
+                      />
+                      {returnFeedback ? (
+                        <div style={{ fontSize: "0.86rem", color: returnFeedback.toLowerCase().includes("successfully") ? "#2d7b4c" : "#b53a2c" }}>
+                          {returnFeedback}
+                        </div>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={handleSubmitReturn}
+                        disabled={isSubmittingReturn}
+                        className="secondary-button"
+                        style={{ justifySelf: "start", cursor: "pointer" }}
+                      >
+                        {isSubmittingReturn ? "Sending Request…" : "Request Return"}
+                      </button>
+                    </div>
+                  </div>
+                ) : selectedOrder.returns.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--muted)" }}>
+                    Return requests open once the order is shipped or delivered.
+                  </p>
+                ) : null}
+              </div>
 
               {/* Price Details */}
               <div style={{

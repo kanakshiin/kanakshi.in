@@ -1,6 +1,7 @@
 import { referenceAssets } from "./reference-assets";
 import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveTermsHtml } from "./legal-content";
-import { Category, Coupon, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink } from "./types";
+import { Category, Coupon, HomepageSection, NavigationItem, Product, ProductListResponse, SiteSettings, SocialLink, BlogPost, BlogCategory, BlogTag, BlogAuthor } from "./types";
+
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -44,7 +45,8 @@ const fallbackFooterMenu: NavigationItem[] = [
   { id: 30003, title: "Privacy Policy", url: "/pages/privacy-policy" },
   { id: 30004, title: "Terms & Conditions", url: "/pages/terms-conditions" },
   { id: 30005, title: "Refund Policy", url: "/pages/refund-policy" },
-  { id: 30006, title: "Track Your Order", url: "/track-order" }
+  { id: 30006, title: "Shipping Policy", url: "/pages/shipping-policy" },
+  { id: 30007, title: "Track Your Order", url: "/track-order" }
 ];
 
 const fallbackSocialLinks: SocialLink[] = [
@@ -505,6 +507,7 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
       merchant_id: string | null;
       is_test_mode: boolean;
       provider_order_id: string | null;
+      checkout_url?: string | null;
     } | null;
   };
 }> {
@@ -737,6 +740,16 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
       message: string | null;
       created_at: string;
     }>;
+    returns: Array<{
+      id: number;
+      return_number: string;
+      status: string;
+      reason: string;
+      requested_amount: number;
+      approved_amount: number;
+      requested_at: string | null;
+      resolved_at: string | null;
+    }>;
   };
 }> {
   try {
@@ -757,3 +770,261 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
     };
   }
 }
+
+export async function requestCustomerOrderReturn(
+  token: string,
+  orderNumber: string,
+  data: {
+    reason: string;
+    customer_notes?: string;
+    items: Array<{
+      product_id: number;
+      variant_id?: number | null;
+      quantity: number;
+    }>;
+    images?: string[];
+  }
+): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    return_number: string;
+    status: string;
+  };
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/customer/orders/${orderNumber}/returns`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(data),
+      cache: "no-store"
+    });
+
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not submit the return request."
+    };
+  }
+}
+
+export async function getBlogPosts(params: {
+  category?: string;
+  tag?: string;
+  author?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
+} = {}): Promise<{
+  success: boolean;
+  message: string;
+  data: {
+    current_page: number;
+    data: BlogPost[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+  };
+}> {
+  try {
+    const url = new URL(`${API_BASE_URL}/blog/posts`);
+    if (params.category) url.searchParams.append("category", params.category);
+    if (params.tag) url.searchParams.append("tag", params.tag);
+    if (params.author) url.searchParams.append("author", params.author);
+    if (params.search) url.searchParams.append("search", params.search);
+    if (params.page) url.searchParams.append("page", String(params.page));
+    if (params.per_page) url.searchParams.append("per_page", String(params.per_page));
+
+    const response = await fetch(url.toString(), {
+      cache: "no-store", // Keep it fresh, or revalidate in background
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog posts.",
+      data: {
+        current_page: 1,
+        data: [],
+        first_page_url: "",
+        from: 0,
+        last_page: 1,
+        last_page_url: "",
+        next_page_url: null,
+        path: "",
+        per_page: 9,
+        prev_page_url: null,
+        to: 0,
+        total: 0,
+      },
+    };
+  }
+}
+
+export async function getBlogPost(slug: string): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogPost | null;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/posts/${slug}`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog post details.",
+      data: null,
+    };
+  }
+}
+
+export async function getBlogCategories(): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogCategory[];
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/categories`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog categories.",
+      data: [],
+    };
+  }
+}
+
+export async function getBlogTags(): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogTag[];
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/tags`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog tags.",
+      data: [],
+    };
+  }
+}
+
+export async function getBlogTag(slug: string): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogTag | null;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/tags/${slug}`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog tag details.",
+      data: null,
+    };
+  }
+}
+
+export async function getBlogAuthors(): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogAuthor[];
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/authors`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog authors.",
+      data: [],
+    };
+  }
+}
+
+export async function getBlogCategory(slug: string): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogCategory | null;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/categories/${slug}`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog category details.",
+      data: null,
+    };
+  }
+}
+
+export async function getBlogAuthor(slug: string): Promise<{
+  success: boolean;
+  message: string;
+  data: BlogAuthor | null;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/blog/authors/${slug}`, {
+      cache: "no-store",
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not retrieve blog author details.",
+      data: null,
+    };
+  }
+}
+
+export async function subscribeNewsletter(email: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/newsletter/subscribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Something went wrong. Please try again later.",
+    };
+  }
+}
+

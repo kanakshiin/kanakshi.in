@@ -23,6 +23,9 @@ type SiteFooterProps = {
 
 export function SiteFooter({ categories, settings, footerMenu, socialLinks }: SiteFooterProps) {
   const footerCategories = categories.slice(0, 8);
+  const normalizedFooterMenu = footerMenu.some((item) => item.url === "/pages/shipping-policy")
+    ? footerMenu
+    : [...footerMenu, { id: 999991, title: "Shipping Policy", url: "/pages/shipping-policy" }];
 
   const socialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -84,7 +87,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
 
         <div className="footer-column">
           <h3>Information</h3>
-          {footerMenu.map((item) => (
+          {normalizedFooterMenu.map((item) => (
             <Link key={item.id} href={item.url}>
               {item.title}
             </Link>

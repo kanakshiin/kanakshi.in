@@ -1,29 +1,47 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { subscribeNewsletter } from "../lib/api";
 
-export function FooterNewsletterForm({ email }: { email: string }) {
+export function FooterNewsletterForm({ email: fallbackEmail }: { email: string }) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmed = value.trim();
     const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
 
     if (!valid) {
+      setStatus("error");
       setMessage("Please enter a valid email address.");
       return;
     }
 
-    const subject = encodeURIComponent("Newsletter subscription request");
-    const body = encodeURIComponent(
-      `Please add this email to the Little Divinity newsletter list:\n\n${trimmed}`,
-    );
+    setLoading(true);
+    setStatus("idle");
+    setMessage("");
 
-    setMessage("Opening your email app to confirm subscription.");
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    try {
+      const result = await subscribeNewsletter(trimmed);
+      setLoading(false);
+      
+      if (result.success) {
+        setStatus("success");
+        setMessage(result.message || "Thank you for subscribing!");
+        setValue("");
+      } else {
+        setStatus("error");
+        setMessage(result.message || "Could not complete subscription. Please try again.");
+      }
+    } catch (err) {
+      setLoading(false);
+      setStatus("error");
+      setMessage("A connection error occurred. Please try again.");
+    }
   };
 
   return (
@@ -35,12 +53,20 @@ export function FooterNewsletterForm({ email }: { email: string }) {
           value={value}
           onChange={(event) => setValue(event.target.value)}
           aria-label="Email address"
+          disabled={loading}
           required
         />
-        <button type="submit">Join</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "..." : "Join"}
+        </button>
       </form>
       {message ? (
-        <p style={{ marginTop: "0.7rem", fontSize: "0.9rem", color: "rgba(var(--rgb-text), 0.68)" }}>
+        <p style={{
+          marginTop: "0.7rem",
+          fontSize: "0.9rem",
+          fontWeight: 600,
+          color: status === "success" ? "#c5a059" : (status === "error" ? "#e05a47" : "rgba(var(--rgb-text), 0.68)")
+        }}>
           {message}
         </p>
       ) : null}

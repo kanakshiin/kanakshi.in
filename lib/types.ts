@@ -142,3 +142,70 @@ export type CustomerAuthConfig = {
   resend_wait_seconds: number;
   customer_email_active: boolean;
 };
+
+export type BlogAuthor = {
+  id: number;
+  name: string;
+  slug: string;
+  bio?: string | null;
+  avatar?: string | null;
+  avatar_alt?: string | null;
+  twitter_handle?: string | null;
+  posts_count?: number;
+};
+
+export type BlogCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  posts_count?: number;
+};
+
+export type BlogTag = {
+  id: number;
+  name: string;
+  slug: string;
+  posts_count?: number;
+};
+
+export type BlogPost = {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image?: string | null;
+  featured_image_alt?: string | null;
+  blog_author_id?: number | null;
+  blog_category_id?: number | null;
+  status: "draft" | "scheduled" | "published";
+  published_at?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  canonical_url?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  primary_keyword?: string | null;
+  secondary_keywords?: string | null;
+  reading_time?: number | null;
+  seo_noindex?: boolean;
+  seo_nofollow?: boolean;
+  schema_type?: "BlogPosting" | "Article" | "NewsArticle";
+  faq_json?: Array<{ question: string; answer: string }> | null;
+  related_products_json?: number[] | null;
+  author?: BlogAuthor | null;
+  category?: BlogCategory | null;
+  tags?: BlogTag[];
+  created_at: string;
+  updated_at: string;
+  related_products?: Product[];
+  related_posts?: BlogPost[];
+};
+

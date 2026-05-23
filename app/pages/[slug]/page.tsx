@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getSettings } from "../../../lib/api";
-import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveTermsHtml } from "../../../lib/legal-content";
+import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveShippingPolicyHtml, liveTermsHtml } from "../../../lib/legal-content";
 import { getCanonicalUrl, getSiteName } from "../../../lib/site";
 
 export const dynamic = "force-dynamic";
@@ -40,12 +40,18 @@ const pageContent = {
     title: "Returns, exchanges, and refunds.",
     body: []
   },
+  "shipping-policy": {
+    eyebrow: "Shipping Policy",
+    title: "Domestic and international shipping details.",
+    body: []
+  },
 } as const;
 
 const policyDescriptions = {
   "privacy-policy": "Read how Little Divinity collects, uses, and protects your personal information.",
   "terms-conditions": "Read the store use, ordering, billing, and service terms for Little Divinity.",
   "refund-policy": "Read the return, exchange, and refund process for Little Divinity orders.",
+  "shipping-policy": "Read the domestic and international shipping timelines, tracking, and delivery information for Little Divinity orders.",
 } as const;
 
 type ContentPageProps = {
@@ -95,16 +101,20 @@ export default async function ContentPage({ params }: ContentPageProps) {
         ? settings.terms_conditions
         : slug === "refund-policy"
           ? settings.return_policy
+          : slug === "shipping-policy"
+            ? liveShippingPolicyHtml
           : null;
 
   const policyFallbackHtml =
     slug === "privacy-policy"
       ? livePrivacyPolicyHtml
       : slug === "terms-conditions"
-        ? liveTermsHtml
-        : slug === "refund-policy"
-          ? liveRefundPolicyHtml
-          : null;
+      ? liveTermsHtml
+      : slug === "refund-policy"
+        ? liveRefundPolicyHtml
+        : slug === "shipping-policy"
+          ? liveShippingPolicyHtml
+        : null;
 
   const policyHtml =
     configuredPolicyHtml && configuredPolicyHtml.replace(/<[^>]+>/g, "").trim().length > 500

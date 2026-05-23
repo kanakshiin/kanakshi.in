@@ -113,3 +113,23 @@ export const liveRefundPolicyHtml = `
 <p><strong>European Union 14 day cooling off period</strong><br>If the merchandise is being shipped into the European Union, you have the right to cancel or return your order within 14 days for any reason and without justification, subject to the same return condition requirements.</p>
 <p><strong>Refunds</strong><br>We will notify you once we’ve received and inspected your return, and let you know if the refund was approved or not. If approved, you’ll be automatically refunded on your original payment method within 10 business days. If more than 15 business days have passed since approval, please contact us at ujjwalagrain@gmail.com.</p>
 `;
+
+export const liveShippingPolicyHtml = `
+<p><strong>Shipping Policy</strong></p>
+<p><strong>Domestic Shipping:</strong></p>
+<p><strong>Processing Time:</strong> Orders are processed within 1-2 business days. Orders placed on weekends or holidays will be processed the next business day.</p>
+<p><strong>Shipping Rates &amp; Delivery:</strong> Shipping rates are calculated at checkout. Delivery typically takes 3-7 business days, depending on the destination.</p>
+<p><strong>Tracking:</strong> Once your order is shipped, you will receive a confirmation email with tracking information. You can track your order online using the provided tracking number.</p>
+<p><strong>Shipping Carriers:</strong> We partner with reliable shipping carriers to ensure your package arrives safely and on time.</p>
+<p><strong>International Shipping:</strong></p>
+<p><strong>Processing Time:</strong> Orders are processed within 1-2 business days. Orders placed on weekends or holidays will be processed the next business day.</p>
+<p><strong>Shipping Rates &amp; Delivery:</strong> Shipping rates are calculated at checkout. Delivery typically takes 7-14 business days, depending on the destination and customs processing.</p>
+<p><strong>Tracking:</strong> Once your order is shipped, you will receive a confirmation email with tracking information. You can track your order online using the provided tracking number.</p>
+<p><strong>Customs &amp; Duties:</strong> International orders may be subject to customs fees, import taxes, and duties. These charges are the responsibility of the recipient and vary by country.</p>
+<p><strong>General Information:</strong></p>
+<p><strong>Order Confirmation:</strong> You will receive an order confirmation email once your purchase is complete.</p>
+<p><strong>Order Changes &amp; Cancellations:</strong> If you need to change or cancel your order, please contact us within 24 hours of placing the order. We will do our best to accommodate your request.</p>
+<p><strong>Damaged or Lost Packages:</strong> In the rare event your package arrives damaged or is lost in transit, please contact us immediately. We will work with the shipping carrier to resolve the issue and ensure you receive your order.</p>
+<p><strong>Contact Us:</strong> For any questions or concerns about your order, please contact our customer service team at <a href="mailto:ujjwalagrain@gmail.com">ujjwalagrain@gmail.com</a> or call <a href="tel:+919473420536">+91 9473420536</a>. We are here to help.</p>
+<p>Thank you for shopping with us. We strive to provide you with the best possible service and ensure your satisfaction with every purchase.</p>
+`;

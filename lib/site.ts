@@ -6,6 +6,10 @@ const fallbackSiteUrl = "https://littledivinity.in";
 const fallbackSiteName = "Little Divinity";
 const fallbackSiteDescription =
   "Handcrafted brass decor, pooja accents, and meaningful gifting pieces for home styling and festive gifting.";
+const fallbackBackendSiteUrl =
+  process.env.NEXT_PUBLIC_BACKEND_SITE_URL ||
+  process.env.BACKEND_SITE_URL ||
+  "https://ecombeckend.saaszo.in";
 
 function normalizeUrl(value?: string | null): string {
   const raw =
@@ -33,6 +37,33 @@ export function getSiteDescription(settings?: SiteSettings | null): string {
 export function getCanonicalUrl(pathname = "/", settings?: SiteSettings | null): string {
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${getSiteUrl(settings)}${path}`;
+}
+
+export function getAbsoluteMediaUrl(
+  path?: string | null,
+  settings?: SiteSettings | null
+): string | null {
+  if (!path) {
+    return null;
+  }
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  const backendBaseUrl = fallbackBackendSiteUrl.replace(/\/+$/, "");
+
+  if (path.startsWith("/storage/")) {
+    return `${backendBaseUrl}${path}`;
+  }
+
+  if (path.startsWith("storage/")) {
+    return `${backendBaseUrl}/${path}`;
+  }
+
+  const siteUrl = getSiteUrl(settings);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${siteUrl}${normalizedPath}`;
 }
 
 export function getProductPath(product: Pick<Product, "slug" | "category_slug">): string {
