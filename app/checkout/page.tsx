@@ -316,10 +316,15 @@ export default function CheckoutPage() {
     const token = getStoredCustomerToken() || undefined;
 
     try {
-      await cancelOrder(activeSimulation.orderNumber, token, shipEmail || shipPhone);
-      setError("Payment cancelled. Your reserved items have been restored to stock.");
+      const cancelRes = await cancelOrder(activeSimulation.orderNumber, token, shipEmail || shipPhone);
+      setError(
+        cancelRes.success
+          ? "Payment cancelled. Your reserved items have been restored to stock."
+          : cancelRes.message || "We could not cancel this payment session automatically. Please contact support if amount was captured."
+      );
     } catch (err) {
       console.error("Order cancellation failed:", err);
+      setError("We could not cancel this payment session automatically. Please contact support if amount was captured.");
     } finally {
       setIsSubmitting(false);
       setActiveSimulation(null);
@@ -366,6 +371,14 @@ export default function CheckoutPage() {
         router.push(`/checkout/success?order_number=${res.data.order_number}`);
       } else {
         const config = res.data.gateway_config;
+        const orderContact = res.data.ship_email || res.data.ship_phone;
+
+        if (paymentMethod === "phonepe" && !config?.is_test_mode) {
+          await cancelOrder(res.data.order_number, token, orderContact);
+          setError("PhonePe live checkout is not available right now. Please choose Cash on Delivery or Razorpay.");
+          setIsSubmitting(false);
+          return;
+        }
         
         // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
         if (
@@ -389,7 +402,7 @@ export default function CheckoutPage() {
                   const verifyRes = await verifyPayment({
                     order_number: res.data!.order_number,
                     payment_method: "razorpay",
-                    order_contact: res.data!.ship_email || res.data!.ship_phone,
+                    order_contact: orderContact,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_signature: response.razorpay_signature,
@@ -406,12 +419,16 @@ export default function CheckoutPage() {
                 modal: {
                   ondismiss: async function () {
                     setIsSubmitting(true);
-                    await cancelOrder(
+                    const cancelRes = await cancelOrder(
                       res.data!.order_number,
                       token,
-                      res.data!.ship_email || res.data!.ship_phone
+                      orderContact
                     );
-                    setError("Payment cancelled. Your reserved items have been restored to stock.");
+                    setError(
+                      cancelRes.success
+                        ? "Payment cancelled. Your reserved items have been restored to stock."
+                        : cancelRes.message || "We could not cancel this payment session automatically. Please contact support if amount was captured."
+                    );
                     setIsSubmitting(false);
                   }
                 },
@@ -428,17 +445,33 @@ export default function CheckoutPage() {
               rzp.open();
               return;
             } catch (err) {
-              console.error("Razorpay SDK initialization failed, falling back to secure simulation:", err);
+              console.error("Razorpay SDK initialization failed:", err);
+              await cancelOrder(res.data.order_number, token, orderContact);
+              setError("Razorpay could not start properly. Please try again or choose another payment method.");
+              setIsSubmitting(false);
+              return;
             }
           }
+
+          await cancelOrder(res.data.order_number, token, orderContact);
+          setError("Razorpay checkout could not load right now. Please try again or choose Cash on Delivery.");
+          setIsSubmitting(false);
+          return;
         }
         
-        // Fallback or Sandbox/Test mode: Trigger the gorgeous secure simulation overlay!
-        setActiveSimulation({
-          orderNumber: res.data.order_number,
-          amount: res.data.total_amount,
-          method: paymentMethod
-        });
+        if (config?.is_test_mode) {
+          setIsSubmitting(false);
+          setActiveSimulation({
+            orderNumber: res.data.order_number,
+            amount: res.data.total_amount,
+            method: paymentMethod
+          });
+          return;
+        }
+
+        await cancelOrder(res.data.order_number, token, orderContact);
+        setError("This payment method is not available right now. Please choose another option.");
+        setIsSubmitting(false);
       }
     } else {
       setError(res.message || "An unexpected error occurred while placing your order.");

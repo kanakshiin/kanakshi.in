@@ -7,6 +7,11 @@ import { Product } from "../lib/types";
 
 const CART_STORAGE_KEY = "little-divinity-cart";
 
+export type CartProductInput = Pick<
+  Product,
+  "id" | "slug" | "name" | "price" | "sale_price" | "effective_price" | "images" | "category_name" | "category_slug"
+>;
+
 export type CartItem = {
   id: number;
   slug: string;
@@ -14,6 +19,7 @@ export type CartItem = {
   price: number;
   image: string;
   categoryName?: string | null;
+  categorySlug?: string | null;
   quantity: number;
 };
 
@@ -21,7 +27,7 @@ type CartContextValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  addItem: (product: Product, quantity?: number) => void;
+  addItem: (product: CartProductInput, quantity?: number) => void;
   getItemQuantity: (slug: string) => number;
   removeItem: (slug: string) => void;
   updateQuantity: (slug: string, quantity: number) => void;
@@ -100,6 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: Number(product.effective_price ?? product.sale_price ?? product.price ?? 0),
             image: getPrimaryImage(product),
             categoryName: product.category_name,
+            categorySlug: product.category_slug,
             quantity: safeQuantity,
           });
         }

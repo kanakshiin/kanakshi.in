@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,6 +12,7 @@ import { useCart } from "./cart-provider";
 export function CartView({ settings, offers }: { settings: SiteSettings; offers: Coupon[] }) {
   const { items, subtotal, clearCart, removeItem } = useCart();
   const currencySymbol = settings.site_currency_symbol || "₹";
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!items.length) {
     return (
@@ -45,22 +44,25 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
         <div className="cart-header">
           <h1 className="cart-title">Your Selection</h1>
           <span className="cart-count-badge">
-            {items.reduce((sum, item) => sum + item.quantity, 0)} {items.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'piece' : 'pieces'}
+            {itemCount} {itemCount === 1 ? "piece" : "pieces"}
           </span>
         </div>
 
         <div className="cart-list">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <article key={item.slug} className="cart-item-card">
               <div className="cart-item-media">
-                <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="cart-item-media-shell">
+                <Link
+                  href={getProductPath({ slug: item.slug, category_slug: item.categorySlug ?? null })}
+                  className="cart-item-media-shell"
+                >
                   <Image
                     src={resolveAssetUrl(item.image)}
                     alt={item.name}
                     fill
                     sizes="(max-width: 760px) 80px, 120px"
                     className="cart-item-image"
-                    priority
+                    priority={index === 0}
                   />
                 </Link>
               </div>
@@ -69,7 +71,10 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
                 <div className="cart-item-head">
                   <div className="product-info">
                     <p className="product-category">{item.categoryName || "Signature Edit"}</p>
-                    <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="product-title-link">
+                    <Link
+                      href={getProductPath({ slug: item.slug, category_slug: item.categorySlug ?? null })}
+                      className="product-title-link"
+                    >
                       <h2 className="product-name">{item.name}</h2>
                     </Link>
                   </div>
@@ -102,7 +107,10 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
                     <span className="quantity-label">Quantity</span>
                     <CartQuantityControl slug={item.slug} compact />
                   </div>
-                  <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="text-link view-product-link">
+                  <Link
+                    href={getProductPath({ slug: item.slug, category_slug: item.categorySlug ?? null })}
+                    className="text-link view-product-link"
+                  >
                     View Details
                   </Link>
                 </div>
@@ -129,7 +137,7 @@ export function CartView({ settings, offers }: { settings: SiteSettings; offers:
           <div className="cart-summary-details">
             <div className="cart-summary-row">
               <span className="summary-label">Selected Items</span>
-              <strong className="summary-value">{items.reduce((sum, item) => sum + item.quantity, 0)}</strong>
+              <strong className="summary-value">{itemCount}</strong>
             </div>
             <div className="cart-summary-row subtotal-row">
               <span className="summary-label">Subtotal</span>

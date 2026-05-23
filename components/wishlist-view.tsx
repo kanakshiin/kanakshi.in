@@ -48,32 +48,33 @@ export function WishlistView({ settings }: { settings: SiteSettings }) {
         </div>
 
         <div className="cart-list">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const quantityInCart = getItemQuantity(item.slug);
+            const productPath = getProductPath({ slug: item.slug, category_slug: item.categorySlug ?? null });
 
             return (
               <article key={item.slug} className="cart-item-card">
                 <div className="cart-item-media">
-                  <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="cart-item-media-shell">
+                  <Link href={productPath} className="cart-item-media-shell">
                     <Image
                       src={resolveAssetUrl(item.image)}
                       alt={item.name}
                       fill
                       sizes="(max-width: 760px) 80px, 120px"
                       className="cart-item-image"
-                      priority
+                      priority={index === 0}
                     />
                   </Link>
                 </div>
 
                 <div className="cart-item-copy">
                   <div className="cart-item-head">
-                    <div className="product-info">
-                      <p className="product-category">{item.categoryName || "Signature Edit"}</p>
-                      <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="product-title-link">
+                  <div className="product-info">
+                    <p className="product-category">{item.categoryName || "Signature Edit"}</p>
+                      <Link href={productPath} className="product-title-link">
                         <h2 className="product-name">{item.name}</h2>
                       </Link>
-                    </div>
+                  </div>
                     
                     <div className="price-and-delete">
                       <p className="detail-price">{formatPrice(item.price, currencySymbol)}</p>
@@ -99,35 +100,53 @@ export function WishlistView({ settings }: { settings: SiteSettings }) {
                   </div>
 
                   <div className="cart-item-foot" style={{ marginTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      style={{
-                        padding: "0.6rem 1.4rem",
-                        fontSize: "0.75rem",
-                        minHeight: "auto",
-                        borderRadius: "999px",
-                        background: "linear-gradient(135deg, #a87f43, #d4af37)",
-                        border: "none",
-                        color: "#fff",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => {
-                        // Cast WishlistItem to format accepted by useCart
-                        addItem({
-                          id: item.id,
-                          slug: item.slug,
-                          name: item.name,
-                          price: item.price,
-                          images: [{ image_path: item.image, is_primary: true }],
-                          category_name: item.categoryName,
-                        } as any);
-                      }}
-                    >
-                      {quantityInCart > 0 ? `In Cart (${quantityInCart})` : "Add to Cart"}
-                    </button>
+                    {quantityInCart > 0 ? (
+                      <Link
+                        href="/cart"
+                        className="primary-button"
+                        style={{
+                          padding: "0.6rem 1.4rem",
+                          fontSize: "0.75rem",
+                          minHeight: "auto",
+                          borderRadius: "999px",
+                          background: "linear-gradient(135deg, #a87f43, #d4af37)",
+                          border: "none",
+                          color: "#fff",
+                        }}
+                      >
+                        In Cart ({quantityInCart})
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{
+                          padding: "0.6rem 1.4rem",
+                          fontSize: "0.75rem",
+                          minHeight: "auto",
+                          borderRadius: "999px",
+                          background: "linear-gradient(135deg, #a87f43, #d4af37)",
+                          border: "none",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          addItem({
+                            id: item.id,
+                            slug: item.slug,
+                            name: item.name,
+                            price: item.price,
+                            images: [item.image],
+                            category_name: item.categoryName,
+                            category_slug: item.categorySlug ?? null,
+                          });
+                        }}
+                      >
+                        Add to Cart
+                      </button>
+                    )}
                     
-                    <Link href={getProductPath({ slug: item.slug, category_slug: null })} className="text-link view-product-link" style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                    <Link href={productPath} className="text-link view-product-link" style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
                       View Details
                     </Link>
                   </div>

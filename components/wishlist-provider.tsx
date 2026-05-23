@@ -14,6 +14,7 @@ export type WishlistItem = {
   price: number;
   image: string;
   categoryName?: string | null;
+  categorySlug?: string | null;
 };
 
 type WishlistContextValue = {
@@ -90,6 +91,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             price: Number(product.effective_price ?? product.sale_price ?? product.price ?? 0),
             image: getPrimaryImage(product),
             categoryName: product.category_name,
+            categorySlug: product.category_slug,
           });
           writeWishlist(nextItems);
           setItems(nextItems);
@@ -117,6 +119,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
               price: Number(product.effective_price ?? product.sale_price ?? product.price ?? 0),
               image: getPrimaryImage(product),
               categoryName: product.category_name,
+              categorySlug: product.category_slug,
             }
           ];
         }
