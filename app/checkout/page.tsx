@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
 import { getStoredCustomerToken, fetchCurrentCustomer } from "../../lib/customer-auth";
@@ -106,6 +106,7 @@ const INDIAN_STATES_AND_CITIES: Record<string, string[]> = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const checkoutCompletingRef = useRef(false);
 
   // User & settings states
   const [user, setUser] = useState<CustomerUser | null>(null);
@@ -205,7 +206,7 @@ export default function CheckoutPage() {
 
   // Redirect to cart if empty
   useEffect(() => {
-    if (!loadingConfig && items.length === 0) {
+    if (!loadingConfig && items.length === 0 && !checkoutCompletingRef.current) {
       router.push("/cart");
     }
   }, [items, loadingConfig, router]);
@@ -296,6 +297,7 @@ export default function CheckoutPage() {
       }, token);
 
       if (verifyRes.success) {
+        checkoutCompletingRef.current = true;
         clearCart();
         router.push(`/checkout/success?order_number=${activeSimulation.orderNumber}`);
       } else {
@@ -367,6 +369,7 @@ export default function CheckoutPage() {
 
     if (res.success && res.data) {
       if (paymentMethod === "cod") {
+        checkoutCompletingRef.current = true;
         clearCart();
         router.push(`/checkout/success?order_number=${res.data.order_number}`);
       } else {
@@ -402,6 +405,7 @@ export default function CheckoutPage() {
                   }, token);
 
                   if (verifyRes.success) {
+                    checkoutCompletingRef.current = true;
                     clearCart();
                     router.push(`/checkout/success?order_number=${res.data!.order_number}`);
                   } else {
