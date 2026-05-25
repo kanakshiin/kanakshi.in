@@ -170,27 +170,51 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
         </div>
       </section>
 
+      {/* Sticky Horizontal Category Pill Bar */}
+      <div className="shop-sticky-category-bar">
+        <div className="container">
+          <div className="shop-category-horizontal-list">
+            <Link
+              href="/shop"
+              className={!params.category ? "shop-category-pill active" : "shop-category-pill"}
+            >
+              <span className="pill-img-wrapper">
+                <Image
+                  src={referenceAssets.collections.godIdols}
+                  alt="All Pieces"
+                  width={32}
+                  height={32}
+                  className="pill-img"
+                />
+              </span>
+              <strong>All Pieces</strong>
+            </Link>
+            {featuredCategories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/shop?category=${category.slug}`}
+                className={category.slug === params.category ? "shop-category-pill active" : "shop-category-pill"}
+              >
+                <span className="pill-img-wrapper">
+                  <Image
+                    src={category.image || referenceAssets.collections.godIdols}
+                    alt={category.name}
+                    width={32}
+                    height={32}
+                    className="pill-img"
+                  />
+                </span>
+                <strong>{category.name}</strong>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="content-section shop-layout-section">
         <div className="container">
           <div className="shop-layout">
             <aside className="shop-sidebar">
-              <div className="shop-filter-card shop-sidebar-categories-card">
-                <p className="eyebrow">Browse By</p>
-                <h3>Categories</h3>
-                <div className="shop-filter-list">
-                  {featuredCategories.map((category) => (
-                    <Link
-                      key={category.id}
-                      href={`/shop?category=${category.slug}`}
-                      className={category.slug === params.category ? "shop-filter-link active" : "shop-filter-link"}
-                    >
-                      <span>{category.name}</span>
-                      <small>Explore</small>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
               <div className="shop-filter-card">
                 <p className="eyebrow">Filter By</p>
                 <h3>Price Range</h3>
