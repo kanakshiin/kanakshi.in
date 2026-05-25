@@ -5,7 +5,8 @@ import Link from "next/link";
 import { StructuredData } from "../../components/structured-data";
 import { ProductCard } from "../../components/product-card";
 import { ShopSortSelect, ShopPriceFilter } from "../../components/shop-controls";
-import { getCategories, getProducts, getSettings } from "../../lib/api";
+import { HeroSlider } from "../../components/hero-slider";
+import { getCategories, getProducts, getSettings, resolveAssetUrl } from "../../lib/api";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
@@ -68,9 +69,61 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const products = await getProducts(query.toString());
   const currencySymbol = settings.site_currency_symbol || "₹";
   const activeCategory = categories.find((category) => category.slug === params.category);
-  const heroImage =
-    activeCategory?.image ||
-    referenceAssets.collections.homeDecor;
+
+  // Curated fallback slides for general shop page
+  const curatedShopSlides = [
+    {
+      alt: "Premium Handcrafted Brass God Idols Collection",
+      title: "God Idols Collection",
+      image: resolveAssetUrl(referenceAssets.collections.godIdols),
+      href: "/shop?category=god-idols"
+    },
+    {
+      alt: "Statement Handcrafted Brass Wall Decor",
+      title: "Wall Decor Collection",
+      image: resolveAssetUrl(referenceAssets.hero.wallDecor),
+      href: "/shop?category=wall-decor"
+    },
+    {
+      alt: "Ritual Singhasans and Pooja Accents",
+      title: "Pooja Decor Collection",
+      image: resolveAssetUrl(referenceAssets.collections.poojaDecor),
+      href: "/shop?category=pooja-decor"
+    },
+    {
+      alt: "Curated Festive Gifting Hamper Edits",
+      title: "Gifting Edit Collection",
+      image: resolveAssetUrl(referenceAssets.founderAndBrand.weddingGift),
+      href: "/shop?category=gifting-edit"
+    }
+  ];
+
+  // Specific category matches to slide between cover and premium close-up
+  const categorySliderTheme: Record<string, string> = {
+    "god-idols": referenceAssets.productHighlights.superfineShiva,
+    "wall-decor": referenceAssets.collections.homeDecor,
+    "table-decor": referenceAssets.productHighlights.peacock,
+    "pooja-decor": referenceAssets.productHighlights.throne,
+    "home-kitchen": referenceAssets.collections.homeKitchen,
+    "gifting-edit": referenceAssets.founderAndBrand.weddingGift
+  };
+
+  const finalShopSlides = activeCategory
+    ? [
+        {
+          alt: activeCategory.name,
+          title: activeCategory.name,
+          image: resolveAssetUrl(activeCategory.image),
+          href: `/shop?category=${activeCategory.slug}`
+        },
+        {
+          alt: `${activeCategory.name} Closeup`,
+          title: activeCategory.name,
+          image: resolveAssetUrl(categorySliderTheme[activeCategory.slug] || referenceAssets.collections.homeDecor),
+          href: `/shop?category=${activeCategory.slug}`
+        }
+      ]
+    : curatedShopSlides;
 
   // In-memory sorting and price filtering for guaranteed functionality
   const minPrice = params.min_price ? Number(params.min_price) : 0;
@@ -131,34 +184,16 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               <p className="eyebrow">Shop The Collection</p>
               <h1 className="page-title">{activeCategory ? activeCategory.name : "Premium Decor For Home, Ritual, And Gifting"}</h1>
               <p className="shop-intro">{subtitleText}</p>
-              <div className="shop-chip-row">
-                <Link
-                  href="/shop"
-                  className={!params.category ? "shop-chip active" : "shop-chip"}
-                >
-                  All Pieces
-                </Link>
-                {featuredCategories.slice(0, 6).map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/shop?category=${category.slug}`}
-                    className={category.slug === params.category ? "shop-chip active" : "shop-chip"}
-                  >
-                    {category.name}
-                  </Link>
-                ))}
-              </div>
             </div>
 
             <div className="shop-hero-visual-frame">
               <div className="shop-hero-visual-inner">
-                <Image
-                  src={heroImage}
-                  alt={activeCategory?.name || "Shop the collection"}
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 100vw, 40vw"
-                  className="shop-hero-img"
+                <HeroSlider
+                  slides={finalShopSlides}
+                  autoplayMs={4000}
+                  showArrows={false}
+                  showDots={finalShopSlides.length > 1}
+                  showText={false}
                 />
                 <div className="shop-summary-card">
                   <span>{products.pagination.total} products ready to browse</span>
