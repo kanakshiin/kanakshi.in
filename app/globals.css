@@ -6160,3 +6160,48 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   STICKY BROWSE BY CATEGORIES
+   ========================================================================== */
+.shop-sidebar-categories-card {
+  position: sticky !important;
+  top: 110px !important; /* sticks just below the sticky site header */
+  z-index: 99 !important; /* floats above other scrolling filters */
+  background: rgba(255, 252, 248, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--line-strong) !important;
+  box-shadow: 0 4px 20px rgba(87, 51, 27, 0.04) !important;
+  transition: all 0.3s ease !important;
+}
+
+.shop-sidebar-categories-card:hover {
+  box-shadow: 0 8px 32px rgba(87, 51, 27, 0.08) !important;
+  border-color: var(--accent-soft) !important;
+}
+
+/* Ensure subsequent sidebar cards scroll behind the sticky categories card correctly */
+.shop-sidebar > div:not(.shop-sidebar-categories-card) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Maintain sticky container height behaviour */
+.shop-sidebar {
+  position: sticky;
+  top: 110px;
+  align-self: start;
+}
+
+@media (max-width: 991px) {
+  .shop-sidebar-categories-card {
+    position: static !important;
+    backdrop-filter: none !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+  
+  .shop-sidebar {
+    position: static !important;
+  }
+}

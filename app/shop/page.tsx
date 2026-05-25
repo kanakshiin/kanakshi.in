@@ -174,7 +174,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
         <div className="container">
           <div className="shop-layout">
             <aside className="shop-sidebar">
-              <div className="shop-filter-card">
+              <div className="shop-filter-card shop-sidebar-categories-card">
                 <p className="eyebrow">Browse By</p>
                 <h3>Categories</h3>
                 <div className="shop-filter-list">
