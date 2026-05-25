@@ -5582,61 +5582,141 @@ h3 {
   }
 
   .hero-slider-stage {
-    min-height: 56vw;
-    max-height: 320px;
+    min-height: 68vw !important;
+    max-height: 300px !important;
+    border-radius: 20px !important;
   }
 
   .hero-cta-overlay {
-    bottom: 0.75rem;
-    left: 0.75rem;
-    right: 0.75rem;
-    padding: 1rem 1.1rem;
-    border-radius: 18px;
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    padding: 1.25rem 0.5rem 0 !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    text-align: center !important;
   }
 
   .hero-cta-headline {
-    font-size: 1.05rem;
-    margin-bottom: 0.4rem;
+    color: var(--accent-deep) !important;
+    font-size: 1.35rem !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
   }
 
   .hero-cta-sub {
-    display: none;
+    display: block !important;
+    color: var(--text-muted) !important;
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
+    margin-bottom: 1.2rem !important;
   }
 
   .hero-cta-actions {
-    gap: 0.55rem;
+    justify-content: center !important;
+    gap: 0.6rem !important;
   }
 
   .hero-cta-actions .primary-button,
   .hero-cta-actions .secondary-button {
-    font-size: 0.72rem;
-    padding: 0.6rem 1rem;
-    min-height: 2.4rem;
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 0.76rem !important;
+    padding: 0.7rem 1.2rem !important;
+    min-height: 2.6rem !important;
+  }
+
+  .hero-cta-actions .secondary-button {
+    background: rgba(87, 51, 27, 0.05) !important;
+    border-color: rgba(87, 51, 27, 0.15) !important;
+    color: var(--accent-deep) !important;
   }
 
   .hero-promo-stack {
     display: none;
   }
 
-  .category-grid,
-  .occasion-grid,
-  .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
+  .category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
   }
 
+  /* Reel effect on mobile for circular occasions grid */
+  .circle-category-grid {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.75rem !important;
+    padding: 0.2rem 0.5rem !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .circle-category-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .circle-category-card {
+    flex: 0 0 76px !important;
+    gap: 0.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .circle-category-image {
+    max-width: 68px !important;
+    border-width: 2px !important;
+  }
+
+  .circle-category-card strong {
+    font-size: 0.7rem !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Reel effect on mobile for story editorial picks */
   .story-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.75rem !important;
+    padding: 0.2rem 0.5rem !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .story-grid::-webkit-scrollbar {
+    display: none !important;
   }
 
   .story-card {
-    min-height: 280px;
+    flex: 0 0 280px !important;
+    min-height: 260px !important;
   }
 
-  .circle-category-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.65rem;
+  /* Reel effect on mobile for Festive Edits Occasions */
+  .occasion-grid {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.75rem !important;
+    padding: 0.2rem 0.5rem !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .occasion-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .occasion-card {
+    flex: 0 0 160px !important;
+    min-height: 180px !important;
   }
 
   .product-detail-layout,
@@ -5688,8 +5768,43 @@ h3 {
     gap: 0.75rem;
   }
 
-  .testimonials-grid {
-    grid-template-columns: 1fr !important;
+  /* Reel effect on mobile for Testimonials */
+  .testimonial-grid {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.75rem !important;
+    padding: 0.2rem 0.5rem !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .testimonial-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .testimonial-card {
+    flex: 0 0 280px !important;
+    padding: 1.25rem !important;
+  }
+
+  /* Product actions and grid optimizations on mobile */
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+
+  .product-card-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.45rem !important;
+    margin-top: 0.75rem !important;
+  }
+
+  .product-card-action {
+    min-height: 2.35rem !important;
+    font-size: 0.65rem !important;
+    width: 100% !important;
   }
 
   .instagram-grid {

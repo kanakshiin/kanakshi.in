@@ -236,9 +236,9 @@ export default async function HomePage() {
               slides={finalHeroSlides}
               autoplayMs={heroConfig.slider_settings?.autoplay_ms || 3500}
               navGap={heroConfig.slider_settings?.nav_gap || 34}
-              showArrows={heroConfig.slider_settings?.show_arrows !== false}
+              showArrows={false}
               showDots={heroConfig.slider_settings?.show_dots === true}
-              showText={heroConfig.slider_settings?.show_text !== false}
+              showText={false}
             />
             <div className="hero-cta-overlay">
               <h1 className="hero-cta-headline">Sacred Craft. Pure Brass. Pan-India Delivery.</h1>
