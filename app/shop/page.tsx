@@ -178,15 +178,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               href="/shop"
               className={!params.category ? "shop-category-pill active" : "shop-category-pill"}
             >
-              <span className="pill-img-wrapper">
-                <Image
-                  src={referenceAssets.collections.godIdols}
-                  alt="All Pieces"
-                  width={32}
-                  height={32}
-                  className="pill-img"
-                />
-              </span>
               <strong>All Pieces</strong>
             </Link>
             {featuredCategories.map((category) => (
@@ -195,15 +186,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 href={`/shop?category=${category.slug}`}
                 className={category.slug === params.category ? "shop-category-pill active" : "shop-category-pill"}
               >
-                <span className="pill-img-wrapper">
-                  <Image
-                    src={category.image || referenceAssets.collections.godIdols}
-                    alt={category.name}
-                    width={32}
-                    height={32}
-                    className="pill-img"
-                  />
-                </span>
                 <strong>{category.name}</strong>
               </Link>
             ))}
