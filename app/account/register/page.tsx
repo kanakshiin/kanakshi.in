@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useState, Suspense } from "react";
 
+import { PasswordField } from "../../../components/account/password-field";
+import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
 import { fetchCustomerAuthConfig, registerCustomer } from "../../../lib/customer-auth";
 
-export default function CustomerRegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,6 +22,8 @@ export default function CustomerRegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [helper, setHelper] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/account");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +40,7 @@ export default function CustomerRegisterPage() {
       }
 
       setHelper("Account created successfully. You can log in now.");
-      router.push("/account/login");
+      router.push(`/account/login?redirect=${encodeURIComponent(redirect)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create account.");
     } finally {
@@ -62,14 +68,20 @@ export default function CustomerRegisterPage() {
               <span>Phone</span>
               <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
             </label>
-            <label className="auth-field">
-              <span>Password</span>
-              <input type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
-            </label>
-            <label className="auth-field">
-              <span>Confirm Password</span>
-              <input type="password" value={form.password_confirmation} onChange={(event) => setForm((current) => ({ ...current, password_confirmation: event.target.value }))} required />
-            </label>
+            <PasswordField
+              label="Password"
+              value={form.password}
+              onChange={(value) => setForm((current) => ({ ...current, password: value }))}
+              required
+              autoComplete="new-password"
+            />
+            <PasswordField
+              label="Confirm Password"
+              value={form.password_confirmation}
+              onChange={(value) => setForm((current) => ({ ...current, password_confirmation: value }))}
+              required
+              autoComplete="new-password"
+            />
             <div className="auth-field auth-field-note">
               <span>Password Rule</span>
               <p>Use at least 8 characters with uppercase, lowercase, and a number.</p>
@@ -83,10 +95,25 @@ export default function CustomerRegisterPage() {
             </div>
           </form>
           <div className="auth-link-row">
-            <Link href="/account/login" className="text-link">Already have an account?</Link>
+            <Link href={`/account/login?redirect=${encodeURIComponent(redirect)}`} className="text-link">Already have an account?</Link>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+export default function CustomerRegisterPage() {
+  return (
+    <Suspense fallback={
+      <main className="content-section auth-page" style={{ justifyContent: "center", alignItems: "center", display: "flex", minHeight: "60vh" }}>
+        <div style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+          <h2 className="auth-title">Preparing secure registration…</h2>
+        </div>
+      </main>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

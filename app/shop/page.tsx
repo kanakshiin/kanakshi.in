@@ -4,16 +4,19 @@ import Link from "next/link";
 
 import { StructuredData } from "../../components/structured-data";
 import { ProductCard } from "../../components/product-card";
+import { ShopSortSelect, ShopPriceFilter } from "../../components/shop-controls";
 import { getCategories, getProducts, getSettings } from "../../lib/api";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 type ShopPageProps = {
   searchParams: Promise<{
     category?: string;
+    sort?: string;
+    min_price?: string;
+    max_price?: string;
   }>;
 };
 
@@ -53,9 +56,10 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const params = await searchParams;
   const [settings, categories] = await Promise.all([getSettings(), getCategories(12)]);
   const query = new URLSearchParams();
+  const activeSort = params.sort || "popularity";
 
   query.set("per_page", "24");
-  query.set("sort", "newest");
+  query.set("sort", activeSort === "newest" ? "newest" : "popular");
 
   if (params.category) {
     query.set("category", params.category);
@@ -67,7 +71,25 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const heroImage =
     activeCategory?.image ||
     referenceAssets.collections.homeDecor;
-  const shopItems = products.items;
+
+  // In-memory sorting and price filtering for guaranteed functionality
+  const minPrice = params.min_price ? Number(params.min_price) : 0;
+  const maxPrice = params.max_price ? Number(params.max_price) : Infinity;
+
+  const filteredItems = products.items.filter((item) => {
+    const price = Number(item.effective_price ?? item.price ?? 0);
+    return price >= minPrice && price <= maxPrice;
+  });
+
+  if (activeSort === "price-asc") {
+    filteredItems.sort((a, b) => Number(a.effective_price ?? a.price ?? 0) - Number(b.effective_price ?? b.price ?? 0));
+  } else if (activeSort === "price-desc") {
+    filteredItems.sort((a, b) => Number(b.effective_price ?? b.price ?? 0) - Number(a.effective_price ?? a.price ?? 0));
+  } else if (activeSort === "newest") {
+    filteredItems.sort((a, b) => Number(b.id) - Number(a.id));
+  }
+
+  const shopItems = filteredItems;
   const featuredCategories = categories.slice(0, 8);
   const pageTitle = activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces";
   const storePromises = [
@@ -97,7 +119,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
   const subtitleText = activeCategory && categorySubtitles[activeCategory.slug]
     ? categorySubtitles[activeCategory.slug]
-    : "Browse handcrafted idols, wall accents, pooja decor, gifting edits, and lifestyle pieces in a denser handcrafted storefront flow inspired by the reference retail rhythm.";
+    : "Browse our complete collection of handcrafted brass idols, wall accents, pooja decor, gifting edits, and lifestyle pieces — curated for sacred spaces, meaningful gifting, and premium home styling.";
 
   return (
     <main className="page-shell">
@@ -170,6 +192,14 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               </div>
 
               <div className="shop-filter-card">
+                <p className="eyebrow">Filter By</p>
+                <h3>Price Range</h3>
+                <div className="shop-filter-block">
+                  <ShopPriceFilter />
+                </div>
+              </div>
+
+              <div className="shop-filter-card">
                 <p className="eyebrow">Store Promise</p>
                 <h3>Why Browse Here</h3>
                 <ul className="shop-promise-list">
@@ -188,7 +218,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 </div>
                 <div className="shop-results-meta">
                   <span className="listing-meta">{shopItems.length} visible now</span>
-                  <span className="listing-meta">Sorted by popularity</span>
+                  <ShopSortSelect />
                 </div>
               </div>
 

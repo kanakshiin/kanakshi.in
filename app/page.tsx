@@ -3,12 +3,12 @@ import Link from "next/link";
 import { StructuredData } from "../components/structured-data";
 import { HeroSlider } from "../components/hero-slider";
 import { ProductCard } from "../components/product-card";
+import { HomepageNewsletter } from "../components/homepage-newsletter";
 import { getHomePageData, resolveAssetUrl } from "../lib/api";
 import { referenceAssets } from "../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 export default async function HomePage() {
   const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
@@ -240,6 +240,14 @@ export default async function HomePage() {
               showDots={heroConfig.slider_settings?.show_dots === true}
               showText={heroConfig.slider_settings?.show_text !== false}
             />
+            <div className="hero-cta-overlay">
+              <h1 className="hero-cta-headline">Sacred Craft. Pure Brass. Pan-India Delivery.</h1>
+              <p className="hero-cta-sub">Handcrafted god idols, home decor &amp; festive gifting — trusted by 45,000+ customers across India.</p>
+              <div className="hero-cta-actions">
+                <Link href="/shop" className="primary-button">Shop the Collection →</Link>
+                <Link href="/shop?category=gifting-edit" className="secondary-button">Explore Gifting Picks</Link>
+              </div>
+            </div>
           </div>
 
           <div className="hero-promo-stack">
@@ -324,7 +332,7 @@ export default async function HomePage() {
               <div className="story-copy">
                 <small>Editorial Pick</small>
                 <h3>{category.name}</h3>
-                <p>Styled with stronger storytelling, warmer overlays, and a more premium discovery rhythm.</p>
+                <p>Discover our curated {category.name.toLowerCase()} collection — handcrafted with care for your home and sacred spaces.</p>
               </div>
             </Link>
           ))}
@@ -366,16 +374,17 @@ export default async function HomePage() {
             </div>
             <div className="about-brand-copy">
               <p>
-                The storefront is now moving closer to that handcrafted multi-section ecommerce rhythm: stronger hero
-                merchandising, category-first discovery, festive edits, and product rails that feel denser and more
-                gift-led.
+                Little Divinity is a home for handcrafted brass idols, home decor, pooja essentials, and meaningful
+                gifting pieces. Every product is made by skilled Indian artisans using traditional techniques passed
+                down through generations.
               </p>
               <p>
-                We are shaping it around brass idols, home decor, pooja accents, wooden pieces, and gifting so the
-                homepage feels layered like a real handcrafted retail brand instead of a generic template.
+                Whether you&apos;re decorating a sacred corner, gifting a housewarming, or adding warmth to your living
+                space — we curate only the finest pieces in solid brass, wood, and stone. Trusted by over 45,000
+                happy customers across India.
               </p>
               <Link href="/shop" className="text-link">
-                Read More
+                Explore Our Collection
               </Link>
             </div>
           </div>
@@ -386,13 +395,15 @@ export default async function HomePage() {
         <div className="container artisan-grid">
           <div className="artisan-copy">
             <p className="eyebrow">About The Founders</p>
-            <h2>Built Around Craft, Story, And Storefront Warmth</h2>
+            <h2>Built Around Craft, Story, And Artisan Heritage</h2>
             <p className="hero-text">
-              This section now carries the founder-story feel from the reference direction, with image-led storytelling,
-              softer editorial copy, and stronger handcrafted-brand positioning.
+              Every piece begins with a craftsperson&apos;s hands. We work directly with artisan families across
+              Rajasthan and Uttar Pradesh — preserving ancient metalworking traditions while bringing their finest
+              work to homes across India. Our 30+ years of craft expertise ensures every product meets the highest
+              standards of quality and authenticity.
             </p>
             <Link href="/shop" className="primary-button">
-              Read More
+              Shop Handcrafted Pieces
             </Link>
           </div>
           <div className="artisan-stack">
@@ -466,19 +477,23 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Premium Homepage Lead Opt-in Banner */}
+      <HomepageNewsletter />
+
       <section className="content-section instagram-section">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
-              <p className="eyebrow">@ Follow Us On</p>
+              <p className="eyebrow">Follow Us On</p>
               <h2>Instagram</h2>
             </div>
+            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="text-link">@littledivinity</a>
           </div>
 
           <div className="instagram-grid">
             {instagramTiles.map((tile, index) => (
-              <a key={`${tile}-${index}`} href="#" className="instagram-tile">
-                <img src={tile} alt={`Instagram tile ${index + 1}`} />
+              <a key={`${tile}-${index}`} href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
+                <img src={tile} alt={["Brass god idol handcrafted","Home decor brass collection","Peacock brass wall art","Buddha statue brass","Candle stand brass","God idols collection"][index] || `Handcrafted product ${index + 1}`} />
               </a>
             ))}
           </div>
@@ -489,8 +504,8 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head section-head-center">
             <div>
-              <p className="eyebrow">Such As</p>
-              <h2>Storefront Highlights</h2>
+              <p className="eyebrow">Trusted By Thousands</p>
+              <h2>Why Customers Choose Little Divinity</h2>
             </div>
           </div>
 
@@ -522,17 +537,18 @@ export default async function HomePage() {
               <p className="eyebrow">Festive Edits</p>
               <h2>Occasions, Gifting, And Seasonal Stories</h2>
             </div>
+            <Link href="/shop" className="text-link">View All</Link>
           </div>
 
           <div className="occasion-grid">
             {festiveMoments.map((moment) => (
-              <article key={moment.title} className="occasion-card">
+              <Link key={moment.title} href="/shop?category=gifting-edit" className="occasion-card">
                 <img src={resolveAssetUrl(moment.image)} alt={moment.title} />
                 <div>
                   <small>Curated Edit</small>
                   <strong>{moment.title}</strong>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>

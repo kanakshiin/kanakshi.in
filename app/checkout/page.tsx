@@ -345,6 +345,20 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Phone validation: 10-digit Indian mobile
+    if (!/^[6-9][0-9]{9}$/.test(shipPhone.trim())) {
+      setError("Please enter a valid 10-digit Indian mobile number (starting with 6-9).");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Pincode validation: 6-digit Indian PIN
+    if (!/^[1-9][0-9]{5}$/.test(shipPincode.trim())) {
+      setError("Please enter a valid 6-digit PIN code.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const token = getStoredCustomerToken() || undefined;
 
     const orderData = {
@@ -518,8 +532,9 @@ export default function CheckoutPage() {
               
               <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1.2rem" }}>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <span>Full Name *</span>
+                  <label htmlFor="ship-name">Full Name *</label>
                   <input
+                    id="ship-name"
                     type="text"
                     required
                     value={shipName}
@@ -529,8 +544,9 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="auth-field">
-                  <span>Email Address *</span>
+                  <label htmlFor="ship-email">Email Address *</label>
                   <input
+                    id="ship-email"
                     type="email"
                     required
                     value={shipEmail}
@@ -540,19 +556,23 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="auth-field">
-                  <span>Phone Number *</span>
+                  <label htmlFor="ship-phone">Phone Number *</label>
                   <input
+                    id="ship-phone"
                     type="tel"
                     required
+                    maxLength={10}
+                    pattern="[6-9][0-9]{9}"
                     value={shipPhone}
-                    onChange={(e) => setShipPhone(e.target.value)}
+                    onChange={(e) => setShipPhone(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
                     placeholder="10-digit mobile number"
                   />
                 </div>
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <span>Street Address *</span>
+                  <label htmlFor="ship-address">Street Address *</label>
                   <input
+                    id="ship-address"
                     type="text"
                     required
                     value={shipAddress}
@@ -611,12 +631,15 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <span>Pincode *</span>
+                  <label htmlFor="ship-pincode">Pincode *</label>
                   <input
+                    id="ship-pincode"
                     type="text"
                     required
+                    maxLength={6}
+                    pattern="[1-9][0-9]{5}"
                     value={shipPincode}
-                    onChange={(e) => setShipPincode(e.target.value)}
+                    onChange={(e) => setShipPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                     placeholder="6-digit PIN code"
                   />
                 </div>
@@ -854,6 +877,13 @@ export default function CheckoutPage() {
                 </strong>
               </div>
 
+              {/* SSL Trust Strip */}
+              <div className="checkout-trust-strip">
+                <span>🔒 SSL Secured</span>
+                <span>✓ Razorpay Certified</span>
+                <span>✓ COD Available</span>
+              </div>
+
               {/* Action Button */}
               <button
                 type="submit"
@@ -876,9 +906,15 @@ export default function CheckoutPage() {
                     Placing Your Order…
                   </>
                 ) : (
-                  <>Secure Order Now {currencySymbol === "₹" ? "₹" : ""}{grandTotal.toLocaleString("en-IN")}</>
+                  <>Confirm &amp; Place Order Securely — {currencySymbol}{grandTotal.toLocaleString("en-IN")}</>
                 )}
               </button>
+              
+              <div style={{ textAlign: "center", marginTop: "1rem" }}>
+                <Link href="/cart" className="text-link" style={{ fontSize: "0.9rem", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <span>←</span> Back to Cart / Edit Items
+                </Link>
+              </div>
             </div>
 
             {/* Public Coupons Card */}
@@ -998,16 +1034,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
     </main>
   );
 }

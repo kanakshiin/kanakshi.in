@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 
+import { PasswordField } from "../../../components/account/password-field";
+import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
 import { resetCustomerPassword, sendCustomerForgotPasswordOtp } from "../../../lib/customer-auth";
 
-export default function CustomerForgotPasswordPage() {
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +18,7 @@ export default function CustomerForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/account");
 
   async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,14 +80,14 @@ export default function CustomerForgotPasswordPage() {
                 <span>OTP</span>
                 <input value={code} onChange={(event) => setCode(event.target.value)} required />
               </label>
-              <label className="auth-field">
-                <span>New Password</span>
-                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-              </label>
-              <label className="auth-field">
-                <span>Confirm Password</span>
-                <input type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required />
-              </label>
+              <PasswordField label="New Password" value={password} onChange={setPassword} required autoComplete="new-password" />
+              <PasswordField
+                label="Confirm Password"
+                value={passwordConfirmation}
+                onChange={setPasswordConfirmation}
+                required
+                autoComplete="new-password"
+              />
               <button type="submit" className="primary-button" disabled={loading || !otpSent}>
                 {loading && otpSent ? "Resetting…" : "Reset Password"}
               </button>
@@ -91,10 +96,25 @@ export default function CustomerForgotPasswordPage() {
           {error ? <p className="auth-error">{error}</p> : null}
           {status ? <p className="auth-success">{status}</p> : null}
           <div className="auth-link-row">
-            <Link href="/account/login" className="text-link">Back to Login</Link>
+            <Link href={`/account/login?redirect=${encodeURIComponent(redirect)}`} className="text-link">Back to Login</Link>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+export default function CustomerForgotPasswordPage() {
+  return (
+    <Suspense fallback={
+      <main className="content-section auth-page auth-suspense-shell">
+        <div className="auth-suspense-card">
+          <p className="eyebrow auth-pulse">Little Divinity</p>
+          <h2 className="auth-title">Preparing password reset…</h2>
+        </div>
+      </main>
+    }>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }

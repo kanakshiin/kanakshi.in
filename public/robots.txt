@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account/
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /api/
+Disallow: /cart
+
+Sitemap: https://littledivinity.com/sitemap.xml

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StructuredData } from "../../../../components/structured-data";
@@ -8,12 +9,13 @@ import { ProductCard } from "../../../../components/product-card";
 import { OffersWidget } from "../../../../components/offers-widget";
 import { ProductGallery } from "../../../../components/product-gallery";
 import { UrgencyTimer } from "../../../../components/urgency-timer";
+import { ProductReviews } from "../../../../components/product-reviews";
 import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons } from "../../../../lib/api";
 import { referenceAssets } from "../../../../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getProductRenderKey } from "../../../../lib/site";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
+
 
 type ProductPageProps = {
   params: Promise<{
@@ -148,6 +150,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <main className="page-shell">
       <StructuredData data={productJsonLd} />
+      
+      {/* Breadcrumb Navigation Trail */}
+      <nav className="breadcrumbs" aria-label="Breadcrumb">
+        <div className="container">
+          <Link href="/">Home</Link>
+          <span className="separator">/</span>
+          <Link href="/shop">Shop</Link>
+          <span className="separator">/</span>
+          <Link href={`/shop?category=${product.category_slug || category}`} style={{ textTransform: "capitalize" }}>
+            {product.category_name || (product.category_slug || category).replace(/-/g, " ")}
+          </Link>
+          <span className="separator">/</span>
+          <span className="current">{product.name}</span>
+        </div>
+      </nav>
+
       <section className="product-hero">
         <div className="container product-detail-grid">
           {/* Interactive Multi-Image Gallery component with fullscreen lightbox option */}
@@ -251,11 +269,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <section className="content-section">
         <div className="container product-story-layout">
           <div className="product-story-copy">
-            <p className="eyebrow">Display Story</p>
+            <p className="eyebrow">Crafted With Purpose</p>
             <h2>Designed To Feel Special The Moment It Is Placed</h2>
             <p>
-              This product page is shaped like a premium handcrafted decor storefront: strong imagery first, quieter details
-              second, and enough breathing room for the object to feel elevated.
+              Each piece from Little Divinity is carefully selected for its finish quality, weight, and display
+              presence. Whether placed on an altar, gifted at a celebration, or styled as a statement piece — our
+              brass and heritage decor is built to last a lifetime and tell a story worth sharing.
             </p>
           </div>
 
@@ -289,6 +308,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </section>
       )}
+
+      {/* Customer Reviews Section */}
+      <ProductReviews productName={product.name} />
     </main>
   );
 }
