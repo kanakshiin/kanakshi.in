@@ -23,9 +23,20 @@ type SiteFooterProps = {
 
 export function SiteFooter({ categories, settings, footerMenu, socialLinks }: SiteFooterProps) {
   const footerCategories = categories.slice(0, 8);
-  const normalizedFooterMenu = footerMenu.some((item) => item.url === "/pages/shipping-policy")
-    ? footerMenu
-    : [...footerMenu, { id: 999991, title: "Shipping Policy", url: "/pages/shipping-policy" }];
+  
+  let normalizedFooterMenu = [...footerMenu];
+  const extraLinks = [
+    { id: 999991, title: "Shipping Policy", url: "/pages/shipping-policy" },
+    { id: 999992, title: "Warranty & Buyback", url: "/warranty-portal" },
+    { id: 999993, title: "Live Auctions", url: "/live-auctions" },
+  ];
+
+  extraLinks.forEach((link) => {
+    if (!normalizedFooterMenu.some((item) => item.url === link.url)) {
+      normalizedFooterMenu.push(link);
+    }
+  });
+
 
   const socialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
