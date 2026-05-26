@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { PasswordField } from "../../../components/account/password-field";
 import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
-import { resetCustomerPassword, sendCustomerForgotPasswordOtp } from "../../../lib/customer-auth";
+import { fetchCustomerAuthConfig, resetCustomerPassword, sendCustomerForgotPasswordOtp } from "../../../lib/customer-auth";
+import { CustomerAuthConfig } from "../../../lib/types";
 
 function ForgotPasswordForm() {
   const searchParams = useSearchParams();
@@ -18,10 +19,55 @@ function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [config, setConfig] = useState<CustomerAuthConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
   const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/account");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadConfig() {
+      setConfigLoading(true);
+
+      try {
+        const nextConfig = await fetchCustomerAuthConfig();
+        if (!active) {
+          return;
+        }
+
+        setConfig(nextConfig);
+        if (!nextConfig.customer_email_active || !nextConfig.email_otp_enabled) {
+          setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+        }
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+
+        setError(err instanceof Error ? err.message : "Unable to load password reset settings.");
+      } finally {
+        if (active) {
+          setConfigLoading(false);
+        }
+      }
+    }
+
+    void loadConfig();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const passwordResetAvailable = Boolean(config?.customer_email_active && config?.email_otp_enabled);
 
   async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!passwordResetAvailable) {
+      setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setStatus(null);
@@ -39,6 +85,11 @@ function ForgotPasswordForm() {
 
   async function handleResetPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!passwordResetAvailable) {
+      setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setStatus(null);
@@ -64,14 +115,15 @@ function ForgotPasswordForm() {
         <section className="auth-card auth-wide-card">
           <small className="eyebrow">Forgot Password</small>
           <h1 className="auth-title">Reset Customer Password</h1>
-          <p className="auth-muted">Request a reset OTP first, then set your new password.</p>
+          <p className="auth-muted">Request a reset OTP first, then set your new password. Little Divinity sends this OTP to your registered email.</p>
+          {configLoading ? <p className="auth-muted">Checking reset availability…</p> : null}
           <div className="auth-two-column">
             <form className="auth-form" onSubmit={handleSendOtp}>
               <label className="auth-field">
                 <span>Email</span>
                 <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
               </label>
-              <button type="submit" className="secondary-button" disabled={loading}>
+              <button type="submit" className="secondary-button" disabled={loading || configLoading || !passwordResetAvailable}>
                 {loading && !otpSent ? "Sending…" : "Send Reset OTP"}
               </button>
             </form>
@@ -88,7 +140,7 @@ function ForgotPasswordForm() {
                 required
                 autoComplete="new-password"
               />
-              <button type="submit" className="primary-button" disabled={loading || !otpSent}>
+              <button type="submit" className="primary-button" disabled={loading || !otpSent || configLoading || !passwordResetAvailable}>
                 {loading && otpSent ? "Resetting…" : "Reset Password"}
               </button>
             </form>
