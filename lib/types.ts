@@ -137,8 +137,29 @@ export type CustomerUser = {
   name: string;
   email: string;
   phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
   email_verified_at?: string | null;
   role?: string;
+};
+
+export type CustomerAddress = {
+  id: number;
+  type: "home" | "office" | "other";
+  label?: string | null;
+  recipient_name: string;
+  phone?: string | null;
+  address_line1: string;
+  address_line2?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark?: string | null;
+  is_default: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type CustomerAuthConfig = {

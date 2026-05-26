@@ -1,6 +1,6 @@
 "use client";
 
-import { CustomerAuthConfig, CustomerUser } from "./types";
+import { CustomerAddress, CustomerAuthConfig, CustomerUser } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -146,4 +146,46 @@ export async function logoutCustomer(token: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({})
   }, token);
+}
+
+export async function fetchCustomerAddresses(token: string): Promise<CustomerAddress[]> {
+  const data = await request<{ addresses: CustomerAddress[] }>("/customer/addresses", {
+    method: "GET",
+    cache: "no-store"
+  }, token);
+
+  return data.addresses || [];
+}
+
+export async function createCustomerAddress(
+  token: string,
+  input: Omit<CustomerAddress, "id" | "created_at" | "updated_at">
+): Promise<CustomerAddress[]> {
+  const data = await request<{ addresses: CustomerAddress[] }>("/customer/addresses", {
+    method: "POST",
+    body: JSON.stringify(input)
+  }, token);
+
+  return data.addresses || [];
+}
+
+export async function updateCustomerAddress(
+  token: string,
+  addressId: number,
+  input: Omit<CustomerAddress, "id" | "created_at" | "updated_at">
+): Promise<CustomerAddress[]> {
+  const data = await request<{ addresses: CustomerAddress[] }>(`/customer/addresses/${addressId}`, {
+    method: "PUT",
+    body: JSON.stringify(input)
+  }, token);
+
+  return data.addresses || [];
+}
+
+export async function deleteCustomerAddress(token: string, addressId: number): Promise<CustomerAddress[]> {
+  const data = await request<{ addresses: CustomerAddress[] }>(`/customer/addresses/${addressId}`, {
+    method: "DELETE"
+  }, token);
+
+  return data.addresses || [];
 }

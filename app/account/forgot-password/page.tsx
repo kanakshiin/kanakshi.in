@@ -75,7 +75,7 @@ function ForgotPasswordForm() {
     try {
       await sendCustomerForgotPasswordOtp(email);
       setOtpSent(true);
-      setStatus("A reset OTP has been sent to your email.");
+      setStatus("A reset OTP has been sent to your email. Enter the OTP below and choose your new password.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send reset OTP.");
     } finally {
@@ -87,6 +87,16 @@ function ForgotPasswordForm() {
     event.preventDefault();
     if (!passwordResetAvailable) {
       setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      return;
+    }
+
+    if (!otpSent) {
+      setError("Request your reset OTP first.");
+      return;
+    }
+
+    if (password !== passwordConfirmation) {
+      setError("New password and confirm password must match.");
       return;
     }
 
@@ -117,33 +127,60 @@ function ForgotPasswordForm() {
           <h1 className="auth-title">Reset Customer Password</h1>
           <p className="auth-muted">Request a reset OTP first, then set your new password. Little Divinity sends this OTP to your registered email.</p>
           {configLoading ? <p className="auth-muted">Checking reset availability…</p> : null}
-          <div className="auth-two-column">
+          <div className="auth-stack">
             <form className="auth-form" onSubmit={handleSendOtp}>
-              <label className="auth-field">
-                <span>Email</span>
-                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-              </label>
-              <button type="submit" className="secondary-button" disabled={loading || configLoading || !passwordResetAvailable}>
-                {loading && !otpSent ? "Sending…" : "Send Reset OTP"}
-              </button>
+              <div className="auth-inline-action">
+                <label className="auth-field" style={{ margin: 0 }}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                    placeholder="Enter your registered email"
+                  />
+                </label>
+                <button type="submit" className="secondary-button auth-inline-button" disabled={loading || configLoading || !passwordResetAvailable}>
+                  {loading && !otpSent ? "Sending…" : otpSent ? "Resend OTP" : "Send Reset OTP"}
+                </button>
+              </div>
             </form>
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <label className="auth-field">
-                <span>OTP</span>
-                <input value={code} onChange={(event) => setCode(event.target.value)} required />
-              </label>
-              <PasswordField label="New Password" value={password} onChange={setPassword} required autoComplete="new-password" />
-              <PasswordField
-                label="Confirm Password"
-                value={passwordConfirmation}
-                onChange={setPasswordConfirmation}
-                required
-                autoComplete="new-password"
-              />
-              <button type="submit" className="primary-button" disabled={loading || !otpSent || configLoading || !passwordResetAvailable}>
-                {loading && otpSent ? "Resetting…" : "Reset Password"}
-              </button>
-            </form>
+
+            {otpSent ? (
+              <form className="auth-form auth-stack auth-reveal-panel" onSubmit={handleResetPassword}>
+                <label className="auth-field">
+                  <span>OTP</span>
+                  <input
+                    value={code}
+                    onChange={(event) => setCode(event.target.value.replace(/[^0-9]/g, "").slice(0, config?.otp_length || 6))}
+                    required
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder={`Enter ${config?.otp_length || 6}-digit OTP`}
+                  />
+                </label>
+                <PasswordField label="New Password" value={password} onChange={setPassword} required autoComplete="new-password" />
+                <PasswordField
+                  label="Confirm Password"
+                  value={passwordConfirmation}
+                  onChange={setPasswordConfirmation}
+                  required
+                  autoComplete="new-password"
+                />
+                <p className="auth-muted" style={{ margin: 0 }}>
+                  Your new password must be different from the current password.
+                </p>
+                <button type="submit" className="primary-button" disabled={loading || configLoading || !passwordResetAvailable}>
+                  {loading && otpSent ? "Resetting…" : "Reset Password"}
+                </button>
+              </form>
+            ) : (
+              <div className="auth-reveal-placeholder">
+                <p className="auth-muted" style={{ margin: 0 }}>
+                  OTP, new password, and confirm password will appear here after the reset OTP is sent.
+                </p>
+              </div>
+            )}
           </div>
           {error ? <p className="auth-error">{error}</p> : null}
           {status ? <p className="auth-success">{status}</p> : null}

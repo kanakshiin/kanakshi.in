@@ -3,9 +3,18 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { clearCustomerToken, fetchCurrentCustomer, getStoredCustomerToken, logoutCustomer } from "../../lib/customer-auth";
+import {
+  clearCustomerToken,
+  createCustomerAddress,
+  deleteCustomerAddress,
+  fetchCurrentCustomer,
+  fetchCustomerAddresses,
+  getStoredCustomerToken,
+  logoutCustomer,
+  updateCustomerAddress
+} from "../../lib/customer-auth";
 import { getCustomerOrders, getCustomerOrderDetail, formatPrice, requestCustomerOrderReturn, resolveAssetUrl } from "../../lib/api";
-import { CustomerUser } from "../../lib/types";
+import { CustomerAddress, CustomerUser } from "../../lib/types";
 
 // Type definitions matching CustomerOrderController responses
 interface OrderSummary {
@@ -82,10 +91,43 @@ interface OrderDetail {
   }>;
 }
 
+type AddressFormState = {
+  type: "home" | "office" | "other";
+  label: string;
+  recipient_name: string;
+  phone: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark: string;
+  is_default: boolean;
+};
+
+const EMPTY_ADDRESS_FORM: AddressFormState = {
+  type: "home",
+  label: "",
+  recipient_name: "",
+  phone: "",
+  address_line1: "",
+  address_line2: "",
+  city: "",
+  state: "",
+  pincode: "",
+  landmark: "",
+  is_default: false,
+};
+
 export default function AccountPage() {
   const [user, setUser] = useState<CustomerUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [addressForm, setAddressForm] = useState<AddressFormState>(EMPTY_ADDRESS_FORM);
+  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressFeedback, setAddressFeedback] = useState<string | null>(null);
 
   // Orders states
   const [orders, setOrders] = useState<OrderSummary[]>([]);
@@ -113,13 +155,13 @@ export default function AccountPage() {
         setUser(customer);
         setError(null);
 
-        // Fetch user order history
-        return getCustomerOrders(token);
+        return Promise.all([getCustomerOrders(token), fetchCustomerAddresses(token)]);
       })
-      .then((res) => {
-        if (res && res.success && res.data) {
-          setOrders(res.data);
+      .then(([ordersRes, fetchedAddresses]) => {
+        if (ordersRes && ordersRes.success && ordersRes.data) {
+          setOrders(ordersRes.data);
         }
+        setAddresses(fetchedAddresses || []);
       })
       .catch((err: Error) => {
         clearCustomerToken();
@@ -144,6 +186,90 @@ export default function AccountPage() {
 
     clearCustomerToken();
     window.location.href = "/account/login";
+  }
+
+  function resetAddressForm() {
+    setAddressForm(EMPTY_ADDRESS_FORM);
+    setEditingAddressId(null);
+  }
+
+  function hydrateAddressForm(address: CustomerAddress) {
+    setEditingAddressId(address.id);
+    setAddressForm({
+      type: address.type,
+      label: address.label || "",
+      recipient_name: address.recipient_name,
+      phone: address.phone || "",
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 || "",
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      landmark: address.landmark || "",
+      is_default: address.is_default,
+    });
+  }
+
+  async function handleSaveAddress() {
+    const token = getStoredCustomerToken();
+    if (!token) {
+      setAddressFeedback("Please log in again before saving an address.");
+      return;
+    }
+
+    if (!addressForm.recipient_name || !addressForm.address_line1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
+      setAddressFeedback("Please complete the required address fields.");
+      return;
+    }
+
+    setAddressLoading(true);
+    setAddressFeedback(null);
+
+    try {
+      const payload = {
+        ...addressForm,
+        phone: addressForm.phone || null,
+        address_line2: addressForm.address_line2 || null,
+        landmark: addressForm.landmark || null,
+        label: addressForm.label || null,
+      };
+
+      const nextAddresses = editingAddressId
+        ? await updateCustomerAddress(token, editingAddressId, payload)
+        : await createCustomerAddress(token, payload);
+
+      setAddresses(nextAddresses);
+      setAddressFeedback(editingAddressId ? "Address updated successfully." : "Address added successfully.");
+      resetAddressForm();
+    } catch (err) {
+      setAddressFeedback(err instanceof Error ? err.message : "Unable to save address.");
+    } finally {
+      setAddressLoading(false);
+    }
+  }
+
+  async function handleDeleteAddress(addressId: number) {
+    const token = getStoredCustomerToken();
+    if (!token) {
+      setAddressFeedback("Please log in again before deleting an address.");
+      return;
+    }
+
+    setAddressLoading(true);
+    setAddressFeedback(null);
+
+    try {
+      const nextAddresses = await deleteCustomerAddress(token, addressId);
+      setAddresses(nextAddresses);
+      if (editingAddressId === addressId) {
+        resetAddressForm();
+      }
+      setAddressFeedback("Address removed successfully.");
+    } catch (err) {
+      setAddressFeedback(err instanceof Error ? err.message : "Unable to remove address.");
+    } finally {
+      setAddressLoading(false);
+    }
   }
 
   async function handleViewOrderDetail(orderNumber: string) {
@@ -293,6 +419,122 @@ export default function AccountPage() {
                       {user.email_verified_at ? "Verified" : "Pending Verification"}
                     </strong>
                   </div>
+                </div>
+                <div className="account-address-book">
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                    <div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600 }}>ADDRESS BOOK</span>
+                      <p className="auth-muted" style={{ margin: "0.25rem 0 0" }}>Save home, office, or other delivery addresses for future orders.</p>
+                    </div>
+                    {editingAddressId ? (
+                      <button type="button" className="auth-link-button text-link" onClick={resetAddressForm}>
+                        Cancel Edit
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div style={{ display: "grid", gap: "0.75rem" }}>
+                    {addresses.length === 0 ? (
+                      <div className="account-address-empty">No saved addresses yet. Add one below to speed up checkout.</div>
+                    ) : (
+                      addresses.map((address) => (
+                        <div key={address.id} className="account-address-card">
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "flex-start" }}>
+                            <div>
+                              <strong style={{ display: "block", textTransform: "capitalize" }}>
+                                {address.type}{address.is_default ? " · Default" : ""}
+                              </strong>
+                              <span style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
+                                {address.label || address.recipient_name}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                              <button type="button" className="auth-link-button text-link" onClick={() => hydrateAddressForm(address)}>
+                                Edit
+                              </button>
+                              <button type="button" className="auth-link-button text-link" onClick={() => handleDeleteAddress(address.id)}>
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                          <p style={{ margin: "0.6rem 0 0", fontSize: "0.9rem", lineHeight: 1.55 }}>
+                            <strong>{address.recipient_name}</strong><br />
+                            {address.address_line1}
+                            {address.address_line2 ? <><br />{address.address_line2}</> : null}
+                            <br />
+                            {address.city}, {address.state} - {address.pincode}
+                            {address.landmark ? <><br />Landmark: {address.landmark}</> : null}
+                            {address.phone ? <><br />Phone: {address.phone}</> : null}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="account-address-form">
+                    <div className="auth-field">
+                      <span>Address Type</span>
+                      <select value={addressForm.type} onChange={(event) => setAddressForm((current) => ({ ...current, type: event.target.value as AddressFormState["type"] }))}>
+                        <option value="home">Home</option>
+                        <option value="office">Office</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="auth-field">
+                      <span>Label</span>
+                      <input value={addressForm.label} onChange={(event) => setAddressForm((current) => ({ ...current, label: event.target.value }))} placeholder="Home, Work, Gift address" />
+                    </div>
+                    <div className="auth-field">
+                      <span>Recipient Name *</span>
+                      <input value={addressForm.recipient_name} onChange={(event) => setAddressForm((current) => ({ ...current, recipient_name: event.target.value }))} required />
+                    </div>
+                    <div className="auth-field">
+                      <span>Phone</span>
+                      <input value={addressForm.phone} onChange={(event) => setAddressForm((current) => ({ ...current, phone: event.target.value.replace(/[^0-9]/g, "").slice(0, 10) }))} placeholder="10-digit mobile number" />
+                    </div>
+                    <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                      <span>Address Line 1 *</span>
+                      <input value={addressForm.address_line1} onChange={(event) => setAddressForm((current) => ({ ...current, address_line1: event.target.value }))} placeholder="Flat, floor, building, area" />
+                    </div>
+                    <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                      <span>Address Line 2</span>
+                      <input value={addressForm.address_line2} onChange={(event) => setAddressForm((current) => ({ ...current, address_line2: event.target.value }))} placeholder="Apartment, company, street details" />
+                    </div>
+                    <div className="auth-field">
+                      <span>City *</span>
+                      <input value={addressForm.city} onChange={(event) => setAddressForm((current) => ({ ...current, city: event.target.value }))} />
+                    </div>
+                    <div className="auth-field">
+                      <span>State *</span>
+                      <input value={addressForm.state} onChange={(event) => setAddressForm((current) => ({ ...current, state: event.target.value }))} />
+                    </div>
+                    <div className="auth-field">
+                      <span>Pincode *</span>
+                      <input value={addressForm.pincode} onChange={(event) => setAddressForm((current) => ({ ...current, pincode: event.target.value.replace(/[^0-9]/g, "").slice(0, 6) }))} />
+                    </div>
+                    <div className="auth-field">
+                      <span>Landmark</span>
+                      <input value={addressForm.landmark} onChange={(event) => setAddressForm((current) => ({ ...current, landmark: event.target.value }))} placeholder="Nearby landmark" />
+                    </div>
+                    <label className="account-default-toggle" style={{ gridColumn: "1 / -1" }}>
+                      <input
+                        type="checkbox"
+                        checked={addressForm.is_default}
+                        onChange={(event) => setAddressForm((current) => ({ ...current, is_default: event.target.checked }))}
+                      />
+                      <span>Make this my default delivery address</span>
+                    </label>
+                  </div>
+
+                  {addressFeedback ? (
+                    <div className={addressFeedback.toLowerCase().includes("success") || addressFeedback.toLowerCase().includes("added") || addressFeedback.toLowerCase().includes("updated") || addressFeedback.toLowerCase().includes("removed") ? "auth-success" : "auth-error"}>
+                      {addressFeedback}
+                    </div>
+                  ) : null}
+
+                  <button type="button" className="secondary-button" style={{ width: "100%", cursor: "pointer" }} onClick={handleSaveAddress} disabled={addressLoading}>
+                    {addressLoading ? "Saving…" : editingAddressId ? "Update Address" : "Add Address"}
+                  </button>
                 </div>
                 <button type="button" className="secondary-button" style={{ width: "100%", cursor: "pointer" }} onClick={handleLogout}>Logout</button>
               </div>

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
-import { getStoredCustomerToken, fetchCurrentCustomer } from "../../lib/customer-auth";
+import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken } from "../../lib/customer-auth";
 import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
-import { Coupon, CustomerUser, PaymentGatewayPublic, SiteSettings } from "../../lib/types";
+import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, SiteSettings } from "../../lib/types";
 
 async function loadRazorpayScript(): Promise<boolean> {
   if (typeof window !== "undefined" && (window as any).Razorpay) {
@@ -110,6 +110,7 @@ export default function CheckoutPage() {
 
   // User & settings states
   const [user, setUser] = useState<CustomerUser | null>(null);
+  const [savedAddresses, setSavedAddresses] = useState<CustomerAddress[]>([]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -136,6 +137,7 @@ export default function CheckoutPage() {
   // Dropdown list helper states
   const [customCityActive, setCustomCityActive] = useState(false);
   const [customCityValue, setCustomCityValue] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
 
   const handleStateChange = (stateVal: string) => {
     setShipState(stateVal);
@@ -159,6 +161,26 @@ export default function CheckoutPage() {
   const handleCustomCityChange = (val: string) => {
     setCustomCityValue(val);
     setShipCity(val);
+  };
+
+  const applySavedAddress = (address: CustomerAddress) => {
+    setSelectedAddressId(address.id);
+    setShipName(address.recipient_name || user?.name || "");
+    setShipEmail(user?.email || shipEmail);
+    setShipPhone(address.phone || user?.phone || "");
+    setShipAddress([address.address_line1, address.address_line2].filter(Boolean).join(", "));
+    setShipCity(address.city || "");
+    setShipPincode(address.pincode || "");
+    handleStateChange(address.state || "");
+    if (address.state && INDIAN_STATES_AND_CITIES[address.state]?.includes(address.city)) {
+      setCustomCityActive(false);
+      setCustomCityValue("");
+      setShipCity(address.city);
+    } else if (address.city) {
+      setCustomCityActive(true);
+      setCustomCityValue(address.city);
+      setShipCity(address.city);
+    }
   };
 
   // Coupon states
@@ -192,12 +214,20 @@ export default function CheckoutPage() {
         const token = getStoredCustomerToken();
         if (token) {
           try {
-            const customer = await fetchCurrentCustomer(token);
+            const [customer, addresses] = await Promise.all([
+              fetchCurrentCustomer(token),
+              fetchCustomerAddresses(token)
+            ]);
             setUser(customer);
+            setSavedAddresses(addresses);
             // Pre-fill shipping info from authenticated user
             setShipName(customer.name || "");
             setShipEmail(customer.email || "");
             setShipPhone(customer.phone || "");
+            const defaultAddress = addresses.find((address) => address.is_default) || addresses[0];
+            if (defaultAddress) {
+              applySavedAddress(defaultAddress);
+            }
           } catch (e) {
             console.error("Auth fetch failed in checkout:", e);
           }
@@ -547,6 +577,33 @@ export default function CheckoutPage() {
               <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1.5rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
                 <span>1.</span> Shipping Details
               </h2>
+
+              {user && savedAddresses.length > 0 ? (
+                <div className="checkout-address-picker">
+                  <div>
+                    <strong style={{ display: "block", marginBottom: "0.35rem" }}>Use a saved address</strong>
+                    <p className="auth-muted" style={{ margin: 0 }}>Select home, office, or other saved address and we will auto-fill the form. You can still edit for this order.</p>
+                  </div>
+                  <div className="checkout-address-grid">
+                    {savedAddresses.map((address) => (
+                      <button
+                        key={address.id}
+                        type="button"
+                        className="checkout-address-option"
+                        data-active={selectedAddressId === address.id ? "true" : "false"}
+                        onClick={() => applySavedAddress(address)}
+                      >
+                        <span className="checkout-address-type">
+                          {address.type}{address.is_default ? " · Default" : ""}
+                        </span>
+                        <strong>{address.recipient_name}</strong>
+                        <span>{address.address_line1}</span>
+                        <span>{address.city}, {address.state} - {address.pincode}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               
               <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1.2rem" }}>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
