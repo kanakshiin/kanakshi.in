@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FooterNewsletterForm } from "./footer-newsletter-form";
 import { liveContactDefaults } from "../lib/legal-content";
 
@@ -22,6 +25,12 @@ type SiteFooterProps = {
 };
 
 export function SiteFooter({ categories, settings, footerMenu, socialLinks }: SiteFooterProps) {
+  const pathname = usePathname();
+  const isRegistryRoute =
+    pathname === "/warranty-portal" ||
+    pathname === "/warranty-status" ||
+    pathname === "/service-claim" ||
+    pathname === "/buyback-request";
   const footerCategories = categories.slice(0, 8);
   
   let normalizedFooterMenu = [...footerMenu];
@@ -52,6 +61,25 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
         return <circle cx="12" cy="12" r="8" />;
     }
   };
+
+  if (isRegistryRoute) {
+    return (
+      <footer className="site-footer registry-footer">
+        <div className="container registry-footer-shell">
+          <div>
+            <strong>{settings.site_name || "Little Divinity"}</strong>
+            <p>Official ownership registry, warranty service, and buyback verification for handcrafted brass pieces.</p>
+          </div>
+          <Link href="/shop" className="registry-footer-link">
+            Return to Storefront
+          </Link>
+        </div>
+        <div className="container footer-bottom">
+          <span>{settings.footer_copyright_text || "© Little Divinity 2026. All Rights Reserved"}</span>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="site-footer">

@@ -10,6 +10,37 @@ import {
 } from "../lib/api";
 import { getSiteUrl } from "../lib/site";
 
+async function getAllProducts() {
+  const firstPage = await getProducts("per_page=48&sort=popular");
+  const initialProducts = firstPage.items || [];
+  const lastPage = Math.max(firstPage.pagination?.last_page || 1, 1);
+
+  if (lastPage === 1) {
+    return initialProducts;
+  }
+
+  const requests: Promise<Awaited<ReturnType<typeof getProducts>>>[] = [];
+  for (let page = 2; page <= lastPage; page += 1) {
+    requests.push(getProducts(`per_page=48&sort=popular&page=${page}`));
+  }
+
+  const pages = await Promise.all(requests);
+  const allProducts = [...initialProducts];
+  for (const page of pages) {
+    allProducts.push(...(page.items || []));
+  }
+
+  const seen = new Set<string>();
+  return allProducts.filter((product) => {
+    if (!product.slug || seen.has(product.slug)) {
+      return false;
+    }
+
+    seen.add(product.slug);
+    return true;
+  });
+}
+
 async function getAllBlogPosts() {
   const firstPage = await getBlogPosts({ page: 1, per_page: 100 });
   const initialPosts = firstPage.data?.data || [];
@@ -43,7 +74,7 @@ async function getAllBlogPosts() {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [settings, products, categories, blogPosts, blogCategoriesData, blogTagsData, blogAuthorsData] = await Promise.all([
     getSettings(),
-    getProducts("per_page=100&sort=popular"),
+    getAllProducts(),
     getCategories(24),
     getAllBlogPosts(),
     getBlogCategories(),
@@ -72,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8
   }));
 
-  const productRoutes: MetadataRoute.Sitemap = products.items
+  const productRoutes: MetadataRoute.Sitemap = products
     .filter((product) => product.category_slug && product.slug)
     .map((product) => ({
       url: `${siteUrl}/shop/${product.category_slug}/${product.slug}`,

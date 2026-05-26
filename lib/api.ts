@@ -46,7 +46,9 @@ const fallbackFooterMenu: NavigationItem[] = [
   { id: 30004, title: "Terms & Conditions", url: "/pages/terms-conditions" },
   { id: 30005, title: "Refund Policy", url: "/pages/refund-policy" },
   { id: 30006, title: "Shipping Policy", url: "/pages/shipping-policy" },
-  { id: 30007, title: "Track Your Order", url: "/track-order" }
+  { id: 30007, title: "Track Your Order", url: "/track-order" },
+  { id: 30008, title: "Warranty & Buyback", url: "/warranty-portal" },
+  { id: 30009, title: "Live Auctions", url: "/live-auctions" }
 ];
 
 const fallbackSocialLinks: SocialLink[] = [
@@ -507,6 +509,7 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
       merchant_id: string | null;
       is_test_mode: boolean;
       provider_order_id: string | null;
+      pending_access_token?: string | null;
       checkout_url?: string | null;
     } | null;
   };
@@ -541,7 +544,7 @@ export async function verifyPayment(
   data: {
     order_number: string;
     payment_method: "razorpay" | "phonepe";
-    order_contact?: string;
+    access_token?: string;
     razorpay_payment_id?: string;
     razorpay_order_id?: string;
     razorpay_signature?: string;
@@ -575,7 +578,7 @@ export async function verifyPayment(
   }
 }
 
-export async function cancelOrder(orderNumber: string, token?: string, orderContact?: string): Promise<{ success: boolean; message: string }> {
+export async function cancelOrder(orderNumber: string, token?: string, accessToken?: string): Promise<{ success: boolean; message: string }> {
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -588,7 +591,7 @@ export async function cancelOrder(orderNumber: string, token?: string, orderCont
     const response = await fetch(`${API_BASE_URL}/checkout/cancel-order`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ order_number: orderNumber, order_contact: orderContact }),
+      body: JSON.stringify({ order_number: orderNumber, access_token: accessToken }),
       cache: "no-store"
     });
 
@@ -1027,4 +1030,3 @@ export async function subscribeNewsletter(email: string): Promise<{
     };
   }
 }
-

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { fetchAuction, fetchAuctionBids, placeBid, type Auction, type AuctionBid } from "../../../lib/auction-api";
+import { getStoredCustomerToken } from "../../../lib/customer-auth";
 
 function formatTimer(endAt: string) {
   const diff = new Date(endAt).getTime() - Date.now();
@@ -43,7 +44,7 @@ export default function AuctionDetailPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setToken(localStorage.getItem("customer_token"));
+      setToken(getStoredCustomerToken());
     }
   }, []);
 
@@ -182,7 +183,7 @@ export default function AuctionDetailPage() {
                 <div className="ad-winner-icon">🏆</div>
                 <div>
                   <p className="ad-winner-label">WINNING BID</p>
-                  <p className="ad-winner-amount">₹{auction.winner.bid.toLocaleString("en-IN")}</p>
+                  <p className="ad-winner-amount">₹{Number(auction.winner.bid || 0).toLocaleString("en-IN")}</p>
                 </div>
               </div>
             )}

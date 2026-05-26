@@ -8,10 +8,13 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const siteUrl = getSiteUrl(settings);
 
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/"
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin", "/admin/", "/account/", "/checkout", "/checkout/", "/api/", "/cart"],
+      },
+    ],
     sitemap: `${siteUrl}/sitemap.xml`
   };
 }

@@ -23,6 +23,13 @@ export type SiteSettings = {
   topbar_bg_color?: string | null;
   topbar_text_color?: string | null;
   topbar_offers?: string[];
+  payment_gateways?: PaymentGatewayPublic[];
+};
+
+export type PaymentGatewayPublic = {
+  provider: "cod" | "razorpay" | "phonepe" | "paytm" | string;
+  display_name: string;
+  is_test_mode?: boolean;
 };
 
 export type NavigationItem = {
@@ -208,4 +215,3 @@ export type BlogPost = {
   related_products?: Product[];
   related_posts?: BlogPost[];
 };
-

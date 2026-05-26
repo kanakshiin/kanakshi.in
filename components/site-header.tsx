@@ -36,6 +36,11 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openMobileSectionId, setOpenMobileSectionId] = useState<number | null>(null);
   const pathname = usePathname();
+  const isRegistryRoute =
+    pathname === "/warranty-portal" ||
+    pathname === "/warranty-status" ||
+    pathname === "/service-claim" ||
+    pathname === "/buyback-request";
   const { count } = useCart();
   const { count: wishlistCount } = useWishlist();
   const [cartPop, setCartPop] = useState(false);
@@ -103,6 +108,39 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
+
+  if (isRegistryRoute) {
+    return (
+      <header className="site-header registry-header">
+        <div className="container registry-header-shell">
+          <Link href="/" className="registry-brand-mark" aria-label={`${brandName} home`}>
+            <Image
+              src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"}
+              alt={brandName}
+              className="brand-logo"
+              width={150}
+              height={52}
+              priority
+              sizes="150px"
+            />
+          </Link>
+
+          <nav className="registry-header-nav" aria-label="Registry navigation">
+            <Link href="/warranty-portal?tab=register">Activate</Link>
+            <Link href="/warranty-portal?tab=status">Status</Link>
+            <Link href="/warranty-portal?tab=claim">Service Claim</Link>
+            <Link href="/warranty-portal?tab=buyback">Buyback</Link>
+          </nav>
+
+          <div className="registry-header-actions">
+            <Link href="/shop" className="registry-header-link">
+              Return to Storefront
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <>

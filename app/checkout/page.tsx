@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "../../components/cart-provider";
 import { getStoredCustomerToken, fetchCurrentCustomer } from "../../lib/customer-auth";
 import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
-import { Coupon, CustomerUser, SiteSettings } from "../../lib/types";
+import { Coupon, CustomerUser, PaymentGatewayPublic, SiteSettings } from "../../lib/types";
 
 async function loadRazorpayScript(): Promise<boolean> {
   if (typeof window !== "undefined" && (window as any).Razorpay) {
@@ -119,6 +119,7 @@ export default function CheckoutPage() {
     orderNumber: string;
     amount: number;
     method: "razorpay" | "phonepe";
+    accessToken?: string | null;
   } | null>(null);
 
   // Form states
@@ -169,6 +170,13 @@ export default function CheckoutPage() {
   // Submit states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const availableGateways = settings?.payment_gateways?.length
+    ? settings.payment_gateways
+    : [{ provider: "cod", display_name: "Cash on Delivery", is_test_mode: false } satisfies PaymentGatewayPublic];
+  const hasGateway = (provider: "cod" | "razorpay" | "phonepe") =>
+    availableGateways.some((gateway) => gateway.provider === provider);
+  const gatewayMeta = (provider: "cod" | "razorpay" | "phonepe") =>
+    availableGateways.find((gateway) => gateway.provider === provider);
 
   // Load configuration & user data
   useEffect(() => {
@@ -211,6 +219,15 @@ export default function CheckoutPage() {
     }
   }, [items, loadingConfig, router]);
 
+  useEffect(() => {
+    if (!hasGateway(paymentMethod)) {
+      const fallbackMethod = (["cod", "razorpay", "phonepe"] as const).find((provider) => hasGateway(provider));
+      if (fallbackMethod) {
+        setPaymentMethod(fallbackMethod);
+      }
+    }
+  }, [paymentMethod, settings]);
+
   if (loadingConfig || items.length === 0) {
     return (
       <main className="content-section auth-page" style={{ justifyContent: "center" }}>
@@ -224,6 +241,7 @@ export default function CheckoutPage() {
   }
 
   const currencySymbol = settings?.site_currency_symbol || "₹";
+  const freeShippingThreshold = Number(settings?.min_order_free_shipping || 499);
 
   // Compute subtotal, discount, shipping, and total amount
   let discountAmount = 0;
@@ -242,8 +260,7 @@ export default function CheckoutPage() {
   }
 
   const netSubtotal = subtotal - discountAmount;
-  // Free shipping above ₹999 net total
-  const shippingCost = netSubtotal >= 999 ? 0 : 99;
+  const shippingCost = netSubtotal >= freeShippingThreshold ? 0 : 99;
   const grandTotal = netSubtotal + shippingCost;
 
   // Handle coupon application
@@ -291,7 +308,7 @@ export default function CheckoutPage() {
       const verifyRes = await verifyPayment({
         order_number: activeSimulation.orderNumber,
         payment_method: activeSimulation.method,
-        order_contact: shipEmail || shipPhone,
+        access_token: activeSimulation.accessToken || undefined,
         razorpay_payment_id: activeSimulation.method === "razorpay" ? "pay_simulated_" + Math.random().toString(36).substring(7) : undefined,
         transaction_id: activeSimulation.method === "phonepe" ? "txn_simulated_" + Math.random().toString(36).substring(7) : undefined,
       }, token);
@@ -318,7 +335,7 @@ export default function CheckoutPage() {
     const token = getStoredCustomerToken() || undefined;
 
     try {
-      const cancelRes = await cancelOrder(activeSimulation.orderNumber, token, shipEmail || shipPhone);
+      const cancelRes = await cancelOrder(activeSimulation.orderNumber, token, activeSimulation.accessToken || undefined);
       setError(
         cancelRes.success
           ? "Payment cancelled. Your reserved items have been restored to stock."
@@ -388,7 +405,7 @@ export default function CheckoutPage() {
         router.push(`/checkout/success?order_number=${res.data.order_number}`);
       } else {
         const config = res.data.gateway_config;
-        const orderContact = res.data.ship_email || res.data.ship_phone;
+        const pendingAccessToken = config?.pending_access_token || undefined;
 
         // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
         if (
@@ -412,7 +429,7 @@ export default function CheckoutPage() {
                   const verifyRes = await verifyPayment({
                     order_number: res.data!.order_number,
                     payment_method: "razorpay",
-                    order_contact: orderContact,
+                    access_token: pendingAccessToken,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_signature: response.razorpay_signature,
@@ -433,7 +450,7 @@ export default function CheckoutPage() {
                     const cancelRes = await cancelOrder(
                       res.data!.order_number,
                       token,
-                      orderContact
+                      pendingAccessToken
                     );
                     setError(
                       cancelRes.success
@@ -457,14 +474,14 @@ export default function CheckoutPage() {
               return;
             } catch (err) {
               console.error("Razorpay SDK initialization failed:", err);
-              await cancelOrder(res.data.order_number, token, orderContact);
+              await cancelOrder(res.data.order_number, token, pendingAccessToken);
               setError("Razorpay could not start properly. Please try again or choose another payment method.");
               setIsSubmitting(false);
               return;
             }
           }
 
-          await cancelOrder(res.data.order_number, token, orderContact);
+          await cancelOrder(res.data.order_number, token, pendingAccessToken);
           setError("Razorpay checkout could not load right now. Please try again or choose Cash on Delivery.");
           setIsSubmitting(false);
           return;
@@ -484,12 +501,13 @@ export default function CheckoutPage() {
           setActiveSimulation({
             orderNumber: res.data.order_number,
             amount: res.data.total_amount,
-            method: paymentMethod
+            method: paymentMethod,
+            accessToken: pendingAccessToken
           });
           return;
         }
 
-        await cancelOrder(res.data.order_number, token, orderContact);
+        await cancelOrder(res.data.order_number, token, pendingAccessToken);
         setError("This payment method is not available right now. Please choose another option.");
         setIsSubmitting(false);
       }
@@ -508,7 +526,7 @@ export default function CheckoutPage() {
           <p className="eyebrow">Secure Gateway</p>
           <h1 className="page-title" style={{ fontSize: "2.8rem", marginBottom: "0.5rem" }}>Checkout</h1>
           <p className="shop-intro" style={{ maxWidth: "600px", margin: "0 auto" }}>
-            Complete your order below. Free shipping is automatically applied to orders above ₹999.
+            Complete your order below. Free shipping is automatically applied to orders above ₹499.
           </p>
         </div>
 
@@ -675,6 +693,7 @@ export default function CheckoutPage() {
               <div style={{ display: "grid", gap: "1rem" }}>
                 
                 {/* Cash on Delivery */}
+                {hasGateway("cod") && (
                 <label
                   style={{
                     display: "flex",
@@ -701,8 +720,10 @@ export default function CheckoutPage() {
                     <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay with cash upon delivery. Recommended & fully functional gateway.</span>
                   </div>
                 </label>
+                )}
 
                 {/* Razorpay */}
+                {hasGateway("razorpay") && (
                 <label
                   style={{
                     display: "flex",
@@ -727,13 +748,17 @@ export default function CheckoutPage() {
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>Razorpay (Cards / UPI / NetBanking)</strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>Secure</span>
+                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
+                        {gatewayMeta("razorpay")?.is_test_mode ? "Test Mode" : "Secure"}
+                      </span>
                     </div>
                     <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay securely via Credit Card, Debit Card, NetBanking, UPI, or wallets. Test mode will use a safe simulation automatically.</span>
                   </div>
                 </label>
+                )}
 
                 {/* PhonePe */}
+                {hasGateway("phonepe") && (
                 <label
                   style={{
                     display: "flex",
@@ -758,11 +783,14 @@ export default function CheckoutPage() {
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>PhonePe UPI Gateway</strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>UPI</span>
+                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
+                        {gatewayMeta("phonepe")?.is_test_mode ? "Test Mode" : "UPI"}
+                      </span>
                     </div>
                     <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay through PhonePe checkout. In test mode the order uses a safe prepaid simulation.</span>
                   </div>
                 </label>
+                )}
               </div>
             </div>
           </div>
@@ -864,7 +892,7 @@ export default function CheckoutPage() {
 
                 {shippingCost > 0 && (
                   <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
-                    Add pieces worth {formatPrice(999 - netSubtotal, currencySymbol)} more for free delivery!
+                    Add pieces worth {formatPrice(freeShippingThreshold - netSubtotal, currencySymbol)} more for free delivery!
                   </p>
                 )}
               </div>

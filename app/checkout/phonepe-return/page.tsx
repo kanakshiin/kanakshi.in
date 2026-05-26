@@ -17,7 +17,7 @@ function PhonePeReturnContent() {
 
   useEffect(() => {
     const orderNumber = searchParams.get("order_number") || "";
-    const orderContact = searchParams.get("contact") || "";
+    const accessToken = searchParams.get("access_token") || "";
     const token = getStoredCustomerToken() || undefined;
 
     if (!orderNumber) {
@@ -32,7 +32,7 @@ function PhonePeReturnContent() {
       {
         order_number: orderNumber,
         payment_method: "phonepe",
-        order_contact: orderContact || undefined,
+        access_token: accessToken || undefined,
       },
       token
     ).then((result) => {
@@ -95,4 +95,3 @@ export default function PhonePeReturnPage() {
     </Suspense>
   );
 }
-

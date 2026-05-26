@@ -1,7 +1,7 @@
 "use client";
 // Theme: Little Divinity — accent #f1a720 golden, text #191919, bg #f7f2ea
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   searchRegistryProducts,
@@ -14,16 +14,20 @@ import {
 /* ─────────────────────────────────────────────
    PAGE SHELL — full-height, no scroll
 ───────────────────────────────────────────── */
-export default function WarrantyPortalPage() {
+function WarrantyPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") || "register") as TabKey;
+  const initialTab = normalizeTab(searchParams.get("tab"));
   const codeParam = searchParams.get("code") || "";
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   const changeTab = (t: TabKey) => {
     setTab(t);
-    router.replace(`/warranty-portal?tab=${t}${codeParam ? `&code=${codeParam}` : ""}`);
+    const params = new URLSearchParams({ tab: t });
+    if (codeParam) {
+      params.set("code", codeParam);
+    }
+    router.replace(`/warranty-portal?${params.toString()}`);
   };
 
   /* Left-panel copy per tab */
@@ -113,10 +117,22 @@ export default function WarrantyPortalPage() {
   );
 }
 
+export default function WarrantyPortalPage() {
+  return (
+    <Suspense fallback={<RegistryPageFallback />}>
+      <WarrantyPortalContent />
+    </Suspense>
+  );
+}
+
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
 type TabKey = "register" | "status" | "claim" | "buyback";
+
+function normalizeTab(value: string | null): TabKey {
+  return value === "status" || value === "claim" || value === "buyback" ? value : "register";
+}
 
 const TAB_LABELS: Record<TabKey, string> = {
   register: "Activate Guarantee",
@@ -167,6 +183,30 @@ function SubmitBtn({ loading, label, loadingLabel }: { loading: boolean; label: 
     <button type="submit" disabled={loading} className="wp-submit">
       {loading ? <><span className="wp-spinner" /> {loadingLabel}</> : label}
     </button>
+  );
+}
+
+function RegistryPageFallback() {
+  return (
+    <div className="wp-shell">
+      <aside className="wp-left">
+        <div className="wp-left-inner">
+          <p className="wp-eyebrow">
+            <span className="wp-eyebrow-icon">🛡</span> OFFICIAL VERIFICATION REGISTRY
+          </p>
+          <h1 className="wp-heading">Preparing Registry Portal</h1>
+          <p className="wp-body">Loading your registration, service, and buyback workspace.</p>
+        </div>
+      </aside>
+      <main className="wp-right">
+        <div className="wp-form-area">
+          <div className="wp-success">
+            <div className="wp-spinner" />
+            <p style={{ marginTop: "1rem" }}>Loading portal…</p>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
 

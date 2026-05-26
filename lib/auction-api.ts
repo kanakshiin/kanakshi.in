@@ -19,7 +19,7 @@ export interface Auction {
   total_participants: number;
   product: { id: number; name: string; slug: string; images?: any; description?: string } | null;
   description?: string;
-  winner?: { bid: number } | null;
+  winner?: { name?: string | null; bid?: number | null } | null;
 }
 
 export interface AuctionBid {
@@ -29,11 +29,38 @@ export interface AuctionBid {
   placed_at: string;
 }
 
+function normalizeAuction(raw: any): Auction {
+  return {
+    id: Number(raw?.id || 0),
+    title: String(raw?.title || ""),
+    status: raw?.status || "draft",
+    image_url: raw?.image_url || null,
+    start_price: Number(raw?.start_price || 0),
+    current_bid: Number(raw?.current_bid || 0),
+    minimum_next_bid: Number(raw?.minimum_next_bid || 0),
+    min_bid_increment: Number(raw?.min_bid_increment || 0),
+    start_at: String(raw?.start_at || ""),
+    end_at: String(raw?.end_at || ""),
+    seconds_left: Number(raw?.seconds_left || 0),
+    total_bids: Number(raw?.total_bids || 0),
+    total_participants: Number(raw?.total_participants || 0),
+    product: raw?.product || null,
+    description: raw?.description || undefined,
+    winner: raw?.winner || raw?.winning_bid
+      ? {
+          name: raw?.winner?.name || null,
+          bid: raw?.winner?.bid != null ? Number(raw.winner.bid) : raw?.winning_bid != null ? Number(raw.winning_bid) : null,
+        }
+      : null,
+  };
+}
+
 export async function fetchAuctions(filter = "all"): Promise<Auction[]> {
   try {
     const res = await fetch(`${API_BASE_URL}/auctions?filter=${filter}`, { cache: "no-store" });
     const data = await res.json();
-    return data.success ? data.auctions : [];
+    const auctions = Array.isArray(data?.data) ? data.data : [];
+    return data.success ? auctions.map(normalizeAuction) : [];
   } catch { return []; }
 }
 
@@ -41,7 +68,7 @@ export async function fetchAuction(id: number): Promise<Auction | null> {
   try {
     const res = await fetch(`${API_BASE_URL}/auctions/${id}`, { cache: "no-store" });
     const data = await res.json();
-    return data.success ? data.auction : null;
+    return data.success && data?.data ? normalizeAuction(data.data) : null;
   } catch { return null; }
 }
 
@@ -49,8 +76,21 @@ export async function fetchAuctionBids(id: number): Promise<{ bids: AuctionBid[]
   try {
     const res = await fetch(`${API_BASE_URL}/auctions/${id}/bids`, { cache: "no-store" });
     const data = await res.json();
+    const bids = Array.isArray(data?.data)
+      ? data.data.map((bid: any) => ({
+          masked_name: String(bid?.bidder || "Anonymous"),
+          amount: Number(bid?.amount || 0),
+          is_winning: Boolean(bid?.is_winning),
+          placed_at: String(bid?.placed_at || ""),
+        }))
+      : [];
+
     return data.success
-      ? { bids: data.bids, total_bids: data.total_bids, total_participants: data.total_participants }
+      ? {
+          bids,
+          total_bids: Number(data?.meta?.total_bids || bids.length),
+          total_participants: Number(data?.meta?.total_participants || new Set(bids.map((bid: AuctionBid) => bid.masked_name)).size),
+        }
       : { bids: [], total_bids: 0, total_participants: 0 };
   } catch { return { bids: [], total_bids: 0, total_participants: 0 }; }
 }

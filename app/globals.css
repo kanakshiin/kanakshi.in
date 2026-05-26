@@ -65,6 +65,61 @@ img {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.registry-header {
+  background: rgba(255, 251, 245, 0.96);
+  border-bottom: 1px solid rgba(107, 72, 44, 0.1);
+}
+
+.registry-header-shell {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 78px;
+  padding: 0.85rem 0;
+}
+
+.registry-brand-mark {
+  display: inline-flex;
+  align-items: center;
+}
+
+.registry-header-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.35rem;
+  flex-wrap: wrap;
+}
+
+.registry-header-nav a,
+.registry-header-link {
+  color: rgba(25, 25, 25, 0.84);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 220ms ease;
+}
+
+.registry-header-nav a:hover,
+.registry-header-link:hover {
+  color: #8e5b39;
+}
+
+.registry-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.registry-header-link {
+  padding: 0.78rem 1.1rem;
+  border: 1px solid rgba(107, 72, 44, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
 .top-offer-bar {
   position: relative;
   display: flex;
@@ -133,6 +188,40 @@ img {
   align-items: center;
   gap: 1.5rem;
   height: 80px;
+}
+
+.registry-footer {
+  border-top: 1px solid rgba(107, 72, 44, 0.1);
+  background: linear-gradient(180deg, rgba(254, 250, 243, 0.98) 0%, rgba(248, 242, 233, 0.98) 100%);
+}
+
+.registry-footer-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 0 1.1rem;
+}
+
+.registry-footer-shell p {
+  margin: 0.45rem 0 0;
+  max-width: 700px;
+  color: rgba(25, 25, 25, 0.72);
+  line-height: 1.6;
+}
+
+.registry-footer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 72, 44, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .brand-mark,
@@ -6027,6 +6116,26 @@ h3 {
 }
 
 @media (max-width: 768px) {
+  .registry-header-shell {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .registry-header-nav {
+    gap: 0.9rem;
+  }
+
+  .registry-header-nav a,
+  .registry-header-link {
+    font-size: 0.82rem;
+  }
+
+  .registry-footer-shell {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .breadcrumbs {
     padding: 0.75rem 0;
     margin-bottom: 1.5rem;

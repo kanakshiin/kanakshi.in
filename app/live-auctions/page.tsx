@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { fetchAuctions, type Auction } from "../../lib/auction-api";
+import { getStoredCustomerToken } from "../../lib/customer-auth";
 
 type Filter = "all" | "live" | "upcoming" | "ended";
 
@@ -86,7 +87,7 @@ export default function LiveAuctionsPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setHasToken(!!localStorage.getItem("customer_token"));
+      setHasToken(!!getStoredCustomerToken());
     }
     setLoading(true);
     load();
