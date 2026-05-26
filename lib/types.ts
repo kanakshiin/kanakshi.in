@@ -16,9 +16,13 @@ export type SiteSettings = {
   pincode?: string;
   country?: string;
   custom_domain?: string;
+  google_tag_manager_id?: string | null;
+  facebook_pixel_id?: string | null;
   logo_url?: string | null;
   favicon_url?: string | null;
   footer_copyright_text?: string | null;
+  custom_header_scripts?: string | null;
+  custom_footer_scripts?: string | null;
   show_topbar?: boolean;
   topbar_bg_color?: string | null;
   topbar_text_color?: string | null;
