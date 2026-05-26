@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { resendCustomerVerificationOtp, storeCustomerToken, verifyCustomerEmailOtp } from "../../lib/customer-auth";
+import { isValidEmailInput, normalizeEmailInput } from "../../lib/form-inputs";
 
 type VerifyEmailFormProps = {
   initialEmail: string;
@@ -18,15 +19,21 @@ export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const emailInvalid = email.length > 0 && !isValidEmailInput(email);
 
   async function handleVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setStatus(null);
 
     try {
-      const data = await verifyCustomerEmailOtp({ email, code });
+      const data = await verifyCustomerEmailOtp({ email: normalizeEmailInput(email), code });
       storeCustomerToken(data.token);
       router.push("/account");
       router.refresh();
@@ -38,12 +45,17 @@ export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
   }
 
   async function handleResend() {
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setResending(true);
     setError(null);
     setStatus(null);
 
     try {
-      await resendCustomerVerificationOtp(email);
+      await resendCustomerVerificationOtp(normalizeEmailInput(email));
       setStatus("A new OTP has been sent to your email.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to resend OTP.");
@@ -60,7 +72,19 @@ export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
       <form className="auth-form" onSubmit={handleVerify}>
         <label className="auth-field">
           <span>Email</span>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            spellCheck={false}
+            className={emailInvalid ? "input-invalid" : ""}
+            aria-invalid={emailInvalid}
+            value={email}
+            onChange={(event) => setEmail(normalizeEmailInput(event.target.value))}
+            placeholder="name@example.com"
+            required
+          />
+          {emailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
         </label>
         <label className="auth-field">
           <span>OTP</span>

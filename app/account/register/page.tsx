@@ -7,6 +7,7 @@ import { FormEvent, useState, Suspense } from "react";
 import { PasswordField } from "../../../components/account/password-field";
 import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
 import { fetchCustomerAuthConfig, registerCustomer } from "../../../lib/customer-auth";
+import { formatIndianPhone, isValidEmailInput, normalizeEmailInput, normalizeIndianPhone } from "../../../lib/form-inputs";
 
 function RegisterForm() {
   const router = useRouter();
@@ -24,16 +25,32 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
 
   const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/account");
+  const emailInvalid = form.email.length > 0 && !isValidEmailInput(form.email);
+  const phoneInvalid = form.phone.length > 0 && form.phone.length < 10;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (form.phone && form.phone.length < 10) {
+      setError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setHelper(null);
 
     try {
       await fetchCustomerAuthConfig();
-      const data = await registerCustomer(form);
+      const data = await registerCustomer({
+        ...form,
+        email: normalizeEmailInput(form.email),
+        phone: normalizeIndianPhone(form.phone),
+      });
       if (data.requires_verification) {
         router.push(`/account/verify-email?email=${encodeURIComponent(form.email)}`);
         return;
@@ -62,11 +79,37 @@ function RegisterForm() {
             </label>
             <label className="auth-field">
               <span>Email</span>
-              <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                spellCheck={false}
+                className={emailInvalid ? "input-invalid" : ""}
+                aria-invalid={emailInvalid}
+                value={form.email}
+                onChange={(event) => setForm((current) => ({ ...current, email: normalizeEmailInput(event.target.value) }))}
+                placeholder="name@example.com"
+                required
+              />
+              {emailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
             </label>
             <label className="auth-field">
               <span>Phone</span>
-              <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                pattern="[6-9][0-9]{9}"
+                maxLength={10}
+                className={phoneInvalid ? "input-invalid" : ""}
+                aria-invalid={phoneInvalid}
+                value={formatIndianPhone(form.phone)}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, phone: normalizeIndianPhone(event.target.value) }))
+                }
+                placeholder="10-digit mobile number"
+              />
+              {phoneInvalid ? <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p> : null}
             </label>
             <PasswordField
               label="Password"

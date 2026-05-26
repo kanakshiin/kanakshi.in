@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
 import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken } from "../../lib/customer-auth";
+import { fetchPincodeLocation, formatIndianPhone, isValidEmailInput, isValidIndianPhone, normalizeEmailInput, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
 import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
 import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, SiteSettings } from "../../lib/types";
 
@@ -138,6 +139,8 @@ export default function CheckoutPage() {
   const [customCityActive, setCustomCityActive] = useState(false);
   const [customCityValue, setCustomCityValue] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
+  const pincodeLookupRef = useRef<string>("");
 
   const handleStateChange = (stateVal: string) => {
     setShipState(stateVal);
@@ -163,24 +166,28 @@ export default function CheckoutPage() {
     setShipCity(val);
   };
 
+  const applyPincodeLocation = (state: string, city: string) => {
+    setShipState(state);
+    if (state && INDIAN_STATES_AND_CITIES[state]?.includes(city)) {
+      setCustomCityActive(false);
+      setCustomCityValue("");
+      setShipCity(city);
+      return;
+    }
+
+    setCustomCityActive(true);
+    setCustomCityValue(city);
+    setShipCity(city);
+  };
+
   const applySavedAddress = (address: CustomerAddress) => {
     setSelectedAddressId(address.id);
     setShipName(address.recipient_name || user?.name || "");
     setShipEmail(user?.email || shipEmail);
     setShipPhone(address.phone || user?.phone || "");
     setShipAddress([address.address_line1, address.address_line2].filter(Boolean).join(", "));
-    setShipCity(address.city || "");
-    setShipPincode(address.pincode || "");
-    handleStateChange(address.state || "");
-    if (address.state && INDIAN_STATES_AND_CITIES[address.state]?.includes(address.city)) {
-      setCustomCityActive(false);
-      setCustomCityValue("");
-      setShipCity(address.city);
-    } else if (address.city) {
-      setCustomCityActive(true);
-      setCustomCityValue(address.city);
-      setShipCity(address.city);
-    }
+    setShipPincode(normalizeIndianPincode(address.pincode || ""));
+    applyPincodeLocation(address.state || "", address.city || "");
   };
 
   // Coupon states
@@ -258,6 +265,42 @@ export default function CheckoutPage() {
     }
   }, [paymentMethod, settings]);
 
+  useEffect(() => {
+    const normalizedPincode = normalizeIndianPincode(shipPincode);
+
+    if (normalizedPincode.length !== 6 || normalizedPincode === pincodeLookupRef.current) {
+      if (normalizedPincode.length < 6) {
+        setPincodeStatus(null);
+      }
+      return;
+    }
+
+    let active = true;
+    pincodeLookupRef.current = normalizedPincode;
+    setPincodeStatus("Looking up city and state from pincode…");
+
+    fetchPincodeLocation(normalizedPincode)
+      .then((location) => {
+        if (!active) {
+          return;
+        }
+
+        applyPincodeLocation(location.state, location.city);
+        setPincodeStatus("City and state auto-filled from pincode.");
+      })
+      .catch((err) => {
+        if (!active) {
+          return;
+        }
+
+        setPincodeStatus(err instanceof Error ? err.message : "Unable to auto-fill city/state right now.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [shipPincode]);
+
   if (loadingConfig || items.length === 0) {
     return (
       <main className="content-section auth-page" style={{ justifyContent: "center" }}>
@@ -272,6 +315,8 @@ export default function CheckoutPage() {
 
   const currencySymbol = settings?.site_currency_symbol || "₹";
   const freeShippingThreshold = Number(settings?.min_order_free_shipping || 499);
+  const shipEmailInvalid = shipEmail.length > 0 && !isValidEmailInput(shipEmail);
+  const shipPhoneInvalid = shipPhone.length > 0 && !isValidIndianPhone(shipPhone);
 
   // Compute subtotal, discount, shipping, and total amount
   let discountAmount = 0;
@@ -386,6 +431,12 @@ export default function CheckoutPage() {
     setError(null);
     setIsSubmitting(true);
 
+    if (shipEmailInvalid) {
+      setError("Please enter a valid email address.");
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!shipName || !shipEmail || !shipPhone || !shipAddress || !shipCity || !shipState || !shipPincode) {
       setError("Please fill out all required shipping fields.");
       setIsSubmitting(false);
@@ -393,14 +444,14 @@ export default function CheckoutPage() {
     }
 
     // Phone validation: 10-digit Indian mobile
-    if (!/^[6-9][0-9]{9}$/.test(shipPhone.trim())) {
+    if (!isValidIndianPhone(shipPhone)) {
       setError("Please enter a valid 10-digit Indian mobile number (starting with 6-9).");
       setIsSubmitting(false);
       return;
     }
 
     // Pincode validation: 6-digit Indian PIN
-    if (!/^[1-9][0-9]{5}$/.test(shipPincode.trim())) {
+    if (!/^[1-9][0-9]{5}$/.test(normalizeIndianPincode(shipPincode))) {
       setError("Please enter a valid 6-digit PIN code.");
       setIsSubmitting(false);
       return;
@@ -410,12 +461,12 @@ export default function CheckoutPage() {
 
     const orderData = {
       ship_name: shipName,
-      ship_email: shipEmail,
-      ship_phone: shipPhone,
+      ship_email: normalizeEmailInput(shipEmail),
+      ship_phone: normalizeIndianPhone(shipPhone),
       ship_address: shipAddress,
       ship_city: shipCity,
       ship_state: shipState,
-      ship_pincode: shipPincode,
+      ship_pincode: normalizeIndianPincode(shipPincode),
       payment_method: paymentMethod,
       coupon_code: appliedCoupon ? appliedCoupon.code : undefined,
       notes: notes || undefined,
@@ -623,11 +674,17 @@ export default function CheckoutPage() {
                   <input
                     id="ship-email"
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    spellCheck={false}
                     required
+                    className={shipEmailInvalid ? "input-invalid" : ""}
+                    aria-invalid={shipEmailInvalid}
                     value={shipEmail}
-                    onChange={(e) => setShipEmail(e.target.value)}
+                    onChange={(e) => setShipEmail(normalizeEmailInput(e.target.value))}
                     placeholder="name@example.com"
                   />
+                  {shipEmailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
                 </div>
 
                 <div className="auth-field">
@@ -635,13 +692,18 @@ export default function CheckoutPage() {
                   <input
                     id="ship-phone"
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
                     required
                     maxLength={10}
                     pattern="[6-9][0-9]{9}"
-                    value={shipPhone}
-                    onChange={(e) => setShipPhone(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                    className={shipPhoneInvalid ? "input-invalid" : ""}
+                    aria-invalid={shipPhoneInvalid}
+                    value={formatIndianPhone(shipPhone)}
+                    onChange={(e) => setShipPhone(normalizeIndianPhone(e.target.value))}
                     placeholder="10-digit mobile number"
                   />
+                  {shipPhoneInvalid ? <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p> : null}
                 </div>
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
@@ -710,13 +772,16 @@ export default function CheckoutPage() {
                   <input
                     id="ship-pincode"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
                     required
                     maxLength={6}
                     pattern="[1-9][0-9]{5}"
                     value={shipPincode}
-                    onChange={(e) => setShipPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                    onChange={(e) => setShipPincode(normalizeIndianPincode(e.target.value))}
                     placeholder="6-digit PIN code"
                   />
+                  {pincodeStatus ? <p className={pincodeStatus.toLowerCase().includes("unable") ? "auth-field-error" : "auth-field-success"}>{pincodeStatus}</p> : null}
                 </div>
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>

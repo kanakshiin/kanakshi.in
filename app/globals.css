@@ -2771,6 +2771,13 @@ h3 {
   box-shadow: 0 0 0 4px rgba(241, 167, 32, 0.12);
 }
 
+.auth-field input.input-invalid,
+.auth-field textarea.input-invalid,
+.auth-field select.input-invalid {
+  border-color: #b53a2c;
+  box-shadow: 0 0 0 3px rgba(181, 58, 44, 0.12);
+}
+
 .auth-field select {
   min-height: 54px;
   padding: 0 2.5rem 0 1rem;
@@ -2801,6 +2808,22 @@ h3 {
   opacity: 0.6;
   cursor: not-allowed;
   background-color: #f7f2ea;
+}
+
+.auth-field-error,
+.auth-field-success {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.auth-field-error {
+  color: #b53a2c;
+}
+
+.auth-field-success {
+  color: #226643;
 }
 
 .auth-inline-action {

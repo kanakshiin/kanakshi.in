@@ -7,6 +7,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { PasswordField } from "../../../components/account/password-field";
 import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
 import { fetchCustomerAuthConfig, resetCustomerPassword, sendCustomerForgotPasswordOtp } from "../../../lib/customer-auth";
+import { isValidEmailInput, normalizeEmailInput } from "../../../lib/form-inputs";
 import { CustomerAuthConfig } from "../../../lib/types";
 
 function ForgotPasswordForm() {
@@ -60,9 +61,15 @@ function ForgotPasswordForm() {
   }, []);
 
   const passwordResetAvailable = Boolean(config?.customer_email_active && config?.email_otp_enabled);
+  const emailInvalid = email.length > 0 && !isValidEmailInput(email);
 
   async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     if (!passwordResetAvailable) {
       setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
       return;
@@ -73,7 +80,7 @@ function ForgotPasswordForm() {
     setStatus(null);
 
     try {
-      await sendCustomerForgotPasswordOtp(email);
+      await sendCustomerForgotPasswordOtp(normalizeEmailInput(email));
       setOtpSent(true);
       setStatus("A reset OTP has been sent to your email. Enter the OTP below and choose your new password.");
     } catch (err) {
@@ -87,6 +94,11 @@ function ForgotPasswordForm() {
     event.preventDefault();
     if (!passwordResetAvailable) {
       setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      return;
+    }
+
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
       return;
     }
 
@@ -106,7 +118,7 @@ function ForgotPasswordForm() {
 
     try {
       await resetCustomerPassword({
-        email,
+        email: normalizeEmailInput(email),
         code,
         password,
         password_confirmation: passwordConfirmation
@@ -134,11 +146,17 @@ function ForgotPasswordForm() {
                   <span>Email</span>
                   <input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    spellCheck={false}
+                    className={emailInvalid ? "input-invalid" : ""}
+                    aria-invalid={emailInvalid}
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => setEmail(normalizeEmailInput(event.target.value))}
                     required
                     placeholder="Enter your registered email"
                   />
+                  {emailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
                 </label>
                 <button type="submit" className="secondary-button auth-inline-button" disabled={loading || configLoading || !passwordResetAvailable}>
                   {loading && !otpSent ? "Sending…" : otpSent ? "Resend OTP" : "Send Reset OTP"}

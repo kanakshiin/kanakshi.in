@@ -7,6 +7,7 @@ import { FormEvent, useState, Suspense } from "react";
 import { PasswordField } from "../../../components/account/password-field";
 import { sanitizeRedirectPath } from "../../../lib/auth-redirect";
 import { loginCustomer, storeCustomerToken } from "../../../lib/customer-auth";
+import { isValidEmailInput, normalizeEmailInput } from "../../../lib/form-inputs";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,14 +19,20 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/account");
+  const emailInvalid = email.length > 0 && !isValidEmailInput(email);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (emailInvalid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const data = await loginCustomer({ email, password });
+      const data = await loginCustomer({ email: normalizeEmailInput(email), password });
       storeCustomerToken(data.token);
       router.push(redirect);
       router.refresh();
@@ -50,7 +57,19 @@ function LoginForm() {
           <form className="auth-form" onSubmit={handleSubmit}>
             <label className="auth-field">
               <span>Email</span>
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                spellCheck={false}
+                className={emailInvalid ? "input-invalid" : ""}
+                aria-invalid={emailInvalid}
+                value={email}
+                onChange={(event) => setEmail(normalizeEmailInput(event.target.value))}
+                placeholder="name@example.com"
+                required
+              />
+              {emailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
             </label>
             <PasswordField
               label="Password"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   clearCustomerToken,
@@ -14,6 +14,7 @@ import {
   updateCustomerAddress
 } from "../../lib/customer-auth";
 import { getCustomerOrders, getCustomerOrderDetail, formatPrice, requestCustomerOrderReturn, resolveAssetUrl } from "../../lib/api";
+import { fetchPincodeLocation, formatIndianPhone, isValidIndianPhone, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
 import { CustomerAddress, CustomerUser } from "../../lib/types";
 
 // Type definitions matching CustomerOrderController responses
@@ -128,6 +129,8 @@ export default function AccountPage() {
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
   const [addressFeedback, setAddressFeedback] = useState<string | null>(null);
+  const [addressPincodeStatus, setAddressPincodeStatus] = useState<string | null>(null);
+  const addressPincodeLookupRef = useRef<string>("");
 
   // Orders states
   const [orders, setOrders] = useState<OrderSummary[]>([]);
@@ -222,16 +225,22 @@ export default function AccountPage() {
       return;
     }
 
+    if (addressForm.phone && !isValidIndianPhone(addressForm.phone)) {
+      setAddressFeedback("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+
     setAddressLoading(true);
     setAddressFeedback(null);
 
     try {
       const payload = {
         ...addressForm,
-        phone: addressForm.phone || null,
+        phone: normalizeIndianPhone(addressForm.phone) || null,
         address_line2: addressForm.address_line2 || null,
         landmark: addressForm.landmark || null,
         label: addressForm.label || null,
+        pincode: normalizeIndianPincode(addressForm.pincode),
       };
 
       const nextAddresses = editingAddressId
@@ -247,6 +256,47 @@ export default function AccountPage() {
       setAddressLoading(false);
     }
   }
+
+  useEffect(() => {
+    const normalizedPincode = normalizeIndianPincode(addressForm.pincode);
+
+    if (normalizedPincode.length !== 6 || normalizedPincode === addressPincodeLookupRef.current) {
+      if (normalizedPincode.length < 6) {
+        setAddressPincodeStatus(null);
+      }
+      return;
+    }
+
+    let active = true;
+    addressPincodeLookupRef.current = normalizedPincode;
+    setAddressPincodeStatus("Looking up city and state from pincode…");
+
+    fetchPincodeLocation(normalizedPincode)
+      .then((location) => {
+        if (!active) {
+          return;
+        }
+
+        setAddressForm((current) => ({
+          ...current,
+          pincode: normalizedPincode,
+          city: location.city || current.city,
+          state: location.state || current.state,
+        }));
+        setAddressPincodeStatus("City and state auto-filled from pincode.");
+      })
+      .catch((err) => {
+        if (!active) {
+          return;
+        }
+
+        setAddressPincodeStatus(err instanceof Error ? err.message : "Unable to auto-fill city/state right now.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [addressForm.pincode]);
 
   async function handleDeleteAddress(addressId: number) {
     const token = getStoredCustomerToken();
@@ -490,7 +540,21 @@ export default function AccountPage() {
                     </div>
                     <div className="auth-field">
                       <span>Phone</span>
-                      <input value={addressForm.phone} onChange={(event) => setAddressForm((current) => ({ ...current, phone: event.target.value.replace(/[^0-9]/g, "").slice(0, 10) }))} placeholder="10-digit mobile number" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        pattern="[6-9][0-9]{9}"
+                        maxLength={10}
+                        className={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone) ? "input-invalid" : ""}
+                        aria-invalid={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone)}
+                        value={formatIndianPhone(addressForm.phone)}
+                        onChange={(event) => setAddressForm((current) => ({ ...current, phone: normalizeIndianPhone(event.target.value) }))}
+                        placeholder="10-digit mobile number"
+                      />
+                      {addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone) ? (
+                        <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p>
+                      ) : null}
                     </div>
                     <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                       <span>Address Line 1 *</span>
@@ -510,7 +574,15 @@ export default function AccountPage() {
                     </div>
                     <div className="auth-field">
                       <span>Pincode *</span>
-                      <input value={addressForm.pincode} onChange={(event) => setAddressForm((current) => ({ ...current, pincode: event.target.value.replace(/[^0-9]/g, "").slice(0, 6) }))} />
+                      <input
+                        inputMode="numeric"
+                        pattern="[1-9][0-9]{5}"
+                        maxLength={6}
+                        value={addressForm.pincode}
+                        onChange={(event) => setAddressForm((current) => ({ ...current, pincode: normalizeIndianPincode(event.target.value) }))}
+                        placeholder="6-digit pincode"
+                      />
+                      {addressPincodeStatus ? <p className={addressPincodeStatus.toLowerCase().includes("unable") ? "auth-field-error" : "auth-field-success"}>{addressPincodeStatus}</p> : null}
                     </div>
                     <div className="auth-field">
                       <span>Landmark</span>
