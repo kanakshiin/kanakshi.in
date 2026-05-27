@@ -11,13 +11,7 @@ export function normalizeIndianPhone(value: string): string {
 }
 
 export function formatIndianPhone(value: string): string {
-  const digits = normalizeIndianPhone(value);
-
-  if (digits.length <= 5) {
-    return digits;
-  }
-
-  return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+  return normalizeIndianPhone(value);
 }
 
 export function isValidIndianPhone(value: string): boolean {
