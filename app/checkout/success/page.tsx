@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { getSettings } from "../../../lib/api";
+import { getCustomerOrderDetail, getSettings } from "../../../lib/api";
+import { getStoredCustomerToken } from "../../../lib/customer-auth";
 import { SiteSettings } from "../../../lib/types";
 
 function SuccessReceiptContent() {
@@ -12,16 +13,55 @@ function SuccessReceiptContent() {
   
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loadingOrder, setLoadingOrder] = useState(true);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [order, setOrder] = useState<Awaited<ReturnType<typeof getCustomerOrderDetail>>["data"] | null>(null);
 
   useEffect(() => {
     getSettings().then(setSettings).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    async function loadOrder() {
+      if (!orderNumber) {
+        setLoadingOrder(false);
+        return;
+      }
+
+      const token = getStoredCustomerToken();
+      if (!token) {
+        setLoadingOrder(false);
+        return;
+      }
+
+      try {
+        const result = await getCustomerOrderDetail(token, orderNumber);
+        if (result.success && result.data) {
+          setOrder(result.data);
+        } else {
+          setOrderError(result.message || "We could not load your order details right now.");
+        }
+      } catch (error) {
+        setOrderError("We could not load your order details right now.");
+      } finally {
+        setLoadingOrder(false);
+      }
+    }
+
+    loadOrder();
+  }, [orderNumber]);
 
   const handleCopy = () => {
     if (orderNumber) {
       navigator.clipboard.writeText(orderNumber);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.print();
     }
   };
 
@@ -32,6 +72,13 @@ function SuccessReceiptContent() {
     month: "short",
     year: "numeric"
   });
+  const currencySymbol = settings?.site_currency_symbol || "₹";
+  const orderStatus = order?.status ? order.status.replace(/_/g, " ") : "confirmed";
+  const paymentStatus = order?.payment_status ? order.payment_status.replace(/_/g, " ") : "authorized";
+  const paymentMethod = order?.payment_method ? order.payment_method.toUpperCase() : "COD / Online Gateway";
+  const orderDate = order?.created_at
+    ? new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto", padding: "1.5rem" }}>
@@ -113,25 +160,81 @@ function SuccessReceiptContent() {
           {/* Delivery & Method */}
           <div style={{ display: "grid", gap: "1.5rem" }} className="success-detail-grid">
             <div>
+              <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ORDER DATE</span>
+              <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>{orderDate}</strong>
+            </div>
+            <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ESTIMATED DELIVERY</span>
               <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>{deliveryEstimate}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>SHIPPING STATUS</span>
-              <strong style={{ fontSize: "1.05rem", color: "var(--accent-deep)" }}>Pending Fulfilment</strong>
+              <strong style={{ fontSize: "1.05rem", color: "var(--accent-deep)", textTransform: "capitalize" }}>{orderStatus}</strong>
             </div>
           </div>
 
           <div style={{ display: "grid", gap: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1rem" }} className="success-detail-grid">
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>PAYMENT PARAMETER</span>
-              <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>COD / Online Gateway</strong>
+              <strong style={{ fontSize: "1.05rem", color: "var(--text)" }}>{paymentMethod}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>PAYMENT STATUS</span>
-              <strong style={{ fontSize: "1.05rem", color: "#2d7b4c" }}>Authorized</strong>
+              <strong style={{ fontSize: "1.05rem", color: "#2d7b4c", textTransform: "capitalize" }}>{paymentStatus}</strong>
             </div>
           </div>
+
+          {loadingOrder ? (
+            <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1rem" }}>
+              <p style={{ margin: 0, color: "var(--muted)" }}>Loading order details…</p>
+            </div>
+          ) : null}
+
+          {order ? (
+            <div style={{ display: "grid", gap: "1rem", borderTop: "1px solid var(--line)", paddingTop: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                <div>
+                  <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ORDER TOTAL</span>
+                  <strong style={{ fontSize: "1.15rem", color: "var(--text)" }}>
+                    {currencySymbol}{Number(order.total_amount || 0).toLocaleString("en-IN")}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ITEMS</span>
+                  <strong style={{ fontSize: "1.15rem", color: "var(--text)" }}>{order.items.length}</strong>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block", marginBottom: "0.4rem" }}>DELIVERY ADDRESS</span>
+                <strong style={{ display: "block", color: "var(--text)" }}>{order.ship_name}</strong>
+                <span style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+                  {order.ship_address}, {order.ship_city}, {order.ship_state} - {order.ship_pincode}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block", marginBottom: "0.5rem" }}>ORDER ITEMS</span>
+                <div style={{ display: "grid", gap: "0.7rem" }}>
+                  {order.items.slice(0, 4).map((item) => (
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", color: "var(--text)" }}>
+                      <span>{item.name} x {item.quantity}</span>
+                      <strong>{currencySymbol}{Number(item.line_total || 0).toLocaleString("en-IN")}</strong>
+                    </div>
+                  ))}
+                  {order.items.length > 4 ? (
+                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>+ {order.items.length - 4} more item(s)</span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {orderError ? (
+            <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1rem" }}>
+              <p style={{ margin: 0, color: "#a43c31" }}>{orderError}</p>
+            </div>
+          ) : null}
 
         </div>
 
@@ -152,6 +255,37 @@ function SuccessReceiptContent() {
           }}
         >
           Track Live Shipment Status
+        </a>
+
+        <button
+          type="button"
+          onClick={handlePrint}
+          className="secondary-button"
+          style={{
+            width: "100%",
+            textAlign: "center",
+            textDecoration: "none",
+            display: "inline-flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+          Download / Print Invoice
+        </button>
+
+        <a
+          href="/account"
+          className="secondary-button"
+          style={{
+            width: "100%",
+            textAlign: "center",
+            textDecoration: "none",
+            display: "inline-flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+          View Order In My Account
         </a>
 
         <a

@@ -208,6 +208,15 @@ export default function CheckoutPage() {
   const gatewayMeta = (provider: "cod" | "razorpay" | "phonepe") =>
     availableGateways.find((gateway) => gateway.provider === provider);
 
+  const redirectToSuccess = (orderNumber: string) => {
+    const target = `/checkout/success?order_number=${encodeURIComponent(orderNumber)}`;
+    if (typeof window !== "undefined") {
+      window.location.assign(target);
+      return;
+    }
+    router.push(target);
+  };
+
   // Load configuration & user data
   useEffect(() => {
     async function loadData() {
@@ -450,7 +459,7 @@ export default function CheckoutPage() {
       if (verifyRes.success) {
         checkoutCompletingRef.current = true;
         clearCart();
-        router.push(`/checkout/success?order_number=${activeSimulation.orderNumber}`);
+        redirectToSuccess(activeSimulation.orderNumber);
       } else {
         setError(verifyRes.message || "Payment verification failed.");
         setIsSubmitting(false);
@@ -542,7 +551,7 @@ export default function CheckoutPage() {
       if (paymentMethod === "cod") {
         checkoutCompletingRef.current = true;
         clearCart();
-        router.push(`/checkout/success?order_number=${res.data.order_number}`);
+        redirectToSuccess(res.data.order_number);
       } else {
         const config = res.data.gateway_config;
         const pendingAccessToken = config?.pending_access_token || undefined;
@@ -578,7 +587,7 @@ export default function CheckoutPage() {
                   if (verifyRes.success) {
                     checkoutCompletingRef.current = true;
                     clearCart();
-                    router.push(`/checkout/success?order_number=${res.data!.order_number}`);
+                    redirectToSuccess(res.data!.order_number);
                   } else {
                     setError(verifyRes.message || "Payment verification failed.");
                     setIsSubmitting(false);
