@@ -1,431 +1,18 @@
-"use client";
+const fs = require('fs');
+let content = fs.readFileSync('app/account/page.tsx', 'utf8');
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+// Insert activeTab state
+content = content.replace('const [loading, setLoading] = useState(true);', 'const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");\n  const [loading, setLoading] = useState(true);');
 
-import {
-  clearCustomerToken,
-  createCustomerAddress,
-  deleteCustomerAddress,
-  fetchCurrentCustomer,
-  fetchCustomerAddresses,
-  getStoredCustomerToken,
-  logoutCustomer,
-  updateCustomerAddress
-} from "../../lib/customer-auth";
-import { getCustomerOrders, getCustomerOrderDetail, formatPrice, requestCustomerOrderReturn, resolveAssetUrl } from "../../lib/api";
-import { fetchPincodeLocation, formatIndianPhone, isValidIndianPhone, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
-import { CustomerAddress, CustomerUser } from "../../lib/types";
-
-// Type definitions matching CustomerOrderController responses
-interface OrderSummary {
-  id: number;
-  order_number: string;
-  status: string;
-  subtotal: number;
-  discount: number;
-  tax: number;
-  shipping_cost: number;
-  total_amount: number;
-  payment_method: string;
-  payment_status: string;
-  ship_name: string;
-  created_at: string;
-  items_count: number;
-  first_item_image: string | null;
-  first_item_name: string | null;
+const returnIndex = content.indexOf('\n  return (\n');
+if (returnIndex === -1) {
+  console.error("Could not find '\\n  return (\\n'");
+  process.exit(1);
 }
 
-interface OrderDetail {
-  id: number;
-  order_number: string;
-  status: string;
-  subtotal: number;
-  discount: number;
-  tax: number;
-  shipping_cost: number;
-  total_amount: number;
-  payment_method: string;
-  payment_status: string;
-  payment_id: string | null;
-  ship_name: string;
-  ship_email: string;
-  ship_phone: string;
-  ship_address: string;
-  ship_city: string;
-  ship_state: string;
-  ship_pincode: string;
-  notes: string | null;
-  tracking_number: string | null;
-  tracking_url: string | null;
-  created_at: string;
-  items: Array<{
-    id: number;
-    product_id: number;
-    variant_id: number | null;
-    name: string;
-    price: number;
-    quantity: number;
-    image: string | null;
-    size: string | null;
-    color: string | null;
-    variant_details: string | null;
-    line_total: number;
-    sku: string | null;
-  }>;
-  tracking: Array<{
-    id: number;
-    status: string;
-    location: string | null;
-    message: string | null;
-    created_at: string;
-  }>;
-  returns: Array<{
-    id: number;
-    return_number: string;
-    status: string;
-    reason: string;
-    requested_amount: number;
-    approved_amount: number;
-    requested_at: string | null;
-    resolved_at: string | null;
-  }>;
-}
+const headContent = content.substring(0, returnIndex);
 
-type AddressFormState = {
-  type: "home" | "office" | "other";
-  label: string;
-  recipient_name: string;
-  phone: string;
-  address_line1: string;
-  address_line2: string;
-  city: string;
-  state: string;
-  pincode: string;
-  landmark: string;
-  is_default: boolean;
-};
-
-const EMPTY_ADDRESS_FORM: AddressFormState = {
-  type: "home",
-  label: "",
-  recipient_name: "",
-  phone: "",
-  address_line1: "",
-  address_line2: "",
-  city: "",
-  state: "",
-  pincode: "",
-  landmark: "",
-  is_default: false,
-};
-
-export default function AccountPage() {
-  const [user, setUser] = useState<CustomerUser | null>(null);
-  const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
-  const [addressForm, setAddressForm] = useState<AddressFormState>(EMPTY_ADDRESS_FORM);
-  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
-  const [addressLoading, setAddressLoading] = useState(false);
-  const [addressFeedback, setAddressFeedback] = useState<string | null>(null);
-  const [addressPincodeStatus, setAddressPincodeStatus] = useState<string | null>(null);
-  const addressPincodeLookupRef = useRef<string>("");
-
-  // Orders states
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
-  const [loadingOrderDetail, setLoadingOrderDetail] = useState<string | null>(null);
-  const [returnReason, setReturnReason] = useState("");
-  const [returnNotes, setReturnNotes] = useState("");
-  const [returnImages, setReturnImages] = useState("");
-  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
-  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
-  const [returnFeedback, setReturnFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = getStoredCustomerToken();
-
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    setLoadingOrders(true);
-    fetchCurrentCustomer(token)
-      .then((customer) => {
-        setUser(customer);
-        setError(null);
-
-        return Promise.all([getCustomerOrders(token), fetchCustomerAddresses(token)]);
-      })
-      .then(([ordersRes, fetchedAddresses]) => {
-        if (ordersRes && ordersRes.success && ordersRes.data) {
-          setOrders(ordersRes.data);
-        }
-        setAddresses(fetchedAddresses || []);
-      })
-      .catch((err: Error) => {
-        clearCustomerToken();
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-        setLoadingOrders(false);
-      });
-  }, []);
-
-  async function handleLogout() {
-    const token = getStoredCustomerToken();
-
-    if (token) {
-      try {
-        await logoutCustomer(token);
-      } catch {
-        // Ignore logout transport errors and clear the local session anyway.
-      }
-    }
-
-    clearCustomerToken();
-    window.location.href = "/account/login";
-  }
-
-  function resetAddressForm() {
-    setAddressForm(EMPTY_ADDRESS_FORM);
-    setEditingAddressId(null);
-  }
-
-  function hydrateAddressForm(address: CustomerAddress) {
-    setEditingAddressId(address.id);
-    setAddressForm({
-      type: address.type,
-      label: address.label || "",
-      recipient_name: address.recipient_name,
-      phone: address.phone || "",
-      address_line1: address.address_line1,
-      address_line2: address.address_line2 || "",
-      city: address.city,
-      state: address.state,
-      pincode: address.pincode,
-      landmark: address.landmark || "",
-      is_default: address.is_default,
-    });
-  }
-
-  async function handleSaveAddress() {
-    const token = getStoredCustomerToken();
-    if (!token) {
-      setAddressFeedback("Please log in again before saving an address.");
-      return;
-    }
-
-    if (!addressForm.recipient_name || !addressForm.address_line1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
-      setAddressFeedback("Please complete the required address fields.");
-      return;
-    }
-
-    if (addressForm.phone && !isValidIndianPhone(addressForm.phone)) {
-      setAddressFeedback("Please enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-
-    setAddressLoading(true);
-    setAddressFeedback(null);
-
-    try {
-      const payload = {
-        ...addressForm,
-        phone: normalizeIndianPhone(addressForm.phone) || null,
-        address_line2: addressForm.address_line2 || null,
-        landmark: addressForm.landmark || null,
-        label: addressForm.label || null,
-        pincode: normalizeIndianPincode(addressForm.pincode),
-      };
-
-      const nextAddresses = editingAddressId
-        ? await updateCustomerAddress(token, editingAddressId, payload)
-        : await createCustomerAddress(token, payload);
-
-      setAddresses(nextAddresses);
-      setAddressFeedback(editingAddressId ? "Address updated successfully." : "Address added successfully.");
-      resetAddressForm();
-    } catch (err) {
-      setAddressFeedback(err instanceof Error ? err.message : "Unable to save address.");
-    } finally {
-      setAddressLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const normalizedPincode = normalizeIndianPincode(addressForm.pincode);
-
-    if (normalizedPincode.length !== 6 || normalizedPincode === addressPincodeLookupRef.current) {
-      if (normalizedPincode.length < 6) {
-        setAddressPincodeStatus(null);
-      }
-      return;
-    }
-
-    let active = true;
-    addressPincodeLookupRef.current = normalizedPincode;
-    setAddressPincodeStatus("Looking up city and state from pincode…");
-
-    fetchPincodeLocation(normalizedPincode)
-      .then((location) => {
-        if (!active) {
-          return;
-        }
-
-        setAddressForm((current) => ({
-          ...current,
-          pincode: normalizedPincode,
-          city: location.city || current.city,
-          state: location.state || current.state,
-        }));
-        setAddressPincodeStatus("City and state auto-filled from pincode.");
-      })
-      .catch((err) => {
-        if (!active) {
-          return;
-        }
-
-        setAddressPincodeStatus(err instanceof Error ? err.message : "Unable to auto-fill city/state right now.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [addressForm.pincode]);
-
-  async function handleDeleteAddress(addressId: number) {
-    const token = getStoredCustomerToken();
-    if (!token) {
-      setAddressFeedback("Please log in again before deleting an address.");
-      return;
-    }
-
-    setAddressLoading(true);
-    setAddressFeedback(null);
-
-    try {
-      const nextAddresses = await deleteCustomerAddress(token, addressId);
-      setAddresses(nextAddresses);
-      if (editingAddressId === addressId) {
-        resetAddressForm();
-      }
-      setAddressFeedback("Address removed successfully.");
-    } catch (err) {
-      setAddressFeedback(err instanceof Error ? err.message : "Unable to remove address.");
-    } finally {
-      setAddressLoading(false);
-    }
-  }
-
-  async function handleViewOrderDetail(orderNumber: string) {
-    const token = getStoredCustomerToken();
-    if (!token) return;
-
-    setLoadingOrderDetail(orderNumber);
-    try {
-      const res = await getCustomerOrderDetail(token, orderNumber);
-      if (res && res.success && res.data) {
-        setSelectedOrder(res.data);
-        setReturnReason("");
-        setReturnNotes("");
-        setReturnImages("");
-        setReturnFeedback(null);
-        setReturnQuantities(
-          Object.fromEntries(
-            res.data.items.map((item) => [
-              `${item.product_id}:${item.variant_id ?? 0}`,
-              item.quantity > 0 ? 1 : 0,
-            ])
-          )
-        );
-      } else {
-        alert(res.message || "Failed to load order details.");
-      }
-    } catch (e) {
-      console.error("View order details error:", e);
-      alert("Something went wrong while fetching order receipt.");
-    } finally {
-      setLoadingOrderDetail(null);
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "delivered":
-        return { bg: "rgba(45, 123, 76, 0.08)", text: "#2d7b4c" };
-      case "cancelled":
-        return { bg: "rgba(181, 58, 44, 0.08)", text: "#b53a2c" };
-      case "shipped":
-        return { bg: "rgba(33, 115, 181, 0.08)", text: "#2173b5" };
-      case "placed":
-      case "pending":
-        return { bg: "rgba(241, 167, 32, 0.08)", text: "#b57317" };
-      default:
-        return { bg: "rgba(var(--rgb-text), 0.06)", text: "var(--text)" };
-    }
-  };
-
-  const canRequestReturn = selectedOrder
-    ? ["delivered", "shipped"].includes(selectedOrder.status.toLowerCase())
-    : false;
-
-  async function handleSubmitReturn() {
-    if (!selectedOrder) return;
-
-    const token = getStoredCustomerToken();
-    if (!token) {
-      setReturnFeedback("Please log in again before submitting a return request.");
-      return;
-    }
-
-    if (!returnReason.trim()) {
-      setReturnFeedback("Please enter a return reason.");
-      return;
-    }
-
-    const items = selectedOrder.items
-      .map((item) => ({
-        product_id: item.product_id,
-        variant_id: item.variant_id,
-        quantity: Number(returnQuantities[`${item.product_id}:${item.variant_id ?? 0}`] || 0),
-      }))
-      .filter((item) => item.quantity > 0);
-
-    if (items.length === 0) {
-      setReturnFeedback("Select at least one item quantity to return.");
-      return;
-    }
-
-    setIsSubmittingReturn(true);
-    setReturnFeedback(null);
-
-    const result = await requestCustomerOrderReturn(token, selectedOrder.order_number, {
-      reason: returnReason.trim(),
-      customer_notes: returnNotes.trim() || undefined,
-      items,
-      images: returnImages
-        .split(/\r?\n/)
-        .map((entry) => entry.trim())
-        .filter(Boolean),
-    });
-
-    if (!result.success) {
-      setReturnFeedback(result.message || "Could not submit the return request.");
-      setIsSubmittingReturn(false);
-      return;
-    }
-
-    await handleViewOrderDetail(selectedOrder.order_number);
-    setReturnFeedback(`Return request ${result.data?.return_number || ""} submitted successfully.`.trim());
-    setIsSubmittingReturn(false);
-  }
-
+const newUI = `
   return (
     <main className="content-section auth-page" style={{ padding: "4rem 0", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)", minHeight: "80vh" }}>
       <div className="container" style={{ maxWidth: "1100px" }}>
@@ -849,7 +436,7 @@ export default function AccountPage() {
               {/* Status Banner */}
               <div style={{
                 background: getStatusColor(selectedOrder.status).bg,
-                border: `1px solid ${getStatusColor(selectedOrder.status).text}40`,
+                border: \`1px solid \${getStatusColor(selectedOrder.status).text}40\`,
                 borderRadius: "20px",
                 padding: "1rem",
                 marginBottom: "1.5rem",
@@ -1021,7 +608,7 @@ export default function AccountPage() {
                     </p>
                     <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1rem" }}>
                       {selectedOrder.items.map((item) => {
-                        const key = `${item.product_id}:${item.variant_id ?? 0}`;
+                        const key = \`\${item.product_id}:\${item.variant_id ?? 0}\`;
                         return (
                           <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 92px", gap: "0.75rem", alignItems: "center" }}>
                             <div>
@@ -1132,7 +719,7 @@ export default function AccountPage() {
             {/* Quick Track Link */}
             <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
               <a
-                href={`/track-order?number=${encodeURIComponent(selectedOrder.order_number)}`}
+                href={\`/track-order?number=\${encodeURIComponent(selectedOrder.order_number)}\`}
                 className="primary-button"
                 style={{ flex: 1, textAlign: "center", textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center" }}
               >
@@ -1151,7 +738,7 @@ export default function AccountPage() {
         </div>
       )}
 
-      <style jsx global>{`
+      <style jsx global>{\`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -1168,7 +755,11 @@ export default function AccountPage() {
              grid-template-columns: 1fr !important;
           }
         }
-      `}</style>
+      \`}</style>
     </main>
   );
 }
+`;
+
+fs.writeFileSync('app/account/page.tsx', headContent + newUI);
+console.log('Successfully replaced UI');
