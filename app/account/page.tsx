@@ -545,7 +545,7 @@ export default function AccountPage() {
                         inputMode="numeric"
                         autoComplete="tel-national"
                         pattern="[6-9][0-9]{9}"
-                        maxLength={10}
+                        maxLength={11}
                         className={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone) ? "input-invalid" : ""}
                         aria-invalid={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone)}
                         value={formatIndianPhone(addressForm.phone)}

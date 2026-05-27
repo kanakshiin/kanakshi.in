@@ -100,7 +100,7 @@ function RegisterForm() {
                 inputMode="numeric"
                 autoComplete="tel-national"
                 pattern="[6-9][0-9]{9}"
-                maxLength={10}
+                maxLength={11}
                 className={phoneInvalid ? "input-invalid" : ""}
                 aria-invalid={phoneInvalid}
                 value={formatIndianPhone(form.phone)}

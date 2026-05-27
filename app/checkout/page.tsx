@@ -695,7 +695,7 @@ export default function CheckoutPage() {
                     inputMode="numeric"
                     autoComplete="tel-national"
                     required
-                    maxLength={10}
+                    maxLength={11}
                     pattern="[6-9][0-9]{9}"
                     className={shipPhoneInvalid ? "input-invalid" : ""}
                     aria-invalid={shipPhoneInvalid}
