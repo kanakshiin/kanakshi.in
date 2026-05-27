@@ -505,6 +505,23 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
     ship_email: string;
     ship_phone: string;
     estimated_delivery: string;
+    customer_auth?: {
+      token: string;
+      token_type: string;
+      expires_at?: string | null;
+      user: {
+        id: number;
+        name: string;
+        email: string;
+        phone?: string | null;
+        address?: string | null;
+        city?: string | null;
+        state?: string | null;
+        pincode?: string | null;
+        email_verified_at?: string | null;
+        role?: string;
+      };
+    } | null;
     gateway_config?: {
       public_key: string | null;
       merchant_id: string | null;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
-import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken } from "../../lib/customer-auth";
+import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken, storeCustomerToken } from "../../lib/customer-auth";
 import { fetchPincodeLocation, formatIndianPhone, isValidEmailInput, isValidIndianPhone, normalizeEmailInput, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
 import { getActiveCoupons, getSettings, getProducts, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
 import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, Product, SiteSettings } from "../../lib/types";
@@ -548,6 +548,10 @@ export default function CheckoutPage() {
     const res = await placeOrder(orderData, token);
 
     if (res.success && res.data) {
+      if (res.data.customer_auth?.token) {
+        storeCustomerToken(res.data.customer_auth.token);
+      }
+
       if (paymentMethod === "cod") {
         checkoutCompletingRef.current = true;
         clearCart();
