@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "../../components/cart-provider";
 import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken } from "../../lib/customer-auth";
 import { fetchPincodeLocation, formatIndianPhone, isValidEmailInput, isValidIndianPhone, normalizeEmailInput, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
-import { getActiveCoupons, getSettings, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
-import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, SiteSettings } from "../../lib/types";
+import { getActiveCoupons, getSettings, getProducts, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
+import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, Product, SiteSettings } from "../../lib/types";
 
 async function loadRazorpayScript(): Promise<boolean> {
   if (typeof window !== "undefined" && (window as any).Razorpay) {
@@ -115,6 +115,7 @@ export default function CheckoutPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [shippingProducts, setShippingProducts] = useState<Record<number, Product>>({});
 
   // Online gateway simulation overlay state
   const [activeSimulation, setActiveSimulation] = useState<{
@@ -266,6 +267,31 @@ export default function CheckoutPage() {
   }, [paymentMethod, settings]);
 
   useEffect(() => {
+    async function loadShippingProducts() {
+      if (!items.length) {
+        setShippingProducts({});
+        return;
+      }
+
+      const ids = Array.from(new Set(items.map((item) => item.id))).filter(Boolean);
+
+      try {
+        const response = await getProducts(`ids=${ids.join(",")}&per_page=${ids.length}`);
+        const productMap = response.items.reduce<Record<number, Product>>((acc, product) => {
+          acc[product.id] = product;
+          return acc;
+        }, {});
+        setShippingProducts(productMap);
+      } catch (error) {
+        console.error("Failed to load product shipping rules:", error);
+        setShippingProducts({});
+      }
+    }
+
+    loadShippingProducts();
+  }, [items]);
+
+  useEffect(() => {
     const normalizedPincode = normalizeIndianPincode(shipPincode);
 
     if (normalizedPincode.length !== 6 || normalizedPincode === pincodeLookupRef.current) {
@@ -314,6 +340,7 @@ export default function CheckoutPage() {
   }
 
   const currencySymbol = settings?.site_currency_symbol || "₹";
+  const defaultShippingCost = Number(settings?.default_shipping_cost || 99);
   const freeShippingThreshold = Number(settings?.min_order_free_shipping || 499);
   const shipEmailInvalid = shipEmail.length > 0 && !isValidEmailInput(shipEmail);
   const shipPhoneInvalid = shipPhone.length > 0 && !isValidIndianPhone(shipPhone);
@@ -335,8 +362,40 @@ export default function CheckoutPage() {
   }
 
   const netSubtotal = subtotal - discountAmount;
-  const shippingCost = netSubtotal >= freeShippingThreshold ? 0 : 99;
+  let customShippingCost = 0;
+  let hasDefaultShippingItem = false;
+  let hasCustomShippingItem = false;
+  let hasFreeShippingItem = false;
+
+  items.forEach((item) => {
+    const shippingProduct = shippingProducts[item.id];
+    const shippingType = shippingProduct?.shipping_type || "default";
+
+    if (shippingType === "custom") {
+      hasCustomShippingItem = true;
+      customShippingCost += Number(shippingProduct?.shipping_fee || 0) * item.quantity;
+      return;
+    }
+
+    if (shippingType === "free") {
+      hasFreeShippingItem = true;
+      return;
+    }
+
+    hasDefaultShippingItem = true;
+  });
+
+  const defaultRuleShippingCost = hasDefaultShippingItem && netSubtotal < freeShippingThreshold ? defaultShippingCost : 0;
+  const shippingCost = defaultRuleShippingCost + customShippingCost;
   const grandTotal = netSubtotal + shippingCost;
+  const onlyCustomShipping = hasCustomShippingItem && !hasDefaultShippingItem;
+  const mixedShippingRules = hasCustomShippingItem && hasDefaultShippingItem;
+  const showDefaultShippingUpsell = hasDefaultShippingItem && !hasCustomShippingItem && defaultRuleShippingCost > 0;
+  const checkoutIntro = onlyCustomShipping
+    ? "Complete your order below. This cart includes product-specific delivery charges."
+    : mixedShippingRules
+      ? "Complete your order below. Standard free-shipping rules apply only to regular-delivery items in this cart."
+      : `Complete your order below. Free shipping is automatically applied to orders above ${formatPrice(freeShippingThreshold, currencySymbol)}.`;
 
   // Handle coupon application
   function handleApplyCoupon(e?: React.FormEvent) {
@@ -607,7 +666,7 @@ export default function CheckoutPage() {
           <p className="eyebrow">Secure Gateway</p>
           <h1 className="page-title" style={{ fontSize: "2.8rem", marginBottom: "0.5rem" }}>Checkout</h1>
           <p className="shop-intro" style={{ maxWidth: "600px", margin: "0 auto" }}>
-            Complete your order below. Free shipping is automatically applied to orders above ₹499.
+            {checkoutIntro}
           </p>
         </div>
 
@@ -1012,7 +1071,19 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {shippingCost > 0 && (
+                {mixedShippingRules && (
+                  <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
+                    Custom delivery charges stay applied on selected products. The free-shipping threshold only removes the standard delivery part.
+                  </p>
+                )}
+
+                {onlyCustomShipping && (
+                  <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
+                    This cart uses product-level delivery charges, so the store-wide free-shipping threshold does not apply here.
+                  </p>
+                )}
+
+                {showDefaultShippingUpsell && (
                   <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
                     Add pieces worth {formatPrice(freeShippingThreshold - netSubtotal, currencySymbol)} more for free delivery!
                   </p>

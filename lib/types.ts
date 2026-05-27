@@ -3,6 +3,7 @@ export type SiteSettings = {
   site_tagline?: string;
   site_email?: string;
   site_phone?: string;
+  default_shipping_cost?: string | number;
   privacy_policy?: string | null;
   terms_conditions?: string | null;
   return_policy?: string | null;
@@ -109,6 +110,8 @@ export type Product = {
   avg_rating?: number | string | null;
   review_count?: number | string | null;
   is_featured?: boolean;
+  shipping_type?: "default" | "custom" | "free" | string | null;
+  shipping_fee?: number | string | null;
 };
 
 export type ProductListResponse = {

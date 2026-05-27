@@ -17,6 +17,7 @@ const fallbackSettings: SiteSettings = {
   site_name: "Little Divinity",
   site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
   site_currency_symbol: "₹",
+  default_shipping_cost: "99",
   min_order_free_shipping: "499",
   site_email: liveContactDefaults.email,
   site_phone: liveContactDefaults.phone,
