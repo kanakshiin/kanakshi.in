@@ -263,8 +263,49 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
           </div>
         </div>
 
-        <div className={`mobile-nav-panel${mobileMenuOpen ? " is-open" : ""}`}>
-          <div className="container mobile-nav-inner">
+      </header>
+
+      <div className={`mobile-nav-layer${mobileMenuOpen ? " is-open" : ""}`} aria-hidden={!mobileMenuOpen}>
+        <button
+          type="button"
+          className="mobile-nav-backdrop"
+          aria-label="Close menu"
+          onClick={closeMobileMenu}
+        />
+
+        <aside className={`mobile-nav-panel${mobileMenuOpen ? " is-open" : ""}`} aria-label="Mobile menu">
+          <div className="mobile-nav-panel-head">
+            <div className="mobile-nav-profile">
+              <span className="mobile-nav-avatar" aria-hidden="true">
+                {brandName.trim().charAt(0) || "L"}
+              </span>
+              <div className="mobile-nav-profile-copy">
+                <strong>{brandName}</strong>
+                <span>Shop, wishlist and account in one place</span>
+              </div>
+            </div>
+
+            <button type="button" className="mobile-nav-close" aria-label="Close menu" onClick={closeMobileMenu}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mobile-nav-quicklinks">
+            <Link href="/account" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
+              Account
+            </Link>
+            <Link href="/wishlist" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
+              Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
+            </Link>
+            <Link href="/cart" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
+              Cart{count > 0 ? ` (${count})` : ""}
+            </Link>
+          </div>
+
+          <div className="mobile-nav-inner">
             <div className="mobile-nav-list">
               {fullNavItems.map((item) => {
                 const hasSubmenu = item.submenu.length > 0;
@@ -313,8 +354,8 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
               })}
             </div>
           </div>
-        </div>
-      </header>
+        </aside>
+      </div>
 
       <nav className="mobile-bottom-nav" aria-label="Mobile quick navigation">
         <Link href="/" className={`mobile-bottom-link${pathname === "/" ? " is-active" : ""}`} onClick={closeMobileMenu}>
