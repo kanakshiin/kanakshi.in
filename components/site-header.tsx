@@ -272,18 +272,6 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
 
         <div className={`mobile-nav-panel${mobileMenuOpen ? " is-open" : ""}`}>
           <div className="container mobile-nav-inner">
-            <div className="mobile-nav-shortcuts">
-              <Link href="/shop" className="mobile-nav-shortcut">
-                Search
-              </Link>
-              <Link href="/wishlist" className="mobile-nav-shortcut">
-                Wishlist {wishlistCount > 0 ? `(${wishlistCount})` : ""}
-              </Link>
-              <Link href="/cart" className="mobile-nav-shortcut">
-                Cart {count > 0 ? `(${count})` : ""}
-              </Link>
-            </div>
-
             <div className="mobile-nav-list">
               {fullNavItems.map((item) => {
                 const hasSubmenu = item.submenu.length > 0;
