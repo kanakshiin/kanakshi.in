@@ -82,6 +82,7 @@ img {
 .registry-brand-mark {
   display: inline-flex;
   align-items: center;
+  isolation: isolate;
 }
 
 .registry-header-nav {
@@ -241,6 +242,7 @@ h3,
   display: inline-flex;
   align-items: center;
   height: 100%;
+  isolation: isolate;
 }
 
 .header-nav,
@@ -397,6 +399,8 @@ h3,
   max-height: 58px;
   height: 100%;
   object-fit: contain;
+  background: transparent;
+  mix-blend-mode: multiply;
 }
 
 .header-tool-icon {
