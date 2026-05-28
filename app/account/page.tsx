@@ -92,6 +92,12 @@ interface OrderDetail {
   }>;
 }
 
+type ToastMessage = {
+  id: number;
+  message: string;
+  tone: "success" | "error" | "info";
+};
+
 type AddressFormState = {
   type: "home" | "office" | "other";
   label: string;
@@ -144,6 +150,16 @@ export default function AccountPage() {
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [returnFeedback, setReturnFeedback] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  function showToast(message: string, tone: ToastMessage["tone"] = "info") {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((current) => [...current, { id, message, tone }]);
+
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+    }, 3200);
+  }
 
   useEffect(() => {
     const token = getStoredCustomerToken();
@@ -249,10 +265,14 @@ export default function AccountPage() {
         : await createCustomerAddress(token, payload);
 
       setAddresses(nextAddresses);
-      setAddressFeedback(editingAddressId ? "Address updated successfully." : "Address added successfully.");
+      const successMessage = editingAddressId ? "Address updated successfully." : "Address added successfully.";
+      setAddressFeedback(successMessage);
+      showToast(successMessage, "success");
       resetAddressForm();
     } catch (err) {
-      setAddressFeedback(err instanceof Error ? err.message : "Unable to save address.");
+      const message = err instanceof Error ? err.message : "Unable to save address.";
+      setAddressFeedback(message);
+      showToast(message, "error");
     } finally {
       setAddressLoading(false);
     }
@@ -316,8 +336,11 @@ export default function AccountPage() {
         resetAddressForm();
       }
       setAddressFeedback("Address removed successfully.");
+      showToast("Address removed successfully.", "success");
     } catch (err) {
-      setAddressFeedback(err instanceof Error ? err.message : "Unable to remove address.");
+      const message = err instanceof Error ? err.message : "Unable to remove address.";
+      setAddressFeedback(message);
+      showToast(message, "error");
     } finally {
       setAddressLoading(false);
     }
@@ -345,11 +368,11 @@ export default function AccountPage() {
           )
         );
       } else {
-        alert(res.message || "Failed to load order details.");
+        showToast(res.message || "Failed to load order details.", "error");
       }
     } catch (e) {
       console.error("View order details error:", e);
-      alert("Something went wrong while fetching order receipt.");
+      showToast("Something went wrong while fetching order receipt.", "error");
     } finally {
       setLoadingOrderDetail(null);
     }
@@ -416,18 +439,116 @@ export default function AccountPage() {
     });
 
     if (!result.success) {
-      setReturnFeedback(result.message || "Could not submit the return request.");
+      const message = result.message || "Could not submit the return request.";
+      setReturnFeedback(message);
+      showToast(message, "error");
       setIsSubmittingReturn(false);
       return;
     }
 
     await handleViewOrderDetail(selectedOrder.order_number);
-    setReturnFeedback(`Return request ${result.data?.return_number || ""} submitted successfully.`.trim());
+    const successMessage = `Return request ${result.data?.return_number || ""} submitted successfully.`.trim();
+    setReturnFeedback(successMessage);
+    showToast(successMessage, "success");
     setIsSubmittingReturn(false);
   }
 
   return (
     <main className="content-section auth-page" style={{ padding: "4rem 0", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)", minHeight: "80vh" }}>
+      {toasts.length > 0 ? (
+        <div
+          style={{
+            position: "fixed",
+            top: "1.25rem",
+            right: "1.25rem",
+            zIndex: 10050,
+            display: "grid",
+            gap: "0.8rem",
+            width: "min(360px, calc(100vw - 2rem))",
+          }}
+        >
+          {toasts.map((toast) => {
+            const palette =
+              toast.tone === "success"
+                ? {
+                    background: "linear-gradient(135deg, rgba(45, 123, 76, 0.96), rgba(33, 99, 63, 0.96))",
+                    accent: "#d7f5df",
+                    shadow: "0 18px 40px -22px rgba(45, 123, 76, 0.85)",
+                  }
+                : toast.tone === "error"
+                  ? {
+                      background: "linear-gradient(135deg, rgba(123, 36, 29, 0.97), rgba(181, 58, 44, 0.96))",
+                      accent: "#ffe1dc",
+                      shadow: "0 18px 40px -22px rgba(181, 58, 44, 0.9)",
+                    }
+                  : {
+                      background: "linear-gradient(135deg, rgba(41, 36, 31, 0.96), rgba(74, 62, 53, 0.96))",
+                      accent: "#f5e7c8",
+                      shadow: "0 18px 40px -22px rgba(41, 36, 31, 0.82)",
+                    };
+
+            return (
+              <div
+                key={toast.id}
+                style={{
+                  borderRadius: "18px",
+                  padding: "0.95rem 1rem",
+                  color: "#fffdf8",
+                  background: palette.background,
+                  boxShadow: palette.shadow,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  display: "grid",
+                  gap: "0.45rem",
+                  animation: "slideUp 0.24s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "start", gap: "0.75rem" }}>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: "1.9rem",
+                      height: "1.9rem",
+                      borderRadius: "999px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(255,255,255,0.14)",
+                      color: palette.accent,
+                      fontSize: "0.95rem",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {toast.tone === "success" ? "✓" : toast.tone === "error" ? "!" : "i"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.78rem", letterSpacing: "0.06em", textTransform: "uppercase", color: palette.accent, fontWeight: 700, marginBottom: "0.18rem" }}>
+                      {toast.tone === "success" ? "Done" : toast.tone === "error" ? "Heads up" : "Notice"}
+                    </div>
+                    <div style={{ fontSize: "0.95rem", lineHeight: 1.5, fontWeight: 500 }}>{toast.message}</div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Dismiss notification"
+                    onClick={() => setToasts((current) => current.filter((item) => item.id !== toast.id))}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "rgba(255,255,255,0.78)",
+                      cursor: "pointer",
+                      fontSize: "1rem",
+                      lineHeight: 1,
+                      padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="container" style={{ maxWidth: "1100px" }}>
         
         {/* Main account wrapper */}
