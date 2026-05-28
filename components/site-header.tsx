@@ -27,7 +27,11 @@ type NavDisplayItem = {
   name: string;
   slug: string;
   href: string;
-  submenu: string[];
+  submenu: Array<{
+    id: number;
+    name: string;
+    href: string;
+  }>;
 };
 
 export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings }: SiteHeaderProps) {
@@ -64,8 +68,11 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
         slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
         href: typeof item.url === "string" ? item.url : "/shop",
         submenu:
-          item.children?.map((child) => child.title) ||
-          (((item.config as { submenu?: string[] } | undefined)?.submenu) ?? [])
+          item.children?.map((child, childIndex) => ({
+            id: child.id || Number(`${item.id}${childIndex + 1}`),
+            name: child.title,
+            href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop")
+          })) || []
       }))
     : categories.slice(0, 6).map((category) => ({
         id: category.id,
@@ -183,28 +190,36 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
           </div>
 
           <nav className="header-nav">
-            {fullNavItems.map((category) => (
-              <div key={category.id} className="nav-item-with-menu">
-                <Link href={category.href} className="nav-link-with-icon">
-                  <span>{category.name}</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
-                    <path d="M7 10.5 12 15l5-4.5" />
-                  </svg>
-                </Link>
+            {fullNavItems.map((category) => {
+              const hasSubmenu = category.submenu.length > 0;
 
-                <div className="nav-submenu">
-                  {category.submenu.map((item) => (
-                    <Link
-                      key={`${category.slug}-${item}`}
-                      href={category.href}
-                      className="nav-submenu-link"
-                    >
-                      {item}
-                    </Link>
-                  ))}
+              return (
+                <div key={category.id} className={`nav-item-with-menu${hasSubmenu ? "" : " nav-item-plain"}`}>
+                  <Link href={category.href} className={hasSubmenu ? "nav-link-with-icon" : "nav-link-plain"}>
+                    <span>{category.name}</span>
+                    {hasSubmenu ? (
+                      <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
+                        <path d="M7 10.5 12 15l5-4.5" />
+                      </svg>
+                    ) : null}
+                  </Link>
+
+                  {hasSubmenu ? (
+                    <div className="nav-submenu">
+                      {category.submenu.map((item) => (
+                        <Link
+                          key={`${category.slug}-${item.id}`}
+                          href={item.href}
+                          className="nav-submenu-link"
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
 
           <div className="header-tools" aria-label="Store tools">
@@ -301,8 +316,8 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                     {hasSubmenu ? (
                       <div className={`mobile-nav-submenu${isOpen ? " is-open" : ""}`}>
                         {item.submenu.map((submenuItem) => (
-                          <Link key={`${item.slug}-${submenuItem}`} href={item.href} className="mobile-nav-submenu-link">
-                            {submenuItem}
+                          <Link key={`${item.slug}-${submenuItem.id}`} href={submenuItem.href} className="mobile-nav-submenu-link">
+                            {submenuItem.name}
                           </Link>
                         ))}
                       </div>
@@ -314,6 +329,51 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
           </div>
         </div>
       </header>
+
+      <nav className="mobile-bottom-nav" aria-label="Mobile quick navigation">
+        <Link href="/" className={`mobile-bottom-link${pathname === "/" ? " is-active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" />
+          </svg>
+          <span>Home</span>
+        </Link>
+        <Link href="/shop" className={`mobile-bottom-link${pathname.startsWith("/shop") ? " is-active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 7.5h15" />
+            <path d="M6.5 7.5l1.2 10h8.6l1.2-10" />
+            <path d="M9 11h6" />
+          </svg>
+          <span>Shop</span>
+        </Link>
+        <button
+          type="button"
+          className={`mobile-bottom-link mobile-bottom-link--menu${mobileMenuOpen ? " is-active" : ""}`}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((current) => !current)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 7h14" />
+            <path d="M5 12h14" />
+            <path d="M5 17h14" />
+          </svg>
+          <span>Menu</span>
+        </button>
+        <Link href="/wishlist" className={`mobile-bottom-link${pathname.startsWith("/wishlist") ? " is-active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
+          </svg>
+          <span>Wishlist</span>
+          {wishlistCount > 0 ? <em>{wishlistCount}</em> : null}
+        </Link>
+        <Link href="/account" className={`mobile-bottom-link${pathname.startsWith("/account") ? " is-active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8.5" r="3.2" />
+            <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
+          </svg>
+          <span>Account</span>
+        </Link>
+      </nav>
     </>
   );
 }
