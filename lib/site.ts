@@ -90,6 +90,8 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
   const twitterDescription = settings?.twitter_description || settings?.og_description || description;
   const twitterImage = getAbsoluteMediaUrl(settings?.twitter_image || settings?.og_image || settings?.logo_url, settings) || ogImage;
   const twitterHandle = settings?.twitter_handle?.trim() || undefined;
+  const favicon = getAbsoluteMediaUrl(settings?.favicon_url, settings) || "/favicon.ico";
+  const logo = getAbsoluteMediaUrl(settings?.logo_url, settings) || `${siteUrl}/logo.jpg`;
 
   return {
     metadataBase: new URL(siteUrl),
@@ -101,6 +103,13 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
     applicationName: siteName,
     alternates: {
       canonical: "/"
+    },
+    icons: {
+      icon: [
+        { url: favicon },
+      ],
+      shortcut: [favicon],
+      apple: [favicon],
     },
     keywords: [
       "brass decor",
@@ -131,6 +140,9 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       images: [twitterImage],
       site: twitterHandle,
       creator: twitterHandle
+    },
+    other: {
+      "logo": logo,
     },
     robots: {
       index: true,

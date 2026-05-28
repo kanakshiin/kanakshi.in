@@ -8,7 +8,7 @@ import { CartProvider } from "../components/cart-provider";
 import { WishlistProvider } from "../components/wishlist-provider";
 import { FloatingWhatsappWidget } from "../components/floating-whatsapp-widget";
 import { getLayoutData } from "../lib/api";
-import { buildStoreMetadata, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
+import { buildStoreMetadata, getAbsoluteMediaUrl, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
 import "./globals.css";
 
 function BodyHtmlSnippet({ html }: { html?: string | null }) {
@@ -52,9 +52,7 @@ export default async function RootLayout({
     "@type": "Organization",
     name: brandName,
     url: siteUrl,
-    logo: settings.logo_url
-      ? `${siteUrl}${settings.logo_url.startsWith("/") ? settings.logo_url : `/${settings.logo_url}`}`
-      : `${siteUrl}/logo.jpg`,
+    logo: getAbsoluteMediaUrl(settings.logo_url, settings) || `${siteUrl}/logo.jpg`,
     email: settings.site_email || undefined,
     telephone: settings.site_phone || undefined,
     address: {
