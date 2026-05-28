@@ -61,61 +61,61 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
 
   return (
     <div className="product-detail-media-gallery">
-      {/* Interactive Main Image Container */}
-      <div className="gallery-main-wrapper" onClick={() => openLightbox(activeIndex)}>
-        <Image
-          src={images[activeIndex] || "/placeholder.jpg"}
-          alt={productName}
-          className="product-detail-main interactive-zoom"
-          width={1200}
-          height={1344}
-          priority
-          sizes="(max-width: 900px) 100vw, 50vw"
-        />
-        
-        {/* Fullscreen Magnifier Overlay Button */}
-        <button
-          type="button"
-          className="gallery-expand-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            openLightbox(activeIndex);
-          }}
-          aria-label="Expand gallery to full screen"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="expand-svg-icon">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            <line x1="11" y1="8" x2="11" y2="14" />
-            <line x1="8" y1="11" x2="14" y2="11" />
-          </svg>
-          <span>Expand View</span>
-        </button>
-      </div>
+      {images.length > 1 ? (
+        <div className="product-thumb-row interactive-thumbs product-thumb-rail">
+          {images.map((image, index) => (
+            <button
+              key={`gallery-thumb-${index}`}
+              type="button"
+              className={`gallery-thumb-btn ${activeIndex === index ? "active" : ""}`}
+              onClick={() => setActiveIndex(index)}
+              onMouseEnter={() => setActiveIndex(index)}
+              aria-label={`Show product image ${index + 1}`}
+            >
+              <Image
+                src={image}
+                alt={`${productName} ${index + 1}`}
+                width={180}
+                height={180}
+                sizes="(max-width: 900px) 22vw, 88px"
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      {/* Interactive Swapping Thumbnail Row */}
-      <div className="product-thumb-row interactive-thumbs">
-        {images.map((image, index) => (
+      <div className="gallery-main-stage">
+        <div className="gallery-main-wrapper" onClick={() => openLightbox(activeIndex)}>
+          <Image
+            src={images[activeIndex] || "/placeholder.jpg"}
+            alt={productName}
+            className="product-detail-main interactive-zoom"
+            width={1200}
+            height={1344}
+            priority
+            sizes="(max-width: 900px) 100vw, 50vw"
+          />
+
           <button
-            key={`gallery-thumb-${index}`}
             type="button"
-            className={`gallery-thumb-btn ${activeIndex === index ? "active" : ""}`}
-            onClick={() => setActiveIndex(index)}
-            onMouseEnter={() => setActiveIndex(index)} // swap on hover for ultra-fluid interactions
-            aria-label={`Show product image ${index + 1}`}
+            className="gallery-expand-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              openLightbox(activeIndex);
+            }}
+            aria-label="Expand gallery to full screen"
           >
-            <Image
-              src={image}
-              alt={`${productName} ${index + 1}`}
-              width={320}
-              height={320}
-              sizes="(max-width: 900px) 25vw, 12vw"
-            />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="expand-svg-icon">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+            <span>Expand View</span>
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Immersive Lightbox Native `<dialog>` Modal */}
       <dialog
         ref={dialogRef}
         className="premium-lightbox-dialog"

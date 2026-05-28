@@ -174,6 +174,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="product-detail-copy">
             <p className="eyebrow">{product.category_name || "Signature Product"}</p>
             <h1 className="page-title">{product.name}</h1>
+            <div className="product-rating-inline">
+              <span>{`${"★".repeat(Math.max(0, Math.min(5, Math.round(Number(product.avg_rating || 0))))) || "☆☆☆☆☆"}`}</span>
+              <strong>{Number(product.avg_rating || 0).toFixed(1)}</strong>
+              <small>{Number(product.review_count || 0)} verified review{Number(product.review_count || 0) === 1 ? "" : "s"}</small>
+            </div>
             <p className="detail-price">{formatPrice(product.effective_price ?? product.price, currencySymbol)}</p>
             {product.short_desc ? <p className="detail-lead">{product.short_desc}</p> : null}
 
@@ -310,7 +315,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       )}
 
       {/* Customer Reviews Section */}
-      <ProductReviews productName={product.name} />
+      <ProductReviews
+        productName={product.name}
+        productSlug={product.slug}
+        initialAverage={Number(product.avg_rating || 0)}
+        initialCount={Number(product.review_count || 0)}
+      />
     </main>
   );
 }

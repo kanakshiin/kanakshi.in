@@ -124,6 +124,37 @@ export type Product = {
   shipping_fee?: number | string | null;
 };
 
+export type ProductReview = {
+  id: number;
+  rating: number;
+  comment: string;
+  images: string[];
+  is_verified_purchase: boolean;
+  customer_name: string;
+  created_at?: string | null;
+  is_published?: boolean;
+  published_at?: string | null;
+  moderated_at?: string | null;
+};
+
+export type ProductReviewEligibility = {
+  is_authenticated: boolean;
+  has_purchased: boolean;
+  can_submit: boolean;
+  reason?: string | null;
+};
+
+export type ProductReviewFeed = {
+  summary: {
+    avg_rating: number;
+    review_count: number;
+    rating_breakdown: Record<string, number> | Record<number, number>;
+  };
+  items: ProductReview[];
+  eligibility: ProductReviewEligibility;
+  viewer_review?: ProductReview | null;
+};
+
 export type ProductListResponse = {
   items: Product[];
   pagination: {
