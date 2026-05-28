@@ -289,6 +289,14 @@ h3,
   transition: color 240ms ease;
 }
 
+.nav-link-plain {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  color: #191919;
+  transition: color 240ms ease;
+}
+
 .nav-chevron {
   width: 0.9rem;
   height: 0.9rem;
@@ -337,6 +345,10 @@ h3,
 }
 
 .nav-item-with-menu:hover .nav-link-with-icon {
+  color: #f1a720;
+}
+
+.nav-item-with-menu:hover .nav-link-plain {
   color: #f1a720;
 }
 
@@ -679,6 +691,32 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.9rem;
+}
+
+.footer-payment-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.footer-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.35rem;
+  height: 2rem;
+  border: 1px solid rgba(25, 25, 25, 0.1);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.footer-payment-badge svg {
+  width: 2.35rem;
+  height: 1.4rem;
+  display: block;
 }
 
 .primary-button,

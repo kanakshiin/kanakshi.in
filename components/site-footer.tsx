@@ -46,6 +46,58 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
     }
   });
 
+  const paymentMethods = [
+    {
+      key: "mastercard",
+      label: "Mastercard",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <circle cx="18" cy="14" r="8.5" fill="#eb001b" />
+          <circle cx="26" cy="14" r="8.5" fill="#f79e1b" fillOpacity="0.92" />
+          <path d="M22 7.2a8.5 8.5 0 0 1 0 13.6a8.5 8.5 0 0 1 0-13.6Z" fill="#ff5f00" />
+        </svg>
+      )
+    },
+    {
+      key: "visa",
+      label: "Visa",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <text x="22" y="18" textAnchor="middle" fontSize="11" fontWeight="800" fill="#1434cb" fontFamily="Arial, sans-serif">
+            VISA
+          </text>
+        </svg>
+      )
+    },
+    {
+      key: "rupay",
+      label: "RuPay",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <path d="M10 20L18 8h15l-8 12H10Z" fill="#1f3f95" />
+          <path d="M16 20l7-10h11l-7 10H16Z" fill="#33a457" fillOpacity="0.92" />
+          <text x="22" y="17.5" textAnchor="middle" fontSize="7.3" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">
+            RuPay
+          </text>
+        </svg>
+      )
+    },
+    {
+      key: "paytm",
+      label: "Paytm",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <text x="19" y="18" textAnchor="middle" fontSize="10" fontWeight="800" fill="#00baf2" fontFamily="Arial, sans-serif">
+            pay
+          </text>
+          <text x="30" y="18" textAnchor="middle" fontSize="10" fontWeight="800" fill="#0f4a8a" fontFamily="Arial, sans-serif">
+            tm
+          </text>
+        </svg>
+      )
+    }
+  ];
+
 
   const socialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -167,7 +219,13 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
 
       <div className="container footer-bottom">
         <span>{settings.footer_copyright_text || "© Little Divinity 2026. All Rights Reserved"}</span>
-        <span>MasterCard · Visa · RuPay · Paytm · PayPal</span>
+        <div className="footer-payment-strip" aria-label="Accepted payment methods">
+          {paymentMethods.map((method) => (
+            <span key={method.key} className="footer-payment-badge" title={method.label} aria-label={method.label}>
+              {method.logo}
+            </span>
+          ))}
+        </div>
       </div>
     </footer>
   );
