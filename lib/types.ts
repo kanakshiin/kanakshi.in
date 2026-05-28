@@ -19,6 +19,16 @@ export type SiteSettings = {
   custom_domain?: string;
   google_tag_manager_id?: string | null;
   facebook_pixel_id?: string | null;
+  seasonal_campaign_name?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  twitter_handle?: string | null;
   logo_url?: string | null;
   favicon_url?: string | null;
   footer_copyright_text?: string | null;

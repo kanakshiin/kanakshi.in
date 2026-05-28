@@ -31,7 +31,7 @@ export function getSiteName(settings?: SiteSettings | null): string {
 }
 
 export function getSiteDescription(settings?: SiteSettings | null): string {
-  return settings?.site_tagline || fallbackSiteDescription;
+  return settings?.meta_description || settings?.site_tagline || fallbackSiteDescription;
 }
 
 export function getCanonicalUrl(pathname = "/", settings?: SiteSettings | null): string {
@@ -82,11 +82,19 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
   const siteName = getSiteName(settings);
   const description = getSiteDescription(settings);
   const siteUrl = getSiteUrl(settings);
+  const title = settings?.meta_title || siteName;
+  const ogTitle = settings?.og_title || settings?.meta_title || siteName;
+  const ogDescription = settings?.og_description || description;
+  const ogImage = getAbsoluteMediaUrl(settings?.og_image || settings?.logo_url, settings) || `${siteUrl}/logo.jpg`;
+  const twitterTitle = settings?.twitter_title || settings?.og_title || settings?.meta_title || siteName;
+  const twitterDescription = settings?.twitter_description || settings?.og_description || description;
+  const twitterImage = getAbsoluteMediaUrl(settings?.twitter_image || settings?.og_image || settings?.logo_url, settings) || ogImage;
+  const twitterHandle = settings?.twitter_handle?.trim() || undefined;
 
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: siteName,
+      default: title,
       template: `%s | ${siteName}`
     },
     description,
@@ -107,13 +115,22 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       type: "website",
       url: siteUrl,
       siteName,
-      title: siteName,
-      description
+      title: ogTitle,
+      description: ogDescription,
+      images: [
+        {
+          url: ogImage,
+          alt: settings?.seasonal_campaign_name || siteName
+        }
+      ]
     },
     twitter: {
       card: "summary_large_image",
-      title: siteName,
-      description
+      title: twitterTitle,
+      description: twitterDescription,
+      images: [twitterImage],
+      site: twitterHandle,
+      creator: twitterHandle
     },
     robots: {
       index: true,
