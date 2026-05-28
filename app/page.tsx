@@ -11,9 +11,14 @@ import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescriptio
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
+  const { settings, categories, socialLinks, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";
   const siteName = getSiteName(settings);
+  const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
+  const instagramUrl = instagramLink?.url || "https://www.instagram.com/the_advitya/";
+  const instagramLabel = instagramLink?.handle
+    ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
+    : "@littledivinity";
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const curatedCollections = [
     {
@@ -487,12 +492,12 @@ export default async function HomePage() {
               <p className="eyebrow">Follow Us On</p>
               <h2>Instagram</h2>
             </div>
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="text-link">@littledivinity</a>
+            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-link">{instagramLabel}</a>
           </div>
 
           <div className="instagram-grid">
             {instagramTiles.map((tile, index) => (
-              <a key={`${tile}-${index}`} href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
+              <a key={`${tile}-${index}`} href={instagramUrl} target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
                 <img src={tile} alt={["Brass god idol handcrafted","Home decor brass collection","Peacock brass wall art","Buddha statue brass","Candle stand brass","God idols collection"][index] || `Handcrafted product ${index + 1}`} />
               </a>
             ))}

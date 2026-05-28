@@ -453,11 +453,12 @@ async function resolveProductRail(section: HomepageSection | undefined, fallback
 }
 
 export async function getHomePageData() {
-  const [settings, categories, homepageSections] = await Promise.all([
-    getSettings(),
-    getCategories(8),
+  const [layoutData, homepageSections] = await Promise.all([
+    getLayoutData(),
     getHomepageSections()
   ]);
+
+  const { settings, categories, socialLinks } = layoutData;
 
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const [featuredProducts, newestProducts] = await Promise.all([
@@ -468,6 +469,7 @@ export async function getHomePageData() {
   return {
     settings,
     categories,
+    socialLinks,
     featuredProducts,
     newestProducts,
     homepageSections
