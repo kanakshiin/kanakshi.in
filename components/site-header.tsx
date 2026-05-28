@@ -48,6 +48,10 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
   const { count } = useCart();
   const { count: wishlistCount } = useWishlist();
   const [cartPop, setCartPop] = useState(false);
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setOpenMobileSectionId(null);
+  };
 
   useEffect(() => {
     if (count > 0) {
@@ -222,14 +226,14 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
             })}
           </nav>
 
-          <div className="header-tools" aria-label="Store tools">
-            <Link href="/shop" aria-label="Search" className="header-tool-icon">
+          <div className="header-tools header-tools--desktop" aria-label="Store tools">
+            <Link href="/shop" aria-label="Search" className="header-tool-icon header-tool-icon--desktop-only">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="11" cy="11" r="6.5" />
                 <path d="M16 16l4.5 4.5" />
               </svg>
             </Link>
-            <Link href="/wishlist" aria-label="Wishlist" className="header-tool-icon header-wishlist-link">
+            <Link href="/wishlist" aria-label="Wishlist" className="header-tool-icon header-tool-icon--desktop-only header-wishlist-link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
               </svg>
@@ -239,13 +243,13 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                 </span>
               ) : null}
             </Link>
-            <Link href="/account" aria-label="Account" className="header-tool-icon">
+            <Link href="/account" aria-label="Account" className="header-tool-icon header-tool-icon--desktop-only">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="8.5" r="3.2" />
                 <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
               </svg>
             </Link>
-            <Link href="/cart" aria-label="Cart" className="header-tool-icon header-cart-link">
+            <Link href="/cart" aria-label="Cart" className="header-tool-icon header-tool-icon--desktop-only header-cart-link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />
                 <path d="M9.5 8.5V7.3c0-1.4 1.1-2.6 2.5-2.6s2.5 1.2 2.5 2.6v1.2" />
@@ -256,17 +260,6 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                 </span>
               ) : null}
             </Link>
-            <button
-              type="button"
-              className="mobile-nav-toggle"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen((current) => !current)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
           </div>
         </div>
 
@@ -280,7 +273,7 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                 return (
                   <div key={item.id} className="mobile-nav-entry">
                     <div className="mobile-nav-row">
-                      <Link href={item.href} className="mobile-nav-link">
+                      <Link href={item.href} className="mobile-nav-link" onClick={closeMobileMenu}>
                         {item.name}
                       </Link>
 
@@ -304,7 +297,12 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
                     {hasSubmenu ? (
                       <div className={`mobile-nav-submenu${isOpen ? " is-open" : ""}`}>
                         {item.submenu.map((submenuItem) => (
-                          <Link key={`${item.slug}-${submenuItem.id}`} href={submenuItem.href} className="mobile-nav-submenu-link">
+                          <Link
+                            key={`${item.slug}-${submenuItem.id}`}
+                            href={submenuItem.href}
+                            className="mobile-nav-submenu-link"
+                            onClick={closeMobileMenu}
+                          >
                             {submenuItem.name}
                           </Link>
                         ))}
@@ -319,13 +317,17 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
       </header>
 
       <nav className="mobile-bottom-nav" aria-label="Mobile quick navigation">
-        <Link href="/" className={`mobile-bottom-link${pathname === "/" ? " is-active" : ""}`}>
+        <Link href="/" className={`mobile-bottom-link${pathname === "/" ? " is-active" : ""}`} onClick={closeMobileMenu}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" />
           </svg>
           <span>Home</span>
         </Link>
-        <Link href="/shop" className={`mobile-bottom-link${pathname.startsWith("/shop") ? " is-active" : ""}`}>
+        <Link
+          href="/shop"
+          className={`mobile-bottom-link${pathname.startsWith("/shop") ? " is-active" : ""}`}
+          onClick={closeMobileMenu}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4.5 7.5h15" />
             <path d="M6.5 7.5l1.2 10h8.6l1.2-10" />
@@ -347,14 +349,22 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
           </svg>
           <span>Menu</span>
         </button>
-        <Link href="/wishlist" className={`mobile-bottom-link${pathname.startsWith("/wishlist") ? " is-active" : ""}`}>
+        <Link
+          href="/wishlist"
+          className={`mobile-bottom-link${pathname.startsWith("/wishlist") ? " is-active" : ""}`}
+          onClick={closeMobileMenu}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
           </svg>
           <span>Wishlist</span>
           {wishlistCount > 0 ? <em>{wishlistCount}</em> : null}
         </Link>
-        <Link href="/account" className={`mobile-bottom-link${pathname.startsWith("/account") ? " is-active" : ""}`}>
+        <Link
+          href="/account"
+          className={`mobile-bottom-link${pathname.startsWith("/account") ? " is-active" : ""}`}
+          onClick={closeMobileMenu}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="8.5" r="3.2" />
             <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />

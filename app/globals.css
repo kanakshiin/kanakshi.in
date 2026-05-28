@@ -397,6 +397,10 @@ h3,
   gap: 0.55rem;
 }
 
+.header-tools--desktop {
+  display: flex;
+}
+
 .brand-logo {
   width: auto;
   max-width: 170px;
@@ -3161,13 +3165,12 @@ h3 {
     gap: 0.25rem;
   }
 
-  .mobile-nav-toggle,
-  .mobile-nav-panel {
-    display: block;
+  .header-tools--desktop {
+    display: none;
   }
 
-  .mobile-nav-toggle {
-    display: inline-flex;
+  .mobile-nav-panel {
+    display: block;
   }
 
   .mobile-bottom-nav {
