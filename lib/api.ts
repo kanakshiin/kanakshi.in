@@ -480,7 +480,15 @@ export interface PlaceOrderInput {
   ship_name: string;
   ship_email: string;
   ship_phone: string;
+  ship_alt_phone?: string;
   ship_address: string;
+  save_address?: boolean;
+  address_type?: "home" | "office" | "other";
+  address_label?: string;
+  address_line1?: string;
+  address_line2?: string;
+  address_landmark?: string;
+  address_is_default?: boolean;
   ship_city: string;
   ship_state: string;
   ship_pincode: string;
@@ -506,6 +514,7 @@ export async function placeOrder(data: PlaceOrderInput, token?: string): Promise
     ship_name: string;
     ship_email: string;
     ship_phone: string;
+    ship_alt_phone?: string | null;
     estimated_delivery: string;
     customer_auth?: {
       token: string;
@@ -734,6 +743,7 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
     ship_name: string;
     ship_email: string;
     ship_phone: string;
+    ship_alt_phone?: string | null;
     ship_address: string;
     ship_city: string;
     ship_state: string;

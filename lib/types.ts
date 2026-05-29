@@ -195,6 +195,7 @@ export type CustomerAddress = {
   label?: string | null;
   recipient_name: string;
   phone?: string | null;
+  alternate_phone?: string | null;
   address_line1: string;
   address_line2?: string | null;
   city: string;

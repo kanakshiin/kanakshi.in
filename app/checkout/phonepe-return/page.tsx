@@ -50,10 +50,20 @@ function PhonePeReturnContent() {
 
       setStatus("error");
       setMessage(result.message || "PhonePe payment is not confirmed yet. Please try again in a moment.");
+      window.setTimeout(() => {
+        router.replace(
+          `/checkout/failed?order_number=${encodeURIComponent(orderNumber)}&payment_method=phonepe&reason=${encodeURIComponent(result.message || "PhonePe payment could not be confirmed.")}`
+        );
+      }, 1200);
     }).catch(() => {
       if (!active) return;
       setStatus("error");
       setMessage("We could not verify your PhonePe payment right now. Please try again in a moment.");
+      window.setTimeout(() => {
+        router.replace(
+          `/checkout/failed?order_number=${encodeURIComponent(orderNumber)}&payment_method=phonepe&reason=${encodeURIComponent("We could not verify your PhonePe payment right now.")}`
+        );
+      }, 1200);
     });
 
     return () => {

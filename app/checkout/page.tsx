@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { useCart } from "../../components/cart-provider";
 import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken, storeCustomerToken } from "../../lib/customer-auth";
@@ -104,8 +104,9 @@ const INDIAN_STATES_AND_CITIES: Record<string, string[]> = {
   "Puducherry": ["Puducherry", "Karaikal", "Mahe", "Yanam", "Other"]
 };
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, subtotal, clearCart } = useCart();
   const checkoutCompletingRef = useRef(false);
 
@@ -129,12 +130,19 @@ export default function CheckoutPage() {
   const [shipName, setShipName] = useState("");
   const [shipEmail, setShipEmail] = useState("");
   const [shipPhone, setShipPhone] = useState("");
-  const [shipAddress, setShipAddress] = useState("");
+  const [shipAltPhone, setShipAltPhone] = useState("");
+  const [shipAddressLine1, setShipAddressLine1] = useState("");
+  const [shipAddressLine2, setShipAddressLine2] = useState("");
+  const [shipLandmark, setShipLandmark] = useState("");
   const [shipCity, setShipCity] = useState("");
   const [shipState, setShipState] = useState("");
   const [shipPincode, setShipPincode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "phonepe">("cod");
   const [notes, setNotes] = useState("");
+  const [saveAddressForFuture, setSaveAddressForFuture] = useState(false);
+  const [saveAddressAsDefault, setSaveAddressAsDefault] = useState(false);
+  const [saveAddressType, setSaveAddressType] = useState<"home" | "office" | "other">("home");
+  const [saveAddressLabel, setSaveAddressLabel] = useState("");
 
   // Dropdown list helper states
   const [customCityActive, setCustomCityActive] = useState(false);
@@ -181,14 +189,25 @@ export default function CheckoutPage() {
     setShipCity(city);
   };
 
+  const composeShippingAddress = () =>
+    [shipAddressLine1.trim(), shipAddressLine2.trim(), shipLandmark.trim()]
+      .filter(Boolean)
+      .join(", ");
+
   const applySavedAddress = (address: CustomerAddress) => {
     setSelectedAddressId(address.id);
     setShipName(address.recipient_name || user?.name || "");
     setShipEmail(user?.email || shipEmail);
     setShipPhone(address.phone || user?.phone || "");
-    setShipAddress([address.address_line1, address.address_line2].filter(Boolean).join(", "));
+    setShipAltPhone(address.alternate_phone || "");
+    setShipAddressLine1(address.address_line1 || "");
+    setShipAddressLine2(address.address_line2 || "");
+    setShipLandmark(address.landmark || "");
     setShipPincode(normalizeIndianPincode(address.pincode || ""));
     applyPincodeLocation(address.state || "", address.city || "");
+    setSaveAddressType(address.type || "home");
+    setSaveAddressLabel(address.label || "");
+    setSaveAddressAsDefault(address.is_default);
   };
 
   // Coupon states
@@ -200,9 +219,10 @@ export default function CheckoutPage() {
   // Submit states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const availableGateways = settings?.payment_gateways?.length
-    ? settings.payment_gateways
+  const availableGateways = settings
+    ? (settings.payment_gateways || [])
     : [{ provider: "cod", display_name: "Cash on Delivery", is_test_mode: false } satisfies PaymentGatewayPublic];
+  const hasAnyPaymentGateway = availableGateways.length > 0;
   const hasGateway = (provider: "cod" | "razorpay" | "phonepe") =>
     availableGateways.some((gateway) => gateway.provider === provider);
   const gatewayMeta = (provider: "cod" | "razorpay" | "phonepe") =>
@@ -210,6 +230,23 @@ export default function CheckoutPage() {
 
   const redirectToSuccess = (orderNumber: string) => {
     const target = `/checkout/success?order_number=${encodeURIComponent(orderNumber)}`;
+    if (typeof window !== "undefined") {
+      window.location.assign(target);
+      return;
+    }
+    router.push(target);
+  };
+
+  const redirectToFailure = (params: {
+    orderNumber?: string;
+    paymentMethod?: string;
+    reason?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params.orderNumber) query.set("order_number", params.orderNumber);
+    if (params.paymentMethod) query.set("payment_method", params.paymentMethod);
+    if (params.reason) query.set("reason", params.reason);
+    const target = `/checkout/failed${query.toString() ? `?${query.toString()}` : ""}`;
     if (typeof window !== "undefined") {
       window.location.assign(target);
       return;
@@ -274,6 +311,16 @@ export default function CheckoutPage() {
       }
     }
   }, [paymentMethod, settings]);
+
+  useEffect(() => {
+    const requestedPayment = searchParams.get("payment");
+
+    if (requestedPayment === "cod" || requestedPayment === "razorpay" || requestedPayment === "phonepe") {
+      if (hasGateway(requestedPayment)) {
+        setPaymentMethod(requestedPayment);
+      }
+    }
+  }, [searchParams, settings]);
 
   useEffect(() => {
     async function loadShippingProducts() {
@@ -461,12 +508,20 @@ export default function CheckoutPage() {
         clearCart();
         redirectToSuccess(activeSimulation.orderNumber);
       } else {
-        setError(verifyRes.message || "Payment verification failed.");
+        redirectToFailure({
+          orderNumber: activeSimulation.orderNumber,
+          paymentMethod: activeSimulation.method,
+          reason: verifyRes.message || "Payment verification failed.",
+        });
         setIsSubmitting(false);
         setActiveSimulation(null);
       }
     } catch (err) {
-      setError("An error occurred during payment verification.");
+      redirectToFailure({
+        orderNumber: activeSimulation.orderNumber,
+        paymentMethod: activeSimulation.method,
+        reason: "An error occurred during payment verification.",
+      });
       setIsSubmitting(false);
       setActiveSimulation(null);
     }
@@ -479,14 +534,20 @@ export default function CheckoutPage() {
 
     try {
       const cancelRes = await cancelOrder(activeSimulation.orderNumber, token, activeSimulation.accessToken || undefined);
-      setError(
-        cancelRes.success
-          ? "Payment cancelled. Your reserved items have been restored to stock."
-          : cancelRes.message || "We could not cancel this payment session automatically. Please contact support if amount was captured."
-      );
+      redirectToFailure({
+        orderNumber: activeSimulation.orderNumber,
+        paymentMethod: activeSimulation.method,
+        reason: cancelRes.success
+          ? "Payment was cancelled before completion. You can retry from checkout."
+          : cancelRes.message || "We could not cancel this payment session automatically.",
+      });
     } catch (err) {
       console.error("Order cancellation failed:", err);
-      setError("We could not cancel this payment session automatically. Please contact support if amount was captured.");
+      redirectToFailure({
+        orderNumber: activeSimulation.orderNumber,
+        paymentMethod: activeSimulation.method,
+        reason: "We could not cancel this payment session automatically. Please retry your order.",
+      });
     } finally {
       setIsSubmitting(false);
       setActiveSimulation(null);
@@ -505,7 +566,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!shipName || !shipEmail || !shipPhone || !shipAddress || !shipCity || !shipState || !shipPincode) {
+    if (!shipName || !shipEmail || !shipPhone || !shipAddressLine1 || !shipCity || !shipState || !shipPincode) {
       setError("Please fill out all required shipping fields.");
       setIsSubmitting(false);
       return;
@@ -525,13 +586,28 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (shipAltPhone && !isValidIndianPhone(shipAltPhone)) {
+      setError("Please enter a valid alternate 10-digit Indian mobile number.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const token = getStoredCustomerToken() || undefined;
+    const shippingAddress = composeShippingAddress();
 
     const orderData = {
       ship_name: shipName,
       ship_email: normalizeEmailInput(shipEmail),
       ship_phone: normalizeIndianPhone(shipPhone),
-      ship_address: shipAddress,
+      ship_alt_phone: normalizeIndianPhone(shipAltPhone) || undefined,
+      ship_address: shippingAddress,
+      save_address: saveAddressForFuture,
+      address_type: saveAddressType,
+      address_label: saveAddressLabel.trim() || undefined,
+      address_line1: shipAddressLine1.trim(),
+      address_line2: shipAddressLine2.trim() || undefined,
+      address_landmark: shipLandmark.trim() || undefined,
+      address_is_default: saveAddressAsDefault,
       ship_city: shipCity,
       ship_state: shipState,
       ship_pincode: normalizeIndianPincode(shipPincode),
@@ -593,7 +669,11 @@ export default function CheckoutPage() {
                     clearCart();
                     redirectToSuccess(res.data!.order_number);
                   } else {
-                    setError(verifyRes.message || "Payment verification failed.");
+                    redirectToFailure({
+                      orderNumber: res.data!.order_number,
+                      paymentMethod: "razorpay",
+                      reason: verifyRes.message || "Payment verification failed.",
+                    });
                     setIsSubmitting(false);
                   }
                 },
@@ -605,11 +685,13 @@ export default function CheckoutPage() {
                       token,
                       pendingAccessToken
                     );
-                    setError(
-                      cancelRes.success
-                        ? "Payment cancelled. Your reserved items have been restored to stock."
-                        : cancelRes.message || "We could not cancel this payment session automatically. Please contact support if amount was captured."
-                    );
+                    redirectToFailure({
+                      orderNumber: res.data!.order_number,
+                      paymentMethod: "razorpay",
+                      reason: cancelRes.success
+                        ? "Payment was cancelled before completion. You can retry from checkout."
+                        : cancelRes.message || "We could not complete your payment. Please retry.",
+                    });
                     setIsSubmitting(false);
                   }
                 },
@@ -628,14 +710,22 @@ export default function CheckoutPage() {
             } catch (err) {
               console.error("Razorpay SDK initialization failed:", err);
               await cancelOrder(res.data.order_number, token, pendingAccessToken);
-              setError("Razorpay could not start properly. Please try again or choose another payment method.");
+              redirectToFailure({
+                orderNumber: res.data.order_number,
+                paymentMethod: "razorpay",
+                reason: "Razorpay could not start properly. Please retry your payment.",
+              });
               setIsSubmitting(false);
               return;
             }
           }
 
           await cancelOrder(res.data.order_number, token, pendingAccessToken);
-          setError("Razorpay checkout could not load right now. Please try again or choose Cash on Delivery.");
+          redirectToFailure({
+            orderNumber: res.data.order_number,
+            paymentMethod: "razorpay",
+            reason: "Razorpay checkout could not load right now. Please retry in a moment.",
+          });
           setIsSubmitting(false);
           return;
         }
@@ -690,6 +780,13 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {!hasAnyPaymentGateway && (
+          <div className="auth-error" style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "1.2rem" }}>⚠️</span>
+            <span>No payment method is active right now. Please enable one from the admin payment gateway panel.</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="auth-two-column checkout-layout" style={{ display: "grid", gap: "2.5rem" }}>
           
           {/* LEFT COLUMN: SHIPPING & PAYMENT */}
@@ -717,10 +814,11 @@ export default function CheckoutPage() {
                         onClick={() => applySavedAddress(address)}
                       >
                         <span className="checkout-address-type">
-                          {address.type}{address.is_default ? " · Default" : ""}
+                          {(address.label || address.type)}{address.is_default ? " · Default" : ""}
                         </span>
                         <strong>{address.recipient_name}</strong>
                         <span>{address.address_line1}</span>
+                        {address.address_line2 ? <span>{address.address_line2}</span> : null}
                         <span>{address.city}, {address.state} - {address.pincode}</span>
                       </button>
                     ))}
@@ -778,15 +876,51 @@ export default function CheckoutPage() {
                   {shipPhoneInvalid ? <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p> : null}
                 </div>
 
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-address">Street Address *</label>
+                <div className="auth-field">
+                  <label htmlFor="ship-alt-phone">Alternate Phone</label>
                   <input
-                    id="ship-address"
+                    id="ship-alt-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    maxLength={11}
+                    value={formatIndianPhone(shipAltPhone)}
+                    onChange={(e) => setShipAltPhone(normalizeIndianPhone(e.target.value))}
+                    placeholder="Optional backup contact"
+                  />
+                </div>
+
+                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="ship-address-line1">Address Line 1 *</label>
+                  <input
+                    id="ship-address-line1"
                     type="text"
                     required
-                    value={shipAddress}
-                    onChange={(e) => setShipAddress(e.target.value)}
+                    value={shipAddressLine1}
+                    onChange={(e) => setShipAddressLine1(e.target.value)}
                     placeholder="Flat, House no., Building, Company, Apartment, Area"
+                  />
+                </div>
+
+                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="ship-address-line2">Address Line 2</label>
+                  <input
+                    id="ship-address-line2"
+                    type="text"
+                    value={shipAddressLine2}
+                    onChange={(e) => setShipAddressLine2(e.target.value)}
+                    placeholder="Street, locality, nearby area"
+                  />
+                </div>
+
+                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="ship-landmark">Landmark</label>
+                  <input
+                    id="ship-landmark"
+                    type="text"
+                    value={shipLandmark}
+                    onChange={(e) => setShipLandmark(e.target.value)}
+                    placeholder="Optional landmark for easy delivery"
                   />
                 </div>
 
@@ -854,6 +988,53 @@ export default function CheckoutPage() {
                     placeholder="6-digit PIN code"
                   />
                   {pincodeStatus ? <p className={pincodeStatus.toLowerCase().includes("unable") ? "auth-field-error" : "auth-field-success"}>{pincodeStatus}</p> : null}
+                </div>
+
+                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", marginBottom: "0.55rem", flexWrap: "wrap" }}>
+                    <span>Save this address for future orders</span>
+                    <label className="checkbox-row compact" style={{ margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={saveAddressForFuture}
+                        onChange={(e) => setSaveAddressForFuture(e.target.checked)}
+                      />
+                      <span>Save</span>
+                    </label>
+                  </div>
+
+                  {saveAddressForFuture ? (
+                    <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1rem", padding: "1rem", border: "1px solid var(--line)", borderRadius: "18px", background: "rgba(255,255,255,0.55)" }}>
+                      <div className="auth-field">
+                        <label htmlFor="save-address-type">Address Type</label>
+                        <select id="save-address-type" value={saveAddressType} onChange={(e) => setSaveAddressType(e.target.value as "home" | "office" | "other")}>
+                          <option value="home">Home</option>
+                          <option value="office">Office</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div className="auth-field">
+                        <label htmlFor="save-address-label">Address Label</label>
+                        <input
+                          id="save-address-label"
+                          type="text"
+                          value={saveAddressLabel}
+                          onChange={(e) => setSaveAddressLabel(e.target.value)}
+                          placeholder="e.g. Home, Office HQ, Mom's Place"
+                        />
+                      </div>
+                      <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
+                        <label className="checkbox-row compact" style={{ margin: 0 }}>
+                          <input
+                            type="checkbox"
+                            checked={saveAddressAsDefault}
+                            onChange={(e) => setSaveAddressAsDefault(e.target.checked)}
+                          />
+                          <span>Make this my default address</span>
+                        </label>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
@@ -1115,13 +1296,13 @@ export default function CheckoutPage() {
               <div className="checkout-trust-strip">
                 <span>🔒 SSL Secured</span>
                 <span>✓ Razorpay Certified</span>
-                <span>✓ COD Available</span>
+                <span>{hasGateway("cod") ? "✓ COD Available" : "✓ Prepaid Only"}</span>
               </div>
 
               {/* Action Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasAnyPaymentGateway}
                 className="primary-button"
                 style={{
                   width: "100%",
@@ -1130,8 +1311,8 @@ export default function CheckoutPage() {
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  opacity: isSubmitting ? 0.75 : 1
+                  cursor: isSubmitting || !hasAnyPaymentGateway ? "not-allowed" : "pointer",
+                  opacity: isSubmitting || !hasAnyPaymentGateway ? 0.75 : 1
                 }}
               >
                 {isSubmitting ? (
@@ -1139,6 +1320,8 @@ export default function CheckoutPage() {
                     <span style={{ display: "inline-block", width: "16px", height: "16px", border: "2px solid #FFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                     Placing Your Order…
                   </>
+                ) : !hasAnyPaymentGateway ? (
+                  <>No active payment method available</>
                 ) : (
                   <>Confirm &amp; Place Order Securely — {currencySymbol}{grandTotal.toLocaleString("en-IN")}</>
                 )}
@@ -1269,5 +1452,23 @@ export default function CheckoutPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="content-section auth-page" style={{ justifyContent: "center" }}>
+          <div style={{ textAlign: "center", padding: "3rem" }}>
+            <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+            <h2 className="auth-title">Preparing your secure checkout…</h2>
+            <p className="auth-muted">Loading payment methods, saved addresses, and delivery details.</p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutPageContent />
+    </Suspense>
   );
 }
