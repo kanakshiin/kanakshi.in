@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { resendCustomerVerificationOtp, storeCustomerToken, verifyCustomerEmailOtp } from "../../lib/customer-auth";
+import { sanitizeRedirectPath } from "../../lib/auth-redirect";
 import { isValidEmailInput, normalizeEmailInput } from "../../lib/form-inputs";
 
 type VerifyEmailFormProps = {
   initialEmail: string;
+  redirectTo?: string;
 };
 
-export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
+export function VerifyEmailForm({ initialEmail, redirectTo = "/account" }: VerifyEmailFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
@@ -20,6 +22,7 @@ export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const emailInvalid = email.length > 0 && !isValidEmailInput(email);
+  const redirect = sanitizeRedirectPath(redirectTo, "/account");
 
   async function handleVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,7 +38,7 @@ export function VerifyEmailForm({ initialEmail }: VerifyEmailFormProps) {
     try {
       const data = await verifyCustomerEmailOtp({ email: normalizeEmailInput(email), code });
       storeCustomerToken(data.token);
-      router.push("/account");
+      router.push(redirect);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to verify email.");

@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { PasswordField } from "../../components/account/password-field";
 
 import { useCart } from "../../components/cart-provider";
-import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken, loginCustomer, registerCustomer, resendCustomerVerificationOtp, storeCustomerToken, verifyCustomerEmailOtp } from "../../lib/customer-auth";
+import { fetchCurrentCustomer, fetchCustomerAddresses, getStoredCustomerToken, storeCustomerToken } from "../../lib/customer-auth";
 import { fetchPincodeLocation, formatIndianPhone, isValidEmailInput, isValidIndianPhone, normalizeEmailInput, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
 import { getActiveCoupons, getSettings, getProducts, placeOrder, formatPrice, resolveAssetUrl, verifyPayment, cancelOrder } from "../../lib/api";
 import { Coupon, CustomerAddress, CustomerUser, PaymentGatewayPublic, Product, SiteSettings } from "../../lib/types";
@@ -144,14 +143,6 @@ function CheckoutPageContent() {
   const [saveAddressAsDefault, setSaveAddressAsDefault] = useState(false);
   const [saveAddressType, setSaveAddressType] = useState<"home" | "office" | "other">("home");
   const [saveAddressLabel, setSaveAddressLabel] = useState("");
-  const [accountPassword, setAccountPassword] = useState("");
-  const [accountPasswordConfirmation, setAccountPasswordConfirmation] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [accountStep, setAccountStep] = useState<"register" | "verify" | "verified">("register");
-  const [accountError, setAccountError] = useState<string | null>(null);
-  const [accountStatus, setAccountStatus] = useState<string | null>(null);
-  const [accountLoading, setAccountLoading] = useState(false);
-  const [accountResending, setAccountResending] = useState(false);
 
   // Dropdown list helper states
   const [customCityActive, setCustomCityActive] = useState(false);
@@ -218,24 +209,6 @@ function CheckoutPageContent() {
     setSaveAddressLabel(address.label || "");
     setSaveAddressAsDefault(address.is_default);
   };
-
-  async function hydrateCheckoutCustomer(token: string) {
-    const [customer, addresses] = await Promise.all([
-      fetchCurrentCustomer(token),
-      fetchCustomerAddresses(token)
-    ]);
-
-    setUser(customer);
-    setSavedAddresses(addresses);
-    setShipName(customer.name || shipName);
-    setShipEmail(customer.email || shipEmail);
-    setShipPhone(customer.phone || shipPhone);
-
-    const defaultAddress = addresses.find((address) => address.is_default) || addresses[0];
-    if (defaultAddress) {
-      applySavedAddress(defaultAddress);
-    }
-  }
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -410,14 +383,6 @@ function CheckoutPageContent() {
     };
   }, [shipPincode]);
 
-  useEffect(() => {
-    if (user) {
-      setAccountStep("verified");
-      setAccountError(null);
-      setAccountStatus("Your account is active and ready for checkout.");
-    }
-  }, [user]);
-
   if (loadingConfig || items.length === 0) {
     return (
       <main className="content-section auth-page" style={{ justifyContent: "center" }}>
@@ -589,103 +554,6 @@ function CheckoutPageContent() {
     }
   }
 
-  async function handleCreateCheckoutAccount() {
-    setAccountError(null);
-    setAccountStatus(null);
-
-    if (!shipName || !shipEmail || !shipPhone) {
-      setAccountError("Please enter your full name, email, and phone first so we can create your account.");
-      return;
-    }
-
-    if (shipEmailInvalid) {
-      setAccountError("Please enter a valid email address before creating the account.");
-      return;
-    }
-
-    if (!isValidIndianPhone(shipPhone)) {
-      setAccountError("Please enter a valid 10-digit Indian mobile number before creating the account.");
-      return;
-    }
-
-    if (accountPassword !== accountPasswordConfirmation) {
-      setAccountError("Password and confirm password must match.");
-      return;
-    }
-
-    setAccountLoading(true);
-
-    try {
-      const data = await registerCustomer({
-        name: shipName.trim(),
-        email: normalizeEmailInput(shipEmail),
-        phone: normalizeIndianPhone(shipPhone),
-        password: accountPassword,
-        password_confirmation: accountPasswordConfirmation,
-      });
-
-      if (data.requires_verification) {
-        setAccountStep("verify");
-        setAccountStatus("We sent an email OTP to your address. Enter it below to activate your account before payment.");
-      } else {
-        const login = await loginCustomer({
-          email: normalizeEmailInput(shipEmail),
-          password: accountPassword,
-        });
-        storeCustomerToken(login.token);
-        await hydrateCheckoutCustomer(login.token);
-        setAccountStep("verified");
-        setAccountStatus("Account created successfully. You can continue to payment now.");
-      }
-    } catch (err) {
-      setAccountError(err instanceof Error ? err.message : "Unable to create your account right now.");
-    } finally {
-      setAccountLoading(false);
-    }
-  }
-
-  async function handleVerifyCheckoutAccount() {
-    setAccountError(null);
-    setAccountStatus(null);
-
-    if (!verificationCode.trim()) {
-      setAccountError("Please enter the OTP sent to your email.");
-      return;
-    }
-
-    setAccountLoading(true);
-
-    try {
-      const data = await verifyCustomerEmailOtp({
-        email: normalizeEmailInput(shipEmail),
-        code: verificationCode.trim(),
-      });
-      storeCustomerToken(data.token);
-      await hydrateCheckoutCustomer(data.token);
-      setAccountStep("verified");
-      setAccountStatus("Email verified successfully. Your account is now linked and ready for checkout.");
-    } catch (err) {
-      setAccountError(err instanceof Error ? err.message : "Unable to verify your email OTP.");
-    } finally {
-      setAccountLoading(false);
-    }
-  }
-
-  async function handleResendCheckoutOtp() {
-    setAccountError(null);
-    setAccountStatus(null);
-    setAccountResending(true);
-
-    try {
-      await resendCustomerVerificationOtp(normalizeEmailInput(shipEmail));
-      setAccountStatus("A fresh verification OTP has been sent to your email.");
-    } catch (err) {
-      setAccountError(err instanceof Error ? err.message : "Unable to resend the verification OTP.");
-    } finally {
-      setAccountResending(false);
-    }
-  }
-
   // Handle order submission
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -693,7 +561,7 @@ function CheckoutPageContent() {
     setIsSubmitting(true);
 
     if (!user) {
-      setError("Please create and verify your customer account before placing the order.");
+      setError("Please create or log in to your verified customer account before checkout.");
       setIsSubmitting(false);
       return;
     }
@@ -929,90 +797,28 @@ function CheckoutPageContent() {
           
           {/* LEFT COLUMN: SHIPPING & PAYMENT */}
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-
             {!user ? (
               <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.76)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)" }}>
                 <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>1.</span> Secure Your Account
+                  <span>1.</span> Sign In Before Checkout
                 </h2>
-                <h3 style={{ fontSize: "1.55rem", marginBottom: "0.65rem" }}>Create your verified customer account before payment</h3>
+                <h3 style={{ fontSize: "1.55rem", marginBottom: "0.65rem" }}>Create or log in to your customer account first</h3>
                 <p className="auth-muted" style={{ marginBottom: "1.25rem" }}>
-                  We now save orders only against verified customer accounts, so you can log in later, track orders, reuse addresses, and recover your purchase history properly.
+                  First create your account on the proper registration page, verify your email OTP, and then come back here for shipping and payment. This keeps your orders, saved addresses, and future login all linked correctly.
                 </p>
-
-                <div style={{ display: "grid", gap: "1rem" }}>
-                  <div style={{ display: "grid", gap: "0.45rem", padding: "1rem 1.1rem", border: "1px solid var(--line)", borderRadius: "18px", background: "rgba(255,255,255,0.55)" }}>
-                    <strong style={{ fontSize: "0.95rem" }}>Account will use your checkout details</strong>
-                    <span style={{ color: "var(--muted)", fontSize: "0.92rem" }}>Name: {shipName || "Add your full name below"}</span>
-                    <span style={{ color: "var(--muted)", fontSize: "0.92rem" }}>Email: {shipEmail || "Add your email below"}</span>
-                    <span style={{ color: "var(--muted)", fontSize: "0.92rem" }}>Phone: {shipPhone ? formatIndianPhone(shipPhone) : "Add your phone below"}</span>
-                  </div>
-
-                  {accountStep === "register" ? (
-                    <>
-                      <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1rem" }}>
-                        <PasswordField
-                          label="Create Password"
-                          value={accountPassword}
-                          onChange={setAccountPassword}
-                          required
-                          autoComplete="new-password"
-                        />
-                        <PasswordField
-                          label="Confirm Password"
-                          value={accountPasswordConfirmation}
-                          onChange={setAccountPasswordConfirmation}
-                          required
-                          autoComplete="new-password"
-                        />
-                      </div>
-                      <p className="auth-muted" style={{ margin: 0 }}>Use at least 8 characters with uppercase, lowercase, and a number.</p>
-                      <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap", alignItems: "center" }}>
-                        <button type="button" className="primary-button" disabled={accountLoading} onClick={handleCreateCheckoutAccount}>
-                          {accountLoading ? "Creating…" : "Create Account & Send OTP"}
-                        </button>
-                        <Link href={`/account/login?redirect=${encodeURIComponent("/checkout")}`} className="text-link">Already have an account? Log in</Link>
-                      </div>
-                    </>
-                  ) : null}
-
-                  {accountStep === "verify" ? (
-                    <>
-                      <label className="auth-field">
-                        <span>Email OTP</span>
-                        <input
-                          value={verificationCode}
-                          onChange={(event) => setVerificationCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 8))}
-                          inputMode="numeric"
-                          placeholder="Enter verification OTP"
-                          required
-                        />
-                      </label>
-                      <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap", alignItems: "center" }}>
-                        <button type="button" className="primary-button" disabled={accountLoading} onClick={handleVerifyCheckoutAccount}>
-                          {accountLoading ? "Verifying…" : "Verify Email & Continue"}
-                        </button>
-                        <button type="button" className="text-link auth-link-button" disabled={accountResending} onClick={handleResendCheckoutOtp}>
-                          {accountResending ? "Resending…" : "Resend OTP"}
-                        </button>
-                      </div>
-                    </>
-                  ) : null}
-
-                  {accountStep === "verified" ? (
-                    <div className="auth-success" style={{ margin: 0 }}>
-                      {accountStatus || "Your verified account is ready. You can continue with shipping and payment."}
-                    </div>
-                  ) : null}
-
-                  {accountError ? <p className="auth-error" style={{ margin: 0 }}>{accountError}</p> : null}
-                  {accountStatus && accountStep !== "verified" ? <p className="auth-success" style={{ margin: 0 }}>{accountStatus}</p> : null}
+                <div style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap" }}>
+                  <Link href={`/account/register?redirect=${encodeURIComponent("/checkout")}`} className="primary-button">
+                    Create Account
+                  </Link>
+                  <Link href={`/account/login?redirect=${encodeURIComponent("/checkout")}`} className="secondary-button">
+                    Login
+                  </Link>
                 </div>
               </div>
             ) : null}
             
             {/* Shipping Card */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)" }}>
+            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)", opacity: user ? 1 : 0.62 }}>
               <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1.5rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
                 <span>{user ? "1." : "2."}</span> Shipping Details
               </h2>
@@ -1045,6 +851,7 @@ function CheckoutPageContent() {
                 </div>
               ) : null}
               
+              <fieldset disabled={!user} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
               <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1.2rem" }}>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <label htmlFor="ship-name">Full Name *</label>
@@ -1275,15 +1082,17 @@ function CheckoutPageContent() {
                     }}
                   />
                 </div>
-              </div>
+                </div>
+              </fieldset>
             </div>
 
             {/* Payment Method Card */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)" }}>
+            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)", opacity: user ? 1 : 0.62 }}>
               <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1.5rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
                 <span>{user ? "2." : "3."}</span> Payment Method
               </h2>
 
+              <fieldset disabled={!user} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
               <div style={{ display: "grid", gap: "1rem" }}>
                 
                 {/* Cash on Delivery */}
@@ -1386,6 +1195,7 @@ function CheckoutPageContent() {
                 </label>
                 )}
               </div>
+              </fieldset>
             </div>
           </div>
 
@@ -1521,7 +1331,7 @@ function CheckoutPageContent() {
               {/* Action Button */}
               <button
                 type="submit"
-                disabled={isSubmitting || !hasAnyPaymentGateway}
+                disabled={isSubmitting || !hasAnyPaymentGateway || !user}
                 className="primary-button"
                 style={{
                   width: "100%",
@@ -1530,8 +1340,8 @@ function CheckoutPageContent() {
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  cursor: isSubmitting || !hasAnyPaymentGateway ? "not-allowed" : "pointer",
-                  opacity: isSubmitting || !hasAnyPaymentGateway ? 0.75 : 1
+                  cursor: isSubmitting || !hasAnyPaymentGateway || !user ? "not-allowed" : "pointer",
+                  opacity: isSubmitting || !hasAnyPaymentGateway || !user ? 0.75 : 1
                 }}
               >
                 {isSubmitting ? (
@@ -1539,6 +1349,8 @@ function CheckoutPageContent() {
                     <span style={{ display: "inline-block", width: "16px", height: "16px", border: "2px solid #FFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                     Placing Your Order…
                   </>
+                ) : !user ? (
+                  <>Create or login to continue checkout</>
                 ) : !hasAnyPaymentGateway ? (
                   <>No active payment method available</>
                 ) : (

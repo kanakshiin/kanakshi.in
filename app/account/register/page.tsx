@@ -52,7 +52,7 @@ function RegisterForm() {
         phone: normalizeIndianPhone(form.phone),
       });
       if (data.requires_verification) {
-        router.push(`/account/verify-email?email=${encodeURIComponent(form.email)}`);
+        router.push(`/account/verify-email?email=${encodeURIComponent(form.email)}&redirect=${encodeURIComponent(redirect)}`);
         return;
       }
 

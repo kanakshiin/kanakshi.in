@@ -40,7 +40,7 @@ function LoginForm() {
       const message = err instanceof Error ? err.message : "Unable to login.";
       setError(message);
       if (message.toLowerCase().includes("verify your email")) {
-        router.push(`/account/verify-email?email=${encodeURIComponent(email)}`);
+        router.push(`/account/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirect)}`);
       }
     } finally {
       setLoading(false);
