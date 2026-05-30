@@ -32,6 +32,9 @@ type CartContextValue = {
   removeItem: (slug: string) => void;
   updateQuantity: (slug: string, quantity: number) => void;
   clearCart: () => void;
+  isAddedModalOpen: boolean;
+  lastAddedItem: CartItem | null;
+  setAddedModalOpen: (open: boolean) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -66,6 +69,8 @@ function writeCart(items: CartItem[]) {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isAddedModalOpen, setAddedModalOpen] = useState(false);
+  const [lastAddedItem, setLastAddedItem] = useState<CartItem | null>(null);
 
   useEffect(() => {
     const sync = () => setItems(readCart());
@@ -88,18 +93,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       count,
       subtotal,
+      isAddedModalOpen,
+      lastAddedItem,
+      setAddedModalOpen,
       addItem(product, quantity = 1) {
         const nextItems = [...readCart()];
         const index = nextItems.findIndex((item) => item.slug === product.slug);
         const safeQuantity = Math.max(1, quantity);
+        let addedItem: CartItem;
 
         if (index >= 0) {
           nextItems[index] = {
             ...nextItems[index],
             quantity: nextItems[index].quantity + safeQuantity,
           };
+          addedItem = nextItems[index];
         } else {
-          nextItems.push({
+          const newItem = {
             id: product.id,
             slug: product.slug,
             name: product.name,
@@ -108,11 +118,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
             categoryName: product.category_name,
             categorySlug: product.category_slug,
             quantity: safeQuantity,
-          });
+          };
+          nextItems.push(newItem);
+          addedItem = newItem;
         }
 
         writeCart(nextItems);
         setItems(nextItems);
+        setLastAddedItem(addedItem);
+        setAddedModalOpen(true);
       },
       getItemQuantity(slug) {
         return items.find((item) => item.slug === slug)?.quantity ?? 0;
@@ -134,7 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems([]);
       },
     };
-  }, [items]);
+  }, [items, isAddedModalOpen, lastAddedItem]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

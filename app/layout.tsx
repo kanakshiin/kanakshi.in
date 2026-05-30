@@ -7,6 +7,7 @@ import { StructuredData } from "../components/structured-data";
 import { CartProvider } from "../components/cart-provider";
 import { WishlistProvider } from "../components/wishlist-provider";
 import { FloatingWhatsappWidget } from "../components/floating-whatsapp-widget";
+import { AddToCartPopup } from "../components/add-to-cart-popup";
 import { getLayoutData } from "../lib/api";
 import { buildStoreMetadata, getAbsoluteMediaUrl, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
 import "./globals.css";
@@ -137,6 +138,7 @@ fbq('track', 'PageView');`,
             {children}
             <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
             <FloatingWhatsappWidget phone={settings.site_phone || "919999999999"} />
+            <AddToCartPopup />
           </WishlistProvider>
         </CartProvider>
         <BodyHtmlSnippet html={settings.custom_footer_scripts} />
