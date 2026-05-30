@@ -127,7 +127,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
           </Link>
         </div>
         <div className="container footer-bottom">
-          <span>{settings.footer_copyright_text || "Little Divinity. ©All rights reserved to  Tadpole Story LLP."}</span>
+          <span>{settings.footer_copyright_text || "© 2026 Tadpole Story LLP. All rights reserved"}</span>
         </div>
       </footer>
     );
@@ -218,7 +218,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
       </div>
 
       <div className="container footer-bottom">
-        <span>{settings.footer_copyright_text || "Little Divinity. ©All rights reserved to  Tadpole Story LLP."}</span>
+        <span>{settings.footer_copyright_text || "© 2026 Tadpole Story LLP. All rights reserved"}</span>
         <div className="footer-payment-strip" aria-label="Accepted payment methods">
           {paymentMethods.map((method) => (
             <span key={method.key} className="footer-payment-badge" title={method.label} aria-label={method.label}>
