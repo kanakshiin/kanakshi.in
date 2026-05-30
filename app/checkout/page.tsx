@@ -137,7 +137,7 @@ function CheckoutPageContent() {
   const [shipCity, setShipCity] = useState("");
   const [shipState, setShipState] = useState("");
   const [shipPincode, setShipPincode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "phonepe">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "phonepe">("razorpay");
   const [notes, setNotes] = useState("");
   const [saveAddressForFuture, setSaveAddressForFuture] = useState(false);
   const [saveAddressAsDefault, setSaveAddressAsDefault] = useState(false);
@@ -305,7 +305,7 @@ function CheckoutPageContent() {
 
   useEffect(() => {
     if (!hasGateway(paymentMethod)) {
-      const fallbackMethod = (["cod", "razorpay", "phonepe"] as const).find((provider) => hasGateway(provider));
+      const fallbackMethod = (["razorpay", "phonepe", "cod"] as const).find((provider) => hasGateway(provider));
       if (fallbackMethod) {
         setPaymentMethod(fallbackMethod);
       }
