@@ -3283,14 +3283,16 @@ h3 {
   }
 
   .header-shell {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
     height: auto;
-    min-height: 80px;
-    padding: 0.9rem 0;
+    min-height: 72px;
+    padding: 0.7rem 0 0.55rem;
+    justify-items: center;
   }
 
   .brand-lockup {
-    justify-content: flex-start;
+    justify-content: center;
+    width: 100%;
   }
 
   .header-nav {
@@ -3394,11 +3396,11 @@ h3 {
   }
 
   .hero-visual {
-    min-height: 520px;
+    min-height: 480px;
   }
 
   .hero-slider-stage {
-    min-height: 520px;
+    min-height: 480px;
   }
 
   .hero-slide-copy {
@@ -3467,7 +3469,7 @@ h3 {
   .site-footer,
   .shop-hero,
   .product-hero {
-    padding: 3.5rem 0;
+    padding: 2.75rem 0;
   }
 
   .container {
@@ -3475,11 +3477,11 @@ h3 {
   }
 
   .top-offer-bar {
-    min-height: 40px;
-    padding: 0.75rem 2.7rem 0.75rem 0.85rem;
+    min-height: 36px;
+    padding: 0.65rem 2.5rem 0.65rem 0.8rem;
     text-align: left;
-    letter-spacing: 0.1em;
-    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    font-size: 0.58rem;
   }
 
   .top-offer-text {
@@ -3494,13 +3496,14 @@ h3 {
   }
 
   .header-shell {
-    min-height: 72px;
-    gap: 0.4rem;
+    min-height: 64px;
+    gap: 0.25rem;
+    padding: 0.5rem 0 0.35rem;
   }
 
   .brand-logo {
-    max-width: 132px;
-    max-height: 44px;
+    max-width: 122px;
+    max-height: 40px;
   }
 
   .header-tool-icon {
@@ -3547,12 +3550,12 @@ h3 {
   .hero-visual,
   .artisan-main,
   .artisan-side {
-    min-height: 300px;
+    min-height: 280px;
   }
 
   .hero-slider-stage,
   .hero-promo-card {
-    min-height: 300px;
+    min-height: 280px;
   }
 
   .hero-slide-copy {
@@ -6156,10 +6159,18 @@ h3 {
     padding-right: 1rem;
   }
 
+  .hero-section {
+    padding-top: 1.25rem !important;
+  }
+
+  .hero-grid {
+    gap: 1rem !important;
+  }
+
   .hero-slider-stage {
-    min-height: 68vw !important;
-    max-height: 300px !important;
-    border-radius: 20px !important;
+    min-height: 64vw !important;
+    max-height: 280px !important;
+    border-radius: 18px !important;
   }
 
   .hero-cta-overlay {
@@ -6168,7 +6179,7 @@ h3 {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
-    padding: 1.25rem 0.5rem 0 !important;
+    padding: 0.95rem 0.35rem 0 !important;
     box-shadow: none !important;
     max-width: none !important;
     text-align: center !important;
@@ -6176,23 +6187,23 @@ h3 {
 
   .hero-cta-headline {
     color: var(--accent-deep) !important;
-    font-size: 1.35rem !important;
-    margin-bottom: 0.5rem !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 0.4rem !important;
     font-weight: 700 !important;
-    line-height: 1.25 !important;
+    line-height: 1.18 !important;
   }
 
   .hero-cta-sub {
     display: block !important;
     color: var(--text-muted) !important;
-    font-size: 0.82rem !important;
-    line-height: 1.45 !important;
-    margin-bottom: 1.2rem !important;
+    font-size: 0.76rem !important;
+    line-height: 1.35 !important;
+    margin-bottom: 0.95rem !important;
   }
 
   .hero-cta-actions {
     justify-content: center !important;
-    gap: 0.6rem !important;
+    gap: 0.5rem !important;
   }
 
   .hero-cta-actions .primary-button,
@@ -6200,9 +6211,9 @@ h3 {
     width: 100% !important;
     text-align: center !important;
     justify-content: center !important;
-    font-size: 0.76rem !important;
-    padding: 0.7rem 1.2rem !important;
-    min-height: 2.6rem !important;
+    font-size: 0.72rem !important;
+    padding: 0.62rem 1rem !important;
+    min-height: 2.35rem !important;
   }
 
   .hero-cta-actions .secondary-button {
@@ -6490,8 +6501,8 @@ h3 {
   }
 
   .content-section {
-    padding-top: 2.5rem;
-    padding-bottom: 2.5rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 
   .shop-hero-grid {
@@ -6523,7 +6534,7 @@ h3 {
   }
 
   .top-offer-text {
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     text-align: center;
   }
 }
@@ -6533,6 +6544,24 @@ h3 {
    ========================================================================== */
 
 @media (max-width: 480px) {
+  .site-header {
+    backdrop-filter: blur(14px);
+  }
+
+  .header-shell {
+    min-height: 60px;
+    padding: 0.45rem 0 0.25rem;
+  }
+
+  .brand-logo {
+    max-width: 112px;
+    max-height: 36px;
+  }
+
+  .hero-section {
+    padding-top: 1rem !important;
+  }
+
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem;
@@ -6636,19 +6665,19 @@ h3 {
   }
 
   .hero-cta-overlay {
-    padding: 0.75rem 0.9rem;
+    padding: 0.7rem 0.2rem 0;
     border-radius: 14px;
   }
 
   .hero-cta-headline {
-    font-size: 0.95rem;
-    line-height: 1.2;
+    font-size: 1.02rem;
+    line-height: 1.14;
   }
 
   .hero-cta-actions .primary-button {
-    font-size: 0.68rem;
-    padding: 0.5rem 0.85rem;
-    min-height: 2.1rem;
+    font-size: 0.66rem;
+    padding: 0.48rem 0.8rem;
+    min-height: 2rem;
   }
 
   .hero-cta-actions .secondary-button {
@@ -7702,4 +7731,3 @@ h3 {
     top: 3.25rem;
   }
 }
-
