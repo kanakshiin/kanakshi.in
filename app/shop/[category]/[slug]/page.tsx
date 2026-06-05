@@ -104,6 +104,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const description = product.meta_desc || product.short_desc || product.description || getSiteDescription(settings);
   const canonicalPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
+  const productSpecs = [
+    product.material ? { label: "Material", value: product.material } : null,
+    product.size_label ? { label: "Size", value: product.size_label } : null,
+    product.length ? { label: "Length", value: `${product.length} ${product.dimension_unit || "cm"}` } : null,
+    product.width ? { label: "Width", value: `${product.width} ${product.dimension_unit || "cm"}` } : null,
+    product.height ? { label: "Height", value: `${product.height} ${product.dimension_unit || "cm"}` } : null,
+    product.weight ? { label: "Weight", value: `${product.weight} ${product.weight_unit || "kg"}` } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string | number }>;
 
   let productJsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -232,6 +240,44 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             {product.description ? <p className="detail-body">{product.description}</p> : null}
+
+            {productSpecs.length > 0 && (
+              <div
+                style={{
+                  display: "grid",
+                  gap: "0.8rem",
+                  padding: "1.1rem 1.2rem",
+                  border: "1px solid var(--line)",
+                  borderRadius: "20px",
+                  background: "rgba(255,255,255,0.66)",
+                  marginTop: "1.1rem",
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: "1rem" }}>Product Specifications</h3>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: "0.7rem",
+                  }}
+                >
+                  {productSpecs.map((spec) => (
+                    <div
+                      key={spec.label}
+                      style={{
+                        padding: "0.85rem 0.9rem",
+                        borderRadius: "16px",
+                        border: "1px solid var(--line)",
+                        background: "rgba(255,255,255,0.72)",
+                      }}
+                    >
+                      <small style={{ display: "block", color: "var(--muted)", marginBottom: "0.25rem" }}>{spec.label}</small>
+                      <strong style={{ fontSize: "0.96rem" }}>{spec.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Premium Bullet Points Checklist */}
             {bulletPoints.length > 0 && (

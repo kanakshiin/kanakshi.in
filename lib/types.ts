@@ -112,6 +112,14 @@ export type Product = {
   price: number | string;
   sale_price?: number | string | null;
   effective_price?: number | string;
+  weight?: number | string | null;
+  weight_unit?: string | null;
+  length?: number | string | null;
+  width?: number | string | null;
+  height?: number | string | null;
+  dimension_unit?: string | null;
+  size_label?: string | null;
+  material?: string | null;
   category_name?: string | null;
   category_slug?: string | null;
   meta_title?: string | null;
