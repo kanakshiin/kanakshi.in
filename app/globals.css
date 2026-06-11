@@ -2784,6 +2784,56 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.shop-load-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
+.shop-load-more-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-height: 52px;
+  margin-top: 1.25rem;
+}
+
+.shop-load-status,
+.shop-load-complete {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.shop-load-error {
+  color: #b42318;
+  font-size: 0.92rem;
+}
+
+.shop-load-more-button {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.shop-load-more-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.shop-empty-state {
+  display: grid;
+  gap: 0.35rem;
+  padding: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.shop-empty-state h3,
+.shop-empty-state p {
+  margin: 0;
+}
+
 .product-detail-grid {
   padding: 1rem;
   gap: 1rem;

@@ -3,11 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { StructuredData } from "../../components/structured-data";
-import { ProductCard } from "../../components/product-card";
+import { ShopProductList } from "../../components/shop-product-list";
 import { ShopSortSelect, ShopPriceFilter } from "../../components/shop-controls";
 import { HeroSlider } from "../../components/hero-slider";
 import { getCategories, getProducts, getSettings, resolveAssetUrl } from "../../lib/api";
-import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../../lib/site";
+import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
 export const revalidate = 60;
@@ -58,12 +58,26 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const [settings, categories] = await Promise.all([getSettings(), getCategories(12)]);
   const query = new URLSearchParams();
   const activeSort = params.sort || "popularity";
+  const sortMap: Record<string, string> = {
+    newest: "newest",
+    "price-asc": "price_asc",
+    "price-desc": "price_desc",
+    popularity: "popular"
+  };
 
   query.set("per_page", "24");
-  query.set("sort", activeSort === "newest" ? "newest" : "popular");
+  query.set("sort", sortMap[activeSort] || "popular");
 
   if (params.category) {
     query.set("category", params.category);
+  }
+
+  if (params.min_price) {
+    query.set("min_price", params.min_price);
+  }
+
+  if (params.max_price) {
+    query.set("max_price", params.max_price);
   }
 
   const products = await getProducts(query.toString());
@@ -125,24 +139,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       ]
     : curatedShopSlides;
 
-  // In-memory sorting and price filtering for guaranteed functionality
-  const minPrice = params.min_price ? Number(params.min_price) : 0;
-  const maxPrice = params.max_price ? Number(params.max_price) : Infinity;
-
-  const filteredItems = products.items.filter((item) => {
-    const price = Number(item.effective_price ?? item.price ?? 0);
-    return price >= minPrice && price <= maxPrice;
-  });
-
-  if (activeSort === "price-asc") {
-    filteredItems.sort((a, b) => Number(a.effective_price ?? a.price ?? 0) - Number(b.effective_price ?? b.price ?? 0));
-  } else if (activeSort === "price-desc") {
-    filteredItems.sort((a, b) => Number(b.effective_price ?? b.price ?? 0) - Number(a.effective_price ?? a.price ?? 0));
-  } else if (activeSort === "newest") {
-    filteredItems.sort((a, b) => Number(b.id) - Number(a.id));
-  }
-
-  const shopItems = filteredItems;
+  const shopItems = products.items;
   const featuredCategories = categories.slice(0, 8);
   const pageTitle = activeCategory ? `${activeCategory.name} Picks` : "Most Loved Pieces";
   const storePromises = [
@@ -258,16 +255,17 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                   <h2>{pageTitle}</h2>
                 </div>
                 <div className="shop-results-meta">
-                  <span className="listing-meta">{shopItems.length} visible now</span>
+                  <span className="listing-meta">{products.pagination.total} products found</span>
                   <ShopSortSelect />
                 </div>
               </div>
 
-              <div className="product-grid shop-product-grid">
-                {shopItems.map((product) => (
-                  <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
-                ))}
-              </div>
+              <ShopProductList
+                initialProducts={shopItems}
+                initialPagination={products.pagination}
+                baseQuery={query.toString()}
+                currencySymbol={currencySymbol}
+              />
             </div>
           </div>
         </div>
