@@ -128,6 +128,7 @@ export type Product = {
   avg_rating?: number | string | null;
   review_count?: number | string | null;
   is_featured?: boolean;
+  is_sellable?: boolean;
   shipping_type?: "default" | "custom" | "free" | string | null;
   shipping_fee?: number | string | null;
 };

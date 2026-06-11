@@ -15,10 +15,10 @@ export default async function HomePage() {
   const currencySymbol = settings.site_currency_symbol || "₹";
   const siteName = getSiteName(settings);
   const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
-  const instagramUrl = instagramLink?.url || "https://www.instagram.com/littledivinity/";
+  const instagramUrl = instagramLink?.url || "https://www.instagram.com/littledivinity_official/";
   const instagramLabel = instagramLink?.handle
     ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
-    : "@littledivinity";
+    : "@littledivinity_official";
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const curatedCollections = [
     {
@@ -297,7 +297,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section circle-category-section">
+      <section className="content-section circle-category-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
@@ -319,7 +319,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section soft-section">
+      <section className="content-section soft-section mobile-home-hidden">
         <div className="container story-grid">
           {categories.slice(0, 3).map((category, index) => (
             <Link key={category.id} href={`/shop?category=${category.slug}`} className={`story-card story-card-${index}`}>
@@ -364,7 +364,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section white-section">
+      <section className="content-section white-section mobile-home-hidden">
         <div className="container">
           <div className="section-head">
             <div>
@@ -396,7 +396,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section artisan-section">
+      <section className="content-section artisan-section mobile-home-hidden">
         <div className="container artisan-grid">
           <div className="artisan-copy">
             <p className="eyebrow">About The Founders</p>
@@ -418,7 +418,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section white-section new-arrivals-showcase">
+      <section className="content-section white-section new-arrivals-showcase mobile-home-hidden">
         <div className="container new-arrivals-showcase-shell">
           <div className="section-head new-arrivals-heading">
             <div>
@@ -441,7 +441,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section new-arrivals-products">
+      <section className="content-section new-arrivals-products mobile-home-hidden">
         <div className="container">
           <div className="section-head">
             <div>
@@ -460,7 +460,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section white-section">
+      <section className="content-section white-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
@@ -483,11 +483,13 @@ export default async function HomePage() {
       </section>
 
       {/* Premium Homepage Lead Opt-in Banner */}
-      <HomepageNewsletter />
+      <div className="mobile-home-hidden">
+        <HomepageNewsletter />
+      </div>
 
-      <section className="content-section instagram-section">
+      <section className="content-section instagram-section mobile-home-hidden">
         <div className="container">
-          <div className="section-head section-head-center">
+          <div className="section-head section-head-center instagram-head">
             <div>
               <p className="eyebrow">Follow Us On</p>
               <h2>Instagram</h2>
@@ -505,7 +507,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section white-section stats-section">
+      <section className="content-section white-section stats-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
@@ -535,7 +537,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-section">
+      <section className="content-section mobile-home-hidden">
         <div className="container">
           <div className="section-head">
             <div>

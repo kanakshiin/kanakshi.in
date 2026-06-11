@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "../lib/api";
 
 interface ProductGalleryProps {
   images: string[];
@@ -87,7 +88,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       <div className="gallery-main-stage">
         <div className="gallery-main-wrapper" onClick={() => openLightbox(activeIndex)}>
           <Image
-            src={images[activeIndex] || "/placeholder.jpg"}
+            src={images[activeIndex] || PRODUCT_PLACEHOLDER_IMAGE}
             alt={productName}
             className="product-detail-main interactive-zoom"
             width={1200}
@@ -156,7 +157,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             {/* Active Image Box */}
             <div className="lightbox-display-frame">
               <img
-                src={images[lightboxIndex]}
+                src={images[lightboxIndex] || PRODUCT_PLACEHOLDER_IMAGE}
                 alt={`${productName} fullscreen view ${lightboxIndex + 1}`}
                 className="lightbox-active-img"
               />
@@ -191,8 +192,8 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
                   onClick={() => setLightboxIndex(index)}
                   aria-label={`View fullscreen image ${index + 1}`}
                 >
-                  <img
-                    src={image}
+                    <img
+                    src={image || PRODUCT_PLACEHOLDER_IMAGE}
                     alt={`Thumbnail indicator ${index + 1}`}
                     className="lightbox-carousel-thumb-img"
                   />

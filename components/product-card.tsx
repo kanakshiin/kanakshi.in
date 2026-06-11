@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { discountPercent, formatPrice, getPrimaryImage } from "../lib/api";
+import { discountPercent, formatPrice, getPrimaryImage, isProductSellable } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { AddToCartButton } from "./add-to-cart-button";
@@ -19,11 +19,12 @@ type ProductCardProps = {
 
 export function ProductCard({ product, currencySymbol }: ProductCardProps) {
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const isSellable = isProductSellable(product);
   const discount = discountPercent(product);
-  const currentPrice = formatPrice(product.effective_price ?? product.price, currencySymbol);
+  const currentPrice = isSellable ? formatPrice(product.effective_price ?? product.price, currencySymbol) : "Coming Soon";
   const productPath = getProductPath(product);
   const comparePrice =
-    Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price)
+    isSellable && Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price)
       ? formatPrice(product.price, currencySymbol)
       : null;
 
@@ -69,7 +70,11 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
         >
           Quick View
         </button>
-        {discount ? <span className="product-badge">Sale {discount}%</span> : null}
+        {isSellable ? (
+          discount ? <span className="product-badge">Sale {discount}%</span> : null
+        ) : (
+          <span className="product-badge product-badge-coming-soon">Coming Soon</span>
+        )}
       </div>
 
       <div className="product-copy">
@@ -78,7 +83,7 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
           {product.name}
         </Link>
         {product.short_desc ? <p className="product-snippet">{product.short_desc}</p> : null}
-        <div className="price-row">
+        <div className={`price-row${isSellable ? "" : " price-row-coming-soon"}`}>
           <strong>{currentPrice}</strong>
           {comparePrice ? <span>{comparePrice}</span> : null}
         </div>
@@ -108,4 +113,3 @@ export function ProductCard({ product, currencySymbol }: ProductCardProps) {
     </article>
   );
 }
-

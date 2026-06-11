@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 
-import { discountPercent, formatPrice, parseProductImages, resolveAssetUrl, parseBulletPoints, getProducts } from "../lib/api";
+import { PRODUCT_PLACEHOLDER_IMAGE, discountPercent, formatPrice, parseProductImages, resolveAssetUrl, parseBulletPoints, getProducts, isProductSellable } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { ProductDetailActions } from "./product-detail-actions";
@@ -22,13 +22,14 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
   const [mounted, setMounted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [relatedAccents, setRelatedAccents] = useState<Product[]>([]);
+  const isSellable = isProductSellable(product);
   
   const parsedImages = parseProductImages(product.images);
   const discount = discountPercent(product);
-  const currentPrice = formatPrice(product.effective_price ?? product.price, currencySymbol);
+  const currentPrice = isSellable ? formatPrice(product.effective_price ?? product.price, currencySymbol) : "Coming Soon";
   
   const comparePrice =
-    Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price)
+    isSellable && Number(product.sale_price || 0) > 0 && Number(product.sale_price || 0) < Number(product.price)
       ? formatPrice(product.price, currencySymbol)
       : null;
 
@@ -36,7 +37,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
   const parsedPrice = Number(product.price || 0);
   const parsedEffectivePrice = Number((product.effective_price ?? product.price) || 0);
   const savingsAmount = parsedPrice > parsedEffectivePrice ? parsedPrice - parsedEffectivePrice : 0;
-  const savingsText = savingsAmount > 0 ? formatPrice(savingsAmount, currencySymbol) : null;
+  const savingsText = isSellable && savingsAmount > 0 ? formatPrice(savingsAmount, currencySymbol) : null;
 
   const productPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
@@ -98,7 +99,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
 
   const activeImageSrc = parsedImages.length > 0
     ? resolveAssetUrl(parsedImages[activeImageIndex])
-    : "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80";
+    : PRODUCT_PLACEHOLDER_IMAGE;
 
   // Use React Portal to mount under body to avoid relative stacking contexts/transforms and flickering
   return createPortal(
@@ -131,7 +132,11 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
               priority
               className="quickview-active-image"
             />
-            {discount ? <span className="product-badge">Sale {discount}%</span> : null}
+            {isSellable ? (
+              discount ? <span className="product-badge">Sale {discount}%</span> : null
+            ) : (
+              <span className="product-badge product-badge-coming-soon">Coming Soon</span>
+            )}
             
             {/* Gallery Floating Navigation Chevron Controls */}
             {parsedImages.length > 1 && (
@@ -189,8 +194,8 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             <p className="product-category">{product.category_name || "Signature Edit"}</p>
             <h2 id="qv-title" className="quickview-title">{product.name}</h2>
             
-            <div className="price-row" style={{ margin: "0.5rem 0 1rem", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
-              <strong className="quickview-price">{currentPrice}</strong>
+            <div className={`price-row${isSellable ? "" : " price-row-coming-soon"}`} style={{ margin: "0.5rem 0 1rem", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
+              <strong className={`quickview-price${isSellable ? "" : " coming-soon"}`}>{currentPrice}</strong>
               {comparePrice ? <span className="quickview-compare-price">{comparePrice}</span> : null}
               {savingsText && (
                 <span className="quickview-savings-tag">
@@ -231,9 +236,11 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
             )}
 
             {/* Exclusive Offers Widget */}
-            <div className="quickview-offers-wrap" style={{ marginTop: "1rem" }}>
-              <OffersWidget />
-            </div>
+            {isSellable ? (
+              <div className="quickview-offers-wrap" style={{ marginTop: "1rem" }}>
+                <OffersWidget />
+              </div>
+            ) : null}
           </div>
 
           <div className="quickview-details-footer">
@@ -259,7 +266,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
                       >
                         <div className="related-accent-thumb-image-wrap">
                           <Image
-                            src={resolveAssetUrl(firstImage || null)}
+                            src={firstImage ? resolveAssetUrl(firstImage) : PRODUCT_PLACEHOLDER_IMAGE}
                             alt={item.name}
                             fill
                             sizes="40px"

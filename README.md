@@ -20,3 +20,9 @@ This folder contains the new Next.js App Router storefront intended for Vercel d
 
 - `NEXT_PUBLIC_API_BASE_URL`
 - `NEXT_PUBLIC_BACKEND_SITE_URL`
+- `NEXT_PUBLIC_SITE_URL`
+
+Demo catalog and settings fallbacks are enabled automatically during local
+development and disabled in production. Set
+`NEXT_PUBLIC_ENABLE_STOREFRONT_FALLBACKS=true` only for an intentional static
+preview that does not have a backend.

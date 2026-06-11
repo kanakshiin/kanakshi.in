@@ -9,7 +9,7 @@ const CART_STORAGE_KEY = "little-divinity-cart";
 
 export type CartProductInput = Pick<
   Product,
-  "id" | "slug" | "name" | "price" | "sale_price" | "effective_price" | "images" | "category_name" | "category_slug"
+  "id" | "slug" | "name" | "price" | "sale_price" | "effective_price" | "images" | "category_name" | "category_slug" | "is_sellable"
 >;
 
 export type CartItem = {
@@ -97,6 +97,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       lastAddedItem,
       setAddedModalOpen,
       addItem(product, quantity = 1) {
+        if (product.is_sellable === false) {
+          return;
+        }
+
         const nextItems = [...readCart()];
         const index = nextItems.findIndex((item) => item.slug === product.slug);
         const safeQuantity = Math.max(1, quantity);

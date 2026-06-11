@@ -13,6 +13,12 @@ const BACKEND_SITE_URL =
   process.env.BACKEND_SITE_URL ||
   "https://ecombeckend.saaszo.in";
 
+const STOREFRONT_FALLBACKS_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_STOREFRONT_FALLBACKS === "true" ||
+  process.env.NODE_ENV !== "production";
+
+const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+
 export const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.svg";
 
 const fallbackSettings: SiteSettings = {
@@ -242,6 +248,15 @@ const fallbackProducts: Product[] = [
   }
 ];
 
+function isNextDynamicUsageSignal(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === "object" &&
+    "digest" in error &&
+    (error as { digest?: string }).digest === "DYNAMIC_SERVER_USAGE"
+  );
+}
+
 async function fetchJson<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -252,11 +267,21 @@ async function fetchJson<T>(path: string): Promise<T | null> {
     });
 
     if (!response.ok) {
+      if (!IS_PRODUCTION_BUILD) {
+        console.error(`Storefront API request failed: ${path} (${response.status})`);
+      }
       return null;
     }
 
     return (await response.json()) as T;
-  } catch {
+  } catch (error) {
+    if (isNextDynamicUsageSignal(error)) {
+      throw error;
+    }
+
+    if (!IS_PRODUCTION_BUILD) {
+      console.error(`Storefront API request failed: ${path}`, error);
+    }
     return null;
   }
 }
@@ -372,7 +397,11 @@ export function discountPercent(product: Product): number | null {
 
 export async function getSettings(): Promise<SiteSettings> {
   const payload = await fetchJson<PublicSettingsPayload>("/settings/public");
-  return payload?.data && Object.keys(payload.data).length > 0 ? payload.data : fallbackSettings;
+  if (payload?.data && Object.keys(payload.data).length > 0) {
+    return payload.data;
+  }
+
+  return STOREFRONT_FALLBACKS_ENABLED ? fallbackSettings : {};
 }
 
 export async function getLayoutData() {
@@ -384,11 +413,19 @@ export async function getLayoutData() {
   const data = settingsPayload?.data || {};
 
   return {
-    settings: Object.keys(data).length > 0 ? (data as SiteSettings) : fallbackSettings,
+    settings: Object.keys(data).length > 0
+      ? (data as SiteSettings)
+      : (STOREFRONT_FALLBACKS_ENABLED ? fallbackSettings : {}),
     categories,
-    headerMenu: data.header_menu?.length ? data.header_menu : fallbackHeaderMenu,
-    footerMenu: data.footer_menu?.length ? data.footer_menu : fallbackFooterMenu,
-    socialLinks: data.social_links?.length ? data.social_links : fallbackSocialLinks
+    headerMenu: data.header_menu?.length
+      ? data.header_menu
+      : (STOREFRONT_FALLBACKS_ENABLED ? fallbackHeaderMenu : []),
+    footerMenu: data.footer_menu?.length
+      ? data.footer_menu
+      : (STOREFRONT_FALLBACKS_ENABLED ? fallbackFooterMenu : []),
+    socialLinks: data.social_links?.length
+      ? data.social_links
+      : (STOREFRONT_FALLBACKS_ENABLED ? fallbackSocialLinks : [])
   };
 }
 
@@ -399,13 +436,29 @@ export async function getHomepageSections(): Promise<HomepageSection[]> {
 
 export async function getCategories(limit = 8): Promise<Category[]> {
   const payload = await fetchJson<{ data?: Category[] }>(`/catalog/categories?limit=${limit}`);
-  return payload?.data?.length ? payload.data : fallbackCategories.slice(0, limit);
+  if (payload?.data) {
+    return payload.data;
+  }
+
+  return STOREFRONT_FALLBACKS_ENABLED ? fallbackCategories.slice(0, limit) : [];
 }
 
 export async function getProducts(query = ""): Promise<ProductListResponse> {
   const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`);
   if (payload?.data) {
     return payload.data;
+  }
+
+  if (!STOREFRONT_FALLBACKS_ENABLED) {
+    return {
+      items: [],
+      pagination: {
+        current_page: 1,
+        per_page: 0,
+        total: 0,
+        last_page: 1
+      }
+    };
   }
 
   return {
@@ -421,7 +474,13 @@ export async function getProducts(query = ""): Promise<ProductListResponse> {
 
 export async function getProduct(slug: string): Promise<Product | null> {
   const payload = await fetchJson<{ data?: Product }>(`/catalog/products/${slug}`);
-  return payload?.data || fallbackProducts.find((product) => product.slug === slug) || null;
+  if (payload?.data) {
+    return payload.data;
+  }
+
+  return STOREFRONT_FALLBACKS_ENABLED
+    ? fallbackProducts.find((product) => product.slug === slug) || null
+    : null;
 }
 
 export async function getActiveCoupons(): Promise<Coupon[]> {

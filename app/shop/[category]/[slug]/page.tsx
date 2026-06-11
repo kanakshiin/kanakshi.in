@@ -10,7 +10,7 @@ import { OffersWidget } from "../../../../components/offers-widget";
 import { ProductGallery } from "../../../../components/product-gallery";
 import { UrgencyTimer } from "../../../../components/urgency-timer";
 import { ProductReviews } from "../../../../components/product-reviews";
-import { formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons } from "../../../../lib/api";
+import { PRODUCT_PLACEHOLDER_IMAGE, formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons, isProductSellable } from "../../../../lib/api";
 import { referenceAssets } from "../../../../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getProductRenderKey } from "../../../../lib/site";
 
@@ -97,10 +97,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .slice(0, 3);
 
   const currencySymbol = settings.site_currency_symbol || "₹";
+  const isSellable = isProductSellable(product);
   const gallery = parseProductImages(product.images);
   const images = gallery.length
     ? gallery.map((image) => resolveAssetUrl(image))
-    : [getPrimaryImage(product), referenceAssets.productHighlights.candleStand, referenceAssets.productHighlights.frame];
+    : [PRODUCT_PLACEHOLDER_IMAGE];
   const description = product.meta_desc || product.short_desc || product.description || getSiteDescription(settings);
   const canonicalPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
@@ -129,7 +130,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       "@type": "Offer",
       priceCurrency: settings.site_currency || "INR",
       price: Number(product.effective_price ?? product.price ?? 0),
-      availability: "https://schema.org/InStock",
+      availability: isSellable ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
       url: getCanonicalUrl(canonicalPath, settings)
     }
   };
@@ -187,7 +188,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <strong>{Number(product.avg_rating || 0).toFixed(1)}</strong>
               <small>{Number(product.review_count || 0)} verified review{Number(product.review_count || 0) === 1 ? "" : "s"}</small>
             </div>
-            <p className="detail-price">{formatPrice(product.effective_price ?? product.price, currencySymbol)}</p>
+            <p className={`detail-price${isSellable ? "" : " detail-price-coming-soon"}`}>
+              {isSellable ? formatPrice(product.effective_price ?? product.price, currencySymbol) : "Coming Soon"}
+            </p>
             {product.short_desc ? <p className="detail-lead">{product.short_desc}</p> : null}
 
             {/* Boutique Trust Stamps / Badges Strip */}
@@ -297,9 +300,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
 
             {/* Exclusive Offers Widget */}
-            <div className="product-offers-container" style={{ marginTop: "1.5rem" }}>
-              <OffersWidget coupons={activeCoupons} />
-            </div>
+            {isSellable ? (
+              <div className="product-offers-container" style={{ marginTop: "1.5rem" }}>
+                <OffersWidget coupons={activeCoupons} />
+              </div>
+            ) : (
+              <div className="coming-soon-panel">
+                <strong>Catalog listing is live</strong>
+                <p>This product is visible now and will become buyable automatically once final images and pricing are completed in admin.</p>
+              </div>
+            )}
 
             <div className="detail-callout">
               <strong>Why it stands out</strong>
@@ -312,7 +322,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <ProductDetailActions product={product} />
             
             {/* Scarcity Ticking Countdown Timer */}
-            <UrgencyTimer />
+            {isSellable ? <UrgencyTimer /> : null}
           </div>
         </div>
       </section>

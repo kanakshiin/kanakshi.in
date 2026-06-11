@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { Product } from "../lib/types";
+import { isProductSellable } from "../lib/api";
 import { CartQuantityControl } from "./cart-quantity-control";
 import { useCart } from "./cart-provider";
 import { useWishlist } from "./wishlist-provider";
@@ -13,6 +14,7 @@ export function ProductDetailActions({ product }: { product: Product }) {
   const { toggleItem, hasItem } = useWishlist();
   const quantity = getItemQuantity(product.slug);
   const isWishlisted = hasItem(product.slug);
+  const isSellable = isProductSellable(product);
 
   return (
     <div className="detail-actions-deck">
@@ -37,35 +39,46 @@ export function ProductDetailActions({ product }: { product: Product }) {
       </button>
 
       <div className="action-buttons-grid">
-        {quantity > 0 ? (
-          <CartQuantityControl slug={product.slug} className="detail-quantity-wrap" />
+        {isSellable ? (
+          <>
+            {quantity > 0 ? (
+              <CartQuantityControl slug={product.slug} className="detail-quantity-wrap" />
+            ) : (
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ width: "100%", margin: 0 }}
+                onClick={() => addItem(product, 1)}
+              >
+                Add To Cart
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="primary-button"
+              style={{ width: "100%", margin: 0 }}
+              onClick={() => {
+                if (quantity === 0) {
+                  addItem(product, 1);
+                }
+                router.push("/checkout");
+              }}
+            >
+              Buy Now
+            </button>
+          </>
         ) : (
-          <button
-            type="button"
-            className="secondary-button"
-            style={{ width: "100%", margin: 0 }}
-            onClick={() => addItem(product, 1)}
-          >
-            Add To Cart
-          </button>
+          <>
+            <button type="button" className="secondary-button action-button-disabled" style={{ width: "100%", margin: 0 }} disabled aria-disabled="true">
+              Coming Soon
+            </button>
+            <div className="coming-soon-note">
+              Add final images and price from admin to make this product buyable.
+            </div>
+          </>
         )}
-
-        <button
-          type="button"
-          className="primary-button"
-          style={{ width: "100%", margin: 0 }}
-          onClick={() => {
-            if (quantity === 0) {
-              addItem(product, 1);
-            }
-            router.push("/checkout");
-          }}
-
-        >
-          Buy Now
-        </button>
       </div>
     </div>
   );
 }
-
