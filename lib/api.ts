@@ -13,6 +13,8 @@ const BACKEND_SITE_URL =
   process.env.BACKEND_SITE_URL ||
   "https://ecombeckend.saaszo.in";
 
+export const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.svg";
+
 const fallbackSettings: SiteSettings = {
   site_name: "Little Divinity",
   site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
@@ -54,9 +56,9 @@ const fallbackFooterMenu: NavigationItem[] = [
 
 const fallbackSocialLinks: SocialLink[] = [
   { id: 40001, platform: "facebook", url: "https://www.facebook.com/uniquebrasscollection" },
-  { id: 40002, platform: "instagram", url: "https://www.instagram.com/the_advitya/" },
-  { id: 40003, platform: "youtube", url: "https://www.youtube.com/@the_advitya" },
-  { id: 40004, platform: "linkedin", url: "https://www.linkedin.com/company/theadvitya/" }
+  { id: 40002, platform: "instagram", url: "https://www.instagram.com/littledivinity/" },
+  { id: 40003, platform: "youtube", url: "https://www.youtube.com/@littledivinity" },
+  { id: 40004, platform: "linkedin", url: "https://www.linkedin.com/company/little-divinity/" }
 ];
 
 const fallbackCategories: Category[] = [
@@ -345,7 +347,11 @@ export function parseBulletPoints(bullets?: Product["bullet_points"]): string[] 
 
 export function getPrimaryImage(product: Product): string {
   const [firstImage] = parseProductImages(product.images);
-  return resolveAssetUrl(firstImage || null);
+  return firstImage ? resolveAssetUrl(firstImage) : PRODUCT_PLACEHOLDER_IMAGE;
+}
+
+export function isProductSellable(product: Product): boolean {
+  return product.is_sellable !== false;
 }
 
 export function formatPrice(value: number | string | null | undefined, symbol = "Rs."): string {

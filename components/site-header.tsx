@@ -62,7 +62,7 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
   }, [count]);
   const offers = useMemo(() => {
     const list = settings.topbar_offers?.filter((offer) => typeof offer === "string" && offer.trim().length > 0) ?? [];
-    return list.length ? list : ["Avail 10% Off, Use Code - ADVITYA10 + Get Extra 5% on Prepaid Orders"];
+    return list.length ? list : ["Avail 10% Off, Use Code - LITTLEDIVINITY10 + Get Extra 5% on Prepaid Orders"];
   }, [settings.topbar_offers]);
   const categoryMap = new Map(categories.map((category) => [category.slug, category]));
   const menuSeed: NavDisplayItem[] = menuItems.length

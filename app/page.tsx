@@ -15,7 +15,7 @@ export default async function HomePage() {
   const currencySymbol = settings.site_currency_symbol || "₹";
   const siteName = getSiteName(settings);
   const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
-  const instagramUrl = instagramLink?.url || "https://www.instagram.com/the_advitya/";
+  const instagramUrl = instagramLink?.url || "https://www.instagram.com/littledivinity/";
   const instagramLabel = instagramLink?.handle
     ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
     : "@littledivinity";
