@@ -48,6 +48,19 @@ export function getAbsoluteMediaUrl(
   }
 
   if (path.startsWith("http://") || path.startsWith("https://")) {
+    try {
+      const parsed = new URL(path);
+
+      if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname)) {
+        const backendBaseUrl = fallbackBackendSiteUrl.replace(/\/+$/, "");
+        const normalizedPath = parsed.pathname.startsWith("/") ? parsed.pathname : `/${parsed.pathname}`;
+
+        return `${backendBaseUrl}${normalizedPath}`;
+      }
+    } catch {
+      return path;
+    }
+
     return path;
   }
 
