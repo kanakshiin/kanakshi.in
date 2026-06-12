@@ -108,7 +108,17 @@ export default async function HomePage() {
     slider_settings?: { show_text?: boolean; show_dots?: boolean; show_arrows?: boolean; autoplay_ms?: number; nav_gap?: number };
     slides?: Array<{ title?: string; image?: string; alt?: string; href?: string; is_active?: boolean }>;
     promos?: Array<{ title?: string; subtitle?: string; image?: string; href?: string; show_text?: boolean; is_active?: boolean }>;
+    secondary_button_text?: string;
+    secondary_button_url?: string;
   } | null) || { slides: [], promos: [] };
+
+  const heroHeadline = heroSection?.heading || "Sacred Craft. Pure Brass. Pan-India Delivery.";
+  const heroDescription =
+    heroSection?.content || "Handcrafted god idols, home decor & festive gifting — trusted by 45,000+ customers across India.";
+  const heroPrimaryButtonText = heroSection?.button_text || "Shop the Collection →";
+  const heroPrimaryButtonUrl = heroSection?.button_url || "/shop";
+  const heroSecondaryButtonText = heroConfig.secondary_button_text || "Explore Gifting Picks";
+  const heroSecondaryButtonUrl = heroConfig.secondary_button_url || "/shop?category=gifting-edit";
 
   const resolvedHeroSlides =
     heroConfig.slides?.filter((slide) => slide.image && slide.is_active !== false).map((slide, index) => ({
@@ -246,11 +256,11 @@ export default async function HomePage() {
               showText={false}
             />
             <div className="hero-cta-overlay">
-              <h1 className="hero-cta-headline">Sacred Craft. Pure Brass. Pan-India Delivery.</h1>
-              <p className="hero-cta-sub">Handcrafted god idols, home decor &amp; festive gifting — trusted by 45,000+ customers across India.</p>
+              <h1 className="hero-cta-headline">{heroHeadline}</h1>
+              <p className="hero-cta-sub">{heroDescription}</p>
               <div className="hero-cta-actions">
-                <Link href="/shop" className="primary-button">Shop the Collection →</Link>
-                <Link href="/shop?category=gifting-edit" className="secondary-button">Explore Gifting Picks</Link>
+                <Link href={heroPrimaryButtonUrl} className="primary-button">{heroPrimaryButtonText}</Link>
+                <Link href={heroSecondaryButtonUrl} className="secondary-button">{heroSecondaryButtonText}</Link>
               </div>
             </div>
           </div>
