@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { StructuredData } from "../../../../components/structured-data";
 import { ProductDetailActions } from "../../../../components/product-detail-actions";
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const siteName = getSiteName(settings);
   const fallbackDescription = getSiteDescription(settings);
 
-  if (!product || product.category_slug !== category) {
+  if (!product) {
     return {
       title: "Product Not Found",
       description: fallbackDescription
@@ -86,8 +86,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
     getActiveCoupons()
   ]);
 
-  if (!product || product.category_slug !== category) {
+  if (!product) {
     notFound();
+  }
+
+  if (product.category_slug && product.category_slug !== category) {
+    permanentRedirect(getProductPath(product));
   }
 
   // Fetch related products in the same category
@@ -171,7 +175,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {product.category_name || (product.category_slug || category).replace(/-/g, " ")}
           </Link>
           <span className="separator">/</span>
-          <span className="current">{product.name}</span>
+          <span className="current" style={{ display: 'inline-block', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>
+            {product.name}
+          </span>
         </div>
       </nav>
 
@@ -182,7 +188,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           <div className="product-detail-copy">
             <p className="eyebrow">{product.category_name || "Signature Product"}</p>
-            <h1 className="page-title">{product.name}</h1>
+            <h1 className="page-title" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {product.name}
+            </h1>
             <div className="product-rating-inline">
               <span>{`${"★".repeat(Math.max(0, Math.min(5, Math.round(Number(product.avg_rating || 0))))) || "☆☆☆☆☆"}`}</span>
               <strong>{Number(product.avg_rating || 0).toFixed(1)}</strong>
