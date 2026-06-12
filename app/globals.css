@@ -1341,6 +1341,7 @@ h3 {
 
 .circle-category-image {
   display: block;
+  position: relative;
   width: 100%;
   max-width: 208px;
   aspect-ratio: 1 / 1;

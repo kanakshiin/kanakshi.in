@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { StructuredData } from "../components/structured-data";
@@ -268,7 +269,7 @@ export default async function HomePage() {
           <div className="hero-promo-stack">
             {finalHeroPromos.map((promo) => (
               <Link key={promo.title} href={promo.href} className="hero-promo-card">
-                <img src={promo.image} alt={promo.title} />
+                <Image src={promo.image} alt={promo.title} fill sizes="(max-width: 900px) 100vw, 30vw" />
                 {promo.show_text !== false ? (
                   <div className="hero-promo-copy">
                     <small>{promo.subtitle}</small>
@@ -296,7 +297,7 @@ export default async function HomePage() {
           <div className="category-grid">
             {curatedCollections.map((collection) => (
               <Link key={collection.title} href={collection.href} className="category-card">
-                <img src={collection.image} alt={collection.title} />
+                <Image src={collection.image} alt={collection.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" />
                 <div>
                   <small>{collection.subtitle}</small>
                   <strong>{collection.title}</strong>
@@ -320,7 +321,7 @@ export default async function HomePage() {
             {circularCategories.map((category) => (
               <Link key={category.title} href={category.href} className="circle-category-card">
                 <span className="circle-category-image">
-                  <img src={category.image} alt={category.title} />
+                  <Image src={category.image} alt={category.title} fill sizes="(max-width: 768px) 40vw, 16vw" />
                 </span>
                 <strong>{category.title}</strong>
               </Link>
@@ -333,7 +334,7 @@ export default async function HomePage() {
         <div className="container story-grid">
           {categories.slice(0, 3).map((category, index) => (
             <Link key={category.id} href={`/shop?category=${category.slug}`} className={`story-card story-card-${index}`}>
-              <img
+              <Image
                 src={
                   [
                     referenceAssets.collections.godIdols,
@@ -342,6 +343,8 @@ export default async function HomePage() {
                   ][index] || resolveAssetUrl(category.image || null)
                 }
                 alt={category.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
               />
               <div className="story-overlay" />
               <div className="story-copy">
@@ -385,7 +388,7 @@ export default async function HomePage() {
 
           <div className="about-brand-grid">
             <div className="about-brand-image">
-              <img src={referenceAssets.hero.primary} alt="About the brand" />
+              <Image src={referenceAssets.hero.primary} alt="About the brand" width={1200} height={900} sizes="(max-width: 900px) 100vw, 45vw" />
             </div>
             <div className="about-brand-copy">
               <p>
@@ -422,8 +425,8 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="artisan-stack">
-            <img src={referenceAssets.founderAndBrand.artisans} alt="Artisans" className="artisan-main" />
-            <img src={referenceAssets.founderAndBrand.founder} alt="Founder" className="artisan-side" />
+            <Image src={referenceAssets.founderAndBrand.artisans} alt="Artisans" className="artisan-main" width={900} height={1100} sizes="(max-width: 900px) 100vw, 40vw" />
+            <Image src={referenceAssets.founderAndBrand.founder} alt="Founder" className="artisan-side" width={900} height={1100} sizes="(max-width: 900px) 100vw, 20vw" />
           </div>
         </div>
       </section>
@@ -440,7 +443,7 @@ export default async function HomePage() {
           <div className="twin-promo-grid new-arrivals-grid">
             {finalNewArrivalPromos.map((promo) => (
               <Link key={promo.title} href={promo.href} className="twin-promo-card">
-                <img src={promo.image} alt={promo.title} />
+                <Image src={promo.image} alt={promo.title} fill sizes="(max-width: 900px) 100vw, 50vw" />
                 <div className="twin-promo-copy">
                   <small>Curated Promotion</small>
                   <strong>{promo.title}</strong>
@@ -510,7 +513,13 @@ export default async function HomePage() {
           <div className="instagram-grid">
             {instagramTiles.map((tile, index) => (
               <a key={`${tile}-${index}`} href={instagramUrl} target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
-                <img src={tile} alt={["Brass god idol handcrafted","Home decor brass collection","Peacock brass wall art","Buddha statue brass","Candle stand brass","God idols collection"][index] || `Handcrafted product ${index + 1}`} />
+                <Image
+                  src={tile}
+                  alt={["Brass god idol handcrafted","Home decor brass collection","Peacock brass wall art","Buddha statue brass","Candle stand brass","God idols collection"][index] || `Handcrafted product ${index + 1}`}
+                  width={700}
+                  height={700}
+                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+                />
               </a>
             ))}
           </div>
@@ -560,7 +569,7 @@ export default async function HomePage() {
           <div className="occasion-grid">
             {festiveMoments.map((moment) => (
               <Link key={moment.title} href="/shop?category=gifting-edit" className="occasion-card">
-                <img src={resolveAssetUrl(moment.image)} alt={moment.title} />
+                <Image src={resolveAssetUrl(moment.image)} alt={moment.title} width={700} height={700} sizes="(max-width: 768px) 100vw, 25vw" />
                 <div>
                   <small>Curated Edit</small>
                   <strong>{moment.title}</strong>

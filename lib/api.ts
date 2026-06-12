@@ -18,6 +18,7 @@ const STOREFRONT_FALLBACKS_ENABLED =
   process.env.NODE_ENV !== "production";
 
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+const PUBLIC_READ_REVALIDATE_SECONDS = 60;
 
 export const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.svg";
 
@@ -257,14 +258,34 @@ function isNextDynamicUsageSignal(error: unknown): boolean {
   );
 }
 
-async function fetchJson<T>(path: string): Promise<T | null> {
+type ReadFetchOptions = {
+  noStore?: boolean;
+  revalidate?: number;
+};
+
+function getReadFetchOptions(revalidate = PUBLIC_READ_REVALIDATE_SECONDS): ReadFetchOptions {
+  if (typeof window === "undefined") {
+    return { revalidate };
+  }
+
+  return { noStore: true };
+}
+
+async function fetchJson<T>(path: string, options: ReadFetchOptions = { noStore: true }): Promise<T | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const requestOptions: RequestInit & { next?: { revalidate: number } } = {
       headers: {
         Accept: "application/json"
-      },
-      cache: "no-store"
-    });
+      }
+    };
+
+    if (options.noStore) {
+      requestOptions.cache = "no-store";
+    } else if (typeof options.revalidate === "number") {
+      requestOptions.next = { revalidate: options.revalidate };
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, requestOptions);
 
     if (!response.ok) {
       if (!IS_PRODUCTION_BUILD) {
@@ -396,7 +417,7 @@ export function discountPercent(product: Product): number | null {
 }
 
 export async function getSettings(): Promise<SiteSettings> {
-  const payload = await fetchJson<PublicSettingsPayload>("/settings/public");
+  const payload = await fetchJson<PublicSettingsPayload>("/settings/public", getReadFetchOptions());
   if (payload?.data && Object.keys(payload.data).length > 0) {
     return payload.data;
   }
@@ -406,8 +427,8 @@ export async function getSettings(): Promise<SiteSettings> {
 
 export async function getLayoutData() {
   const [settingsPayload, categories] = await Promise.all([
-    fetchJson<PublicSettingsPayload>("/settings/public"),
-    getCategories(8)
+    fetchJson<PublicSettingsPayload>("/settings/public", getReadFetchOptions()),
+    getCategories(8, getReadFetchOptions())
   ]);
 
   const data = settingsPayload?.data || {};
@@ -430,12 +451,12 @@ export async function getLayoutData() {
 }
 
 export async function getHomepageSections(): Promise<HomepageSection[]> {
-  const payload = await fetchJson<{ data?: HomepageSection[] }>("/settings/homepage-sections");
+  const payload = await fetchJson<{ data?: HomepageSection[] }>("/settings/homepage-sections", getReadFetchOptions());
   return payload?.data?.length ? payload.data : [];
 }
 
-export async function getCategories(limit = 8): Promise<Category[]> {
-  const payload = await fetchJson<{ data?: Category[] }>(`/catalog/categories?limit=${limit}`);
+export async function getCategories(limit = 8, fetchOptions: ReadFetchOptions = getReadFetchOptions()): Promise<Category[]> {
+  const payload = await fetchJson<{ data?: Category[] }>(`/catalog/categories?limit=${limit}`, fetchOptions);
   if (payload?.data) {
     return payload.data;
   }
@@ -443,8 +464,8 @@ export async function getCategories(limit = 8): Promise<Category[]> {
   return STOREFRONT_FALLBACKS_ENABLED ? fallbackCategories.slice(0, limit) : [];
 }
 
-export async function getProducts(query = ""): Promise<ProductListResponse> {
-  const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`);
+export async function getProducts(query = "", fetchOptions: ReadFetchOptions = getReadFetchOptions()): Promise<ProductListResponse> {
+  const payload = await fetchJson<{ data?: ProductListResponse }>(`/catalog/products${query ? `?${query}` : ""}`, fetchOptions);
   if (payload?.data) {
     return payload.data;
   }
@@ -472,8 +493,8 @@ export async function getProducts(query = ""): Promise<ProductListResponse> {
   };
 }
 
-export async function getProduct(slug: string): Promise<Product | null> {
-  const payload = await fetchJson<{ data?: Product }>(`/catalog/products/${slug}`);
+export async function getProduct(slug: string, fetchOptions: ReadFetchOptions = getReadFetchOptions()): Promise<Product | null> {
+  const payload = await fetchJson<{ data?: Product }>(`/catalog/products/${slug}`, fetchOptions);
   if (payload?.data) {
     return payload.data;
   }
@@ -484,13 +505,17 @@ export async function getProduct(slug: string): Promise<Product | null> {
 }
 
 export async function getActiveCoupons(): Promise<Coupon[]> {
-  const payload = await fetchJson<PublicCouponsPayload>("/marketing/coupons");
+  const payload = await fetchJson<PublicCouponsPayload>("/marketing/coupons", getReadFetchOptions());
   return payload?.data?.length ? payload.data : [];
 }
 
-async function resolveProductRail(section: HomepageSection | undefined, fallbackQuery: string): Promise<Product[]> {
+async function resolveProductRail(
+  section: HomepageSection | undefined,
+  fallbackQuery: string,
+  fetchOptions: ReadFetchOptions = getReadFetchOptions()
+): Promise<Product[]> {
   if (!section) {
-    return (await getProducts(fallbackQuery)).items;
+    return (await getProducts(fallbackQuery, fetchOptions)).items;
   }
 
   const config = (section.config as {
@@ -503,21 +528,22 @@ async function resolveProductRail(section: HomepageSection | undefined, fallback
   const count = Math.min(Math.max(Number(config.product_count || 8), 1), 24);
 
   if (config.source_type === "manual" && config.product_ids?.length) {
-    return (await getProducts(`ids=${config.product_ids.join(",")}&per_page=${count}`)).items.slice(0, count);
+    return (await getProducts(`ids=${config.product_ids.join(",")}&per_page=${count}`, fetchOptions)).items.slice(0, count);
   }
 
   if (config.source_type === "category" && config.category_slug) {
-    return (await getProducts(`category=${encodeURIComponent(config.category_slug)}&per_page=${count}&sort=newest`)).items.slice(0, count);
+    return (await getProducts(`category=${encodeURIComponent(config.category_slug)}&per_page=${count}&sort=newest`, fetchOptions)).items.slice(0, count);
   }
 
   if (config.source_type === "newest") {
-    return (await getProducts(`per_page=${count}&sort=newest`)).items.slice(0, count);
+    return (await getProducts(`per_page=${count}&sort=newest`, fetchOptions)).items.slice(0, count);
   }
 
-  return (await getProducts(`featured=1&per_page=${count}&sort=popular`)).items.slice(0, count);
+  return (await getProducts(`featured=1&per_page=${count}&sort=popular`, fetchOptions)).items.slice(0, count);
 }
 
 export async function getHomePageData() {
+  const fetchOptions = getReadFetchOptions();
   const [layoutData, homepageSections] = await Promise.all([
     getLayoutData(),
     getHomepageSections()
@@ -527,8 +553,8 @@ export async function getHomePageData() {
 
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
   const [featuredProducts, newestProducts] = await Promise.all([
-    resolveProductRail(sectionMap.get("best-sellers"), "featured=1&per_page=8&sort=popular"),
-    resolveProductRail(sectionMap.get("new-arrivals-products"), "per_page=4&sort=newest"),
+    resolveProductRail(sectionMap.get("best-sellers"), "featured=1&per_page=8&sort=popular", fetchOptions),
+    resolveProductRail(sectionMap.get("new-arrivals-products"), "per_page=4&sort=newest", fetchOptions),
   ]);
 
   return {
