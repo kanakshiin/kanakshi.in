@@ -840,6 +840,20 @@ h3 {
   gap: 0.9rem;
 }
 
+.detail-body p {
+  margin: 0;
+}
+
+.detail-body p + p {
+  margin-top: 0.85rem;
+}
+
+.detail-body a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
 .footer-payment-strip {
   display: flex;
   flex-wrap: wrap;

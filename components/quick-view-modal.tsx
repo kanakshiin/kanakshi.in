@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 
-import { PRODUCT_PLACEHOLDER_IMAGE, discountPercent, formatPrice, parseProductImages, resolveAssetUrl, parseBulletPoints, getProducts, isProductSellable } from "../lib/api";
+import { PRODUCT_PLACEHOLDER_IMAGE, discountPercent, formatPrice, parseProductImages, resolveAssetUrl, parseBulletPoints, getProducts, isProductSellable, stripHtmlContent } from "../lib/api";
 import { getProductPath } from "../lib/site";
 import { Product } from "../lib/types";
 import { ProductDetailActions } from "./product-detail-actions";
@@ -212,7 +212,7 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
                 <p className="quickview-snippet">{product.short_desc}</p>
               ) : product.description ? (
                 <p className="quickview-snippet" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                  {product.description}
+                  {stripHtmlContent(product.description)}
                 </p>
               ) : (
                 <p className="quickview-snippet">Handcrafted heirloom accent created to elevate your spaces with spiritual warmth and curated boutique styling.</p>

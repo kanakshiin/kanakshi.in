@@ -10,12 +10,11 @@ import { OffersWidget } from "../../../../components/offers-widget";
 import { ProductGallery } from "../../../../components/product-gallery";
 import { UrgencyTimer } from "../../../../components/urgency-timer";
 import { ProductReviews } from "../../../../components/product-reviews";
-import { PRODUCT_PLACEHOLDER_IMAGE, formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons, isProductSellable } from "../../../../lib/api";
+import { PRODUCT_PLACEHOLDER_IMAGE, containsHtmlMarkup, formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons, isProductSellable, stripHtmlContent } from "../../../../lib/api";
 import { referenceAssets } from "../../../../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getProductRenderKey } from "../../../../lib/site";
 
 export const revalidate = 60;
-
 
 type ProductPageProps = {
   params: Promise<{
@@ -48,7 +47,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     };
   }
 
-  const description = product.meta_desc || product.short_desc || product.description || fallbackDescription;
+  const description = stripHtmlContent(product.meta_desc || product.short_desc || product.description || fallbackDescription);
   const image = getPrimaryImage(product);
   const canonicalPath = getProductPath(product);
 
@@ -106,7 +105,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const images = gallery.length
     ? gallery.map((image) => resolveAssetUrl(image))
     : [PRODUCT_PLACEHOLDER_IMAGE];
-  const description = product.meta_desc || product.short_desc || product.description || getSiteDescription(settings);
+  const productDescription = product.description || "";
+  const hasHtmlDescription = containsHtmlMarkup(productDescription);
+  const description = stripHtmlContent(product.meta_desc || product.short_desc || productDescription || getSiteDescription(settings));
   const canonicalPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
   const productSpecs = [
@@ -250,7 +251,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <span>Pan India delivery</span>
             </div>
 
-            {product.description ? <p className="detail-body">{product.description}</p> : null}
+            {productDescription ? (
+              hasHtmlDescription ? (
+                <div className="detail-body" dangerouslySetInnerHTML={{ __html: productDescription }} />
+              ) : (
+                <p className="detail-body">{productDescription}</p>
+              )
+            ) : null}
 
             {productSpecs.length > 0 && (
               <div

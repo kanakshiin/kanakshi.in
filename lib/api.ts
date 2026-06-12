@@ -343,6 +343,34 @@ export function resolveAssetUrl(path?: string | null): string {
   return `${BACKEND_SITE_URL}/${path.replace(/^\/+/, "")}`;
 }
 
+export function containsHtmlMarkup(value?: string | null): boolean {
+  return Boolean(value && /<[^>]+>/.test(value));
+}
+
+export function stripHtmlContent(value?: string | null): string {
+  if (!value) {
+    return "";
+  }
+
+  const withoutTags = value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ");
+
+  return withoutTags
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n\s+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function parseProductImages(images?: Product["images"]): string[] {
   if (Array.isArray(images)) {
     return images.filter(Boolean);
