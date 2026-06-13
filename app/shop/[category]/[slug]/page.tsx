@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { StructuredData } from "../../../../components/structured-data";
 import { ProductDetailActions } from "../../../../components/product-detail-actions";
@@ -10,8 +10,19 @@ import { OffersWidget } from "../../../../components/offers-widget";
 import { ProductGallery } from "../../../../components/product-gallery";
 import { UrgencyTimer } from "../../../../components/urgency-timer";
 import { ProductReviews } from "../../../../components/product-reviews";
-import { PRODUCT_PLACEHOLDER_IMAGE, containsHtmlMarkup, formatPrice, getPrimaryImage, getProduct, getProducts, getSettings, parseProductImages, resolveAssetUrl, parseBulletPoints, getActiveCoupons, isProductSellable, stripHtmlContent } from "../../../../lib/api";
-import { referenceAssets } from "../../../../lib/reference-assets";
+import {
+  PRODUCT_PLACEHOLDER_IMAGE,
+  formatPrice,
+  getPrimaryImage,
+  getProduct,
+  getProducts,
+  getSettings,
+  parseProductImages,
+  resolveAssetUrl,
+  parseBulletPoints,
+  getActiveCoupons,
+  isProductSellable,
+} from "../../../../lib/api";
 import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getProductRenderKey } from "../../../../lib/site";
 
 export const revalidate = 60;
@@ -30,7 +41,7 @@ export async function generateStaticParams() {
     .slice(0, 24)
     .map((product) => ({
       category: product.category_slug as string,
-      slug: product.slug
+      slug: product.slug,
     }));
 }
 
@@ -40,40 +51,30 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const siteName = getSiteName(settings);
   const fallbackDescription = getSiteDescription(settings);
 
-  if (!product) {
-    return {
-      title: "Product Not Found",
-      description: fallbackDescription
-    };
+  if (!product || product.category_slug !== category) {
+    return { title: "Product Not Found", description: fallbackDescription };
   }
 
-  const description = stripHtmlContent(product.meta_desc || product.short_desc || product.description || fallbackDescription);
+  const description = product.meta_desc || product.short_desc || product.description || fallbackDescription;
   const image = getPrimaryImage(product);
   const canonicalPath = getProductPath(product);
 
   return {
     title: product.meta_title || product.name,
     description,
-    alternates: {
-      canonical: canonicalPath
-    },
+    alternates: { canonical: canonicalPath },
     openGraph: {
       title: `${product.name} | ${siteName}`,
       description,
       url: getCanonicalUrl(canonicalPath, settings),
-      images: [
-        {
-          url: image,
-          alt: product.name
-        }
-      ]
+      images: [{ url: image, alt: product.name }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${product.name} | ${siteName}`,
       description,
-      images: [image]
-    }
+      images: [image],
+    },
   };
 }
 
@@ -82,22 +83,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const [settings, product, activeCoupons] = await Promise.all([
     getSettings(),
     getProduct(slug),
-    getActiveCoupons()
+    getActiveCoupons(),
   ]);
 
-  if (!product) {
+  if (!product || product.category_slug !== category) {
     notFound();
   }
 
-  if (product.category_slug && product.category_slug !== category) {
-    permanentRedirect(getProductPath(product));
-  }
-
-  // Fetch related products in the same category
-  const relatedProductsResponse = await getProducts(`category=${encodeURIComponent(product.category_slug || category)}&per_page=4`);
+  // Fetch related products — filter out ones with no images
+  const relatedProductsResponse = await getProducts(
+    `category=${encodeURIComponent(product.category_slug || category)}&per_page=8`
+  );
   const relatedProducts = relatedProductsResponse.items
     .filter((item) => item.id !== product.id)
-    .slice(0, 3);
+    .filter((item) => {
+      const imgs = parseProductImages(item.images);
+      return imgs.length > 0;
+    })
+    .slice(0, 4);
 
   const currencySymbol = settings.site_currency_symbol || "₹";
   const isSellable = isProductSellable(product);
@@ -105,11 +108,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const images = gallery.length
     ? gallery.map((image) => resolveAssetUrl(image))
     : [PRODUCT_PLACEHOLDER_IMAGE];
-  const productDescription = product.description || "";
-  const hasHtmlDescription = containsHtmlMarkup(productDescription);
-  const description = stripHtmlContent(product.meta_desc || product.short_desc || productDescription || getSiteDescription(settings));
+
+  const description = product.meta_desc || product.short_desc || product.description || getSiteDescription(settings);
   const canonicalPath = getProductPath(product);
   const bulletPoints = parseBulletPoints(product.bullet_points);
+
+  // Product specs — only non-null fields
   const productSpecs = [
     product.material ? { label: "Material", value: product.material } : null,
     product.size_label ? { label: "Size", value: product.size_label } : null,
@@ -119,6 +123,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.weight ? { label: "Weight", value: `${product.weight} ${product.weight_unit || "kg"}` } : null,
   ].filter(Boolean) as Array<{ label: string; value: string | number }>;
 
+  // Price info
+  const hasDiscount =
+    product.sale_price &&
+    Number(product.sale_price) > 0 &&
+    Number(product.sale_price) < Number(product.price);
+  const savingsAmount = hasDiscount
+    ? Number(product.price) - Number(product.sale_price)
+    : 0;
+  const savingsPct = hasDiscount
+    ? Math.round((savingsAmount / Number(product.price)) * 100)
+    : 0;
+
+  // Structured data
   let productJsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -127,256 +144,318 @@ export default async function ProductPage({ params }: ProductPageProps) {
     image: images,
     category: product.category_name || undefined,
     sku: product.slug,
-    brand: {
-      "@type": "Brand",
-      name: getSiteName(settings)
-    },
+    brand: { "@type": "Brand", name: getSiteName(settings) },
     offers: {
       "@type": "Offer",
       priceCurrency: settings.site_currency || "INR",
       price: Number(product.effective_price ?? product.price ?? 0),
       availability: isSellable ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
-      url: getCanonicalUrl(canonicalPath, settings)
-    }
+      url: getCanonicalUrl(canonicalPath, settings),
+    },
   };
 
   if (product.custom_schema) {
     try {
       productJsonLd = JSON.parse(product.custom_schema) as Record<string, unknown>;
     } catch {
-      // Ignore invalid custom schema and fall back to generated JSON-LD.
+      // Ignore invalid custom schema
     }
   }
 
-  const relatedMoments = [
-    {
-      title: "Crafted For Sacred Corners",
-      copy: "Use it to create a richer altar, console story, or celebratory vignette at home.",
-      image: referenceAssets.collections.poojaDecor
-    },
-    {
-      title: "Meaningful Gifting",
-      copy: "A strong choice for housewarmings, wedding hampers, festive exchanges, and milestone keepsakes.",
-      image: referenceAssets.founderAndBrand.weddingGift
-    }
-  ];
+  // Use product's own images for the story section if available
+  const storyImage1 = images.length > 1 ? images[1] : null;
+  const storyImage2 = images.length > 2 ? images[2] : images.length > 1 ? images[0] : null;
 
   return (
     <main className="page-shell">
       <StructuredData data={productJsonLd} />
-      
-      {/* Breadcrumb Navigation Trail */}
+
+      {/* Breadcrumb */}
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <div className="container">
           <Link href="/">Home</Link>
           <span className="separator">/</span>
           <Link href="/shop">Shop</Link>
           <span className="separator">/</span>
-          <Link href={`/shop?category=${product.category_slug || category}`} style={{ textTransform: "capitalize" }}>
+          <Link
+            href={`/shop?category=${product.category_slug || category}`}
+            style={{ textTransform: "capitalize" }}
+          >
             {product.category_name || (product.category_slug || category).replace(/-/g, " ")}
           </Link>
           <span className="separator">/</span>
-          <span className="current" style={{ display: 'inline-block', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>
+          <span
+            className="current"
+            style={{
+              display: "inline-block",
+              maxWidth: "260px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              verticalAlign: "bottom",
+            }}
+          >
             {product.name}
           </span>
         </div>
       </nav>
 
-      <section className="product-hero">
-        <div className="container product-detail-grid">
-          {/* Interactive Multi-Image Gallery component with fullscreen lightbox option */}
+      {/* ── HERO: Gallery + Info ── */}
+      <section className="pdp-hero">
+        <div className="container pdp-grid">
+          {/* Gallery — Left */}
           <ProductGallery images={images} productName={product.name} />
 
-          <div className="product-detail-copy">
-            <p className="eyebrow">{product.category_name || "Signature Product"}</p>
-            <h1 className="page-title" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {product.name}
-            </h1>
-            <div className="product-rating-inline">
-              <span>{`${"★".repeat(Math.max(0, Math.min(5, Math.round(Number(product.avg_rating || 0))))) || "☆☆☆☆☆"}`}</span>
-              <strong>{Number(product.avg_rating || 0).toFixed(1)}</strong>
-              <small>{Number(product.review_count || 0)} verified review{Number(product.review_count || 0) === 1 ? "" : "s"}</small>
-            </div>
-            <p className={`detail-price${isSellable ? "" : " detail-price-coming-soon"}`}>
-              {isSellable ? formatPrice(product.effective_price ?? product.price, currencySymbol) : "Coming Soon"}
-            </p>
-            {product.short_desc ? <p className="detail-lead">{product.short_desc}</p> : null}
+          {/* Info Panel — Right */}
+          <div className="pdp-info-panel">
 
-            {/* Boutique Trust Stamps / Badges Strip */}
-            <div className="luxury-trust-badges">
-              <div className="trust-badge-card">
-                <div className="badge-stamp-wrapper">
-                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                  </svg>
-                  <span className="badge-stamp-ring"></span>
-                </div>
-                <div className="badge-label-stack">
-                  <span className="badge-title">Pure Solid Brass</span>
-                  <span className="badge-subtitle">Authentic & Everlasting</span>
-                </div>
-              </div>
+            {/* Category eyebrow */}
+            <p className="eyebrow">{product.category_name || "Signature Collection"}</p>
 
-              <div className="trust-badge-card">
-                <div className="badge-stamp-wrapper">
-                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  <span className="badge-stamp-ring"></span>
-                </div>
-                <div className="badge-label-stack">
-                  <span className="badge-title">Artisan Handcrafted</span>
-                  <span className="badge-subtitle">Generational Legacy</span>
-                </div>
-              </div>
+            {/* Product Name */}
+            <h1 className="pdp-product-title">{product.name}</h1>
 
-              <div className="trust-badge-card">
-                <div className="badge-stamp-wrapper">
-                  <svg className="badge-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zm0 0h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                  </svg>
-                  <span className="badge-stamp-ring"></span>
-                </div>
-                <div className="badge-label-stack">
-                  <span className="badge-title">Premium Gift Box</span>
-                  <span className="badge-subtitle">Festive Ready Presentation</span>
-                </div>
-              </div>
+            {/* Rating Row */}
+            <div className="pdp-rating-row">
+              <span className="pdp-stars">
+                {"★".repeat(Math.max(0, Math.min(5, Math.round(Number(product.avg_rating || 0)))))}
+                {"☆".repeat(Math.max(0, 5 - Math.min(5, Math.round(Number(product.avg_rating || 0)))))}
+              </span>
+              <strong className="pdp-rating-score">
+                {Number(product.avg_rating || 0).toFixed(1)}
+              </strong>
+              <a href="#reviews" className="pdp-rating-count">
+                {Number(product.review_count || 0)} review{Number(product.review_count || 0) === 1 ? "" : "s"}
+              </a>
             </div>
 
-            <div className="detail-meta-strip">
-              <span>Hand-finished aesthetic</span>
-              <span>Premium gifting appeal</span>
-              <span>Pan India delivery</span>
-            </div>
+            {/* Divider */}
+            <div className="pdp-divider" />
 
-            {productDescription ? (
-              hasHtmlDescription ? (
-                <div className="detail-body" dangerouslySetInnerHTML={{ __html: productDescription }} />
-              ) : (
-                <p className="detail-body">{productDescription}</p>
-              )
+            {/* Price Block */}
+            {isSellable ? (
+              <div className="pdp-price-block">
+                <span className="pdp-effective-price">
+                  {formatPrice(product.effective_price ?? product.price, currencySymbol)}
+                </span>
+                {hasDiscount && (
+                  <>
+                    <span className="pdp-mrp">
+                      MRP <s>{formatPrice(product.price, currencySymbol)}</s>
+                    </span>
+                    <span className="pdp-savings-badge">
+                      {savingsPct}% off
+                    </span>
+                  </>
+                )}
+                <span className="pdp-tax-note">Inclusive of all taxes</span>
+              </div>
+            ) : (
+              <div className="pdp-price-block">
+                <span className="pdp-coming-soon-price">Coming Soon</span>
+              </div>
+            )}
+
+            {/* Short Description */}
+            {product.short_desc ? (
+              <p className="pdp-short-desc">{product.short_desc}</p>
             ) : null}
 
-            {productSpecs.length > 0 && (
-              <div
-                style={{
-                  display: "grid",
-                  gap: "0.8rem",
-                  padding: "1.1rem 1.2rem",
-                  border: "1px solid var(--line)",
-                  borderRadius: "20px",
-                  background: "rgba(255,255,255,0.66)",
-                  marginTop: "1.1rem",
-                }}
-              >
-                <h3 style={{ margin: 0, fontSize: "1rem" }}>Product Specifications</h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                    gap: "0.7rem",
-                  }}
-                >
-                  {productSpecs.map((spec) => (
-                    <div
-                      key={spec.label}
-                      style={{
-                        padding: "0.85rem 0.9rem",
-                        borderRadius: "16px",
-                        border: "1px solid var(--line)",
-                        background: "rgba(255,255,255,0.72)",
-                      }}
-                    >
-                      <small style={{ display: "block", color: "var(--muted)", marginBottom: "0.25rem" }}>{spec.label}</small>
-                      <strong style={{ fontSize: "0.96rem" }}>{spec.value}</strong>
-                    </div>
-                  ))}
+            {/* Delivery Strip */}
+            {isSellable && (
+              <div className="pdp-delivery-strip">
+                <div className="pdp-delivery-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+                  </svg>
+                  <div>
+                    <strong>Free Delivery</strong>
+                    <span>On orders above ₹499</span>
+                  </div>
+                </div>
+                <div className="pdp-delivery-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <div>
+                    <strong>Secure Packaging</strong>
+                    <span>Ships in 3–5 business days</span>
+                  </div>
+                </div>
+                <div className="pdp-delivery-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                  <div>
+                    <strong>Easy Returns</strong>
+                    <span>7-day hassle-free returns</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Premium Bullet Points Checklist */}
+            {/* Trust Badges */}
+            <div className="pdp-trust-strip">
+              <div className="pdp-trust-badge">
+                <div className="pdp-trust-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" />
+                  </svg>
+                </div>
+                <div>
+                  <strong>100% Brass</strong>
+                  <span>Pure & authentic</span>
+                </div>
+              </div>
+              <div className="pdp-trust-badge">
+                <div className="pdp-trust-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                    <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 0v20M2 12h20" />
+                  </svg>
+                </div>
+                <div>
+                  <strong>Handcrafted</strong>
+                  <span>Artisan made</span>
+                </div>
+              </div>
+              <div className="pdp-trust-badge">
+                <div className="pdp-trust-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                    <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zm0 0h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                  </svg>
+                </div>
+                <div>
+                  <strong>Gift Box</strong>
+                  <span>Festive ready</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons (Add to Cart / Buy Now / Amazon) */}
+            <ProductDetailActions product={product} />
+
+            {/* Urgency Timer */}
+            {isSellable ? <UrgencyTimer /> : null}
+
+            {/* Divider */}
+            <div className="pdp-divider" style={{ marginTop: "1.5rem" }} />
+
+            {/* Bullet Points */}
             {bulletPoints.length > 0 && (
-              <div className="product-bullets-container">
-                <h3 className="bullets-title">Key Elements</h3>
-                <ul className="bullet-list">
+              <div className="pdp-bullets">
+                <h3 className="pdp-section-label">What's Included</h3>
+                <ul className="pdp-bullet-list">
                   {bulletPoints.map((point, index) => (
-                    <li key={index} className="bullet-item">
-                      <svg className="bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <li key={index} className="pdp-bullet-item">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="pdp-bullet-check" aria-hidden="true">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                      <span className="bullet-text">{point}</span>
+                      <span>{point}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* Exclusive Offers Widget */}
-            {isSellable ? (
-              <div className="product-offers-container" style={{ marginTop: "1.5rem" }}>
+            {/* Product Description */}
+            {product.description ? (
+              <div className="pdp-description">
+                <h3 className="pdp-section-label">About this product</h3>
+                <p className="pdp-desc-body">{product.description}</p>
+              </div>
+            ) : null}
+
+            {/* Offers Widget */}
+            {isSellable && activeCoupons.length > 0 ? (
+              <div style={{ marginTop: "1.5rem" }}>
                 <OffersWidget coupons={activeCoupons} />
               </div>
-            ) : (
-              <div className="coming-soon-panel">
-                <strong>Catalog listing is live</strong>
-                <p>This product is visible now and will become buyable automatically once final images and pricing are completed in admin.</p>
+            ) : null}
+
+            {/* Spec Table */}
+            {productSpecs.length > 0 && (
+              <div className="pdp-specs">
+                <h3 className="pdp-section-label">Product Details</h3>
+                <table className="pdp-spec-table">
+                  <tbody>
+                    {productSpecs.map((spec) => (
+                      <tr key={spec.label} className="pdp-spec-row">
+                        <td className="pdp-spec-label">{spec.label}</td>
+                        <td className="pdp-spec-value">{spec.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
+          </div>
+        </div>
+      </section>
 
-            <div className="detail-callout">
-              <strong>Why it stands out</strong>
+      {/* ── STORY SECTION ── */}
+      {(storyImage1 || storyImage2) && (
+        <section className="pdp-story-section">
+          <div className="container pdp-story-grid">
+            <div className="pdp-story-copy">
+              <p className="eyebrow">Crafted With Purpose</p>
+              <h2>Designed To Feel Special The Moment It Is Placed</h2>
               <p>
-                Rich texture, ceremonial warmth, and display-ready proportions make this piece ideal for premium homes and
-                festive gifting edits.
+                Each piece from Little Divinity is carefully selected for its finish quality, weight,
+                and display presence. Whether placed on an altar, gifted at a celebration, or styled
+                as a statement piece — our brass and heritage decor is built to last a lifetime and
+                tell a story worth sharing.
               </p>
             </div>
-
-            <ProductDetailActions product={product} />
-            
-            {/* Scarcity Ticking Countdown Timer */}
-            {isSellable ? <UrgencyTimer /> : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="content-section">
-        <div className="container product-story-layout">
-          <div className="product-story-copy">
-            <p className="eyebrow">Crafted With Purpose</p>
-            <h2>Designed To Feel Special The Moment It Is Placed</h2>
-            <p>
-              Each piece from Little Divinity is carefully selected for its finish quality, weight, and display
-              presence. Whether placed on an altar, gifted at a celebration, or styled as a statement piece — our
-              brass and heritage decor is built to last a lifetime and tell a story worth sharing.
-            </p>
-          </div>
-
-          <div className="product-story-grid">
-            {relatedMoments.map((moment) => (
-              <article key={moment.title} className="product-story-card">
-                <Image src={moment.image} alt={moment.title} width={800} height={800} sizes="(max-width: 900px) 100vw, 33vw" />
-                <div>
-                  <h3>{moment.title}</h3>
-                  <p>{moment.copy}</p>
+            <div className="pdp-story-cards">
+              {storyImage1 && (
+                <div className="pdp-story-card">
+                  <Image
+                    src={storyImage1}
+                    alt={`${product.name} — Detail view`}
+                    width={600}
+                    height={600}
+                    sizes="(max-width: 900px) 100vw, 33vw"
+                    loading="lazy"
+                  />
+                  <div className="pdp-story-card-caption">
+                    <h3>Sacred Craftsmanship</h3>
+                    <p>Use it to create a richer altar, console story, or celebratory vignette at home.</p>
+                  </div>
                 </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Related Products Accents Tray */}
-      {relatedProducts.length > 0 && (
-        <section className="content-section related-products-section" style={{ borderTop: "1px solid var(--line)", paddingTop: "4rem" }}>
-          <div className="container">
-            <div className="section-header" style={{ marginBottom: "2.5rem" }}>
-              <p className="eyebrow">Complete The Altar</p>
-              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "2rem", color: "var(--accent-deep)", fontWeight: 600 }}>Related Accents</h2>
+              )}
+              {storyImage2 && (
+                <div className="pdp-story-card">
+                  <Image
+                    src={storyImage2}
+                    alt={`${product.name} — Lifestyle view`}
+                    width={600}
+                    height={600}
+                    sizes="(max-width: 900px) 100vw, 33vw"
+                    loading="lazy"
+                  />
+                  <div className="pdp-story-card-caption">
+                    <h3>Meaningful Gifting</h3>
+                    <p>A strong choice for housewarmings, wedding hampers, festive exchanges, and milestone keepsakes.</p>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="product-grid shop-product-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+          </div>
+        </section>
+      )}
+
+      {/* ── RELATED PRODUCTS ── */}
+      {relatedProducts.length > 0 && (
+        <section className="pdp-related-section">
+          <div className="container">
+            <div className="pdp-section-head">
+              <p className="eyebrow">You May Also Like</p>
+              <h2 className="pdp-related-title">Related Accents</h2>
+              <Link href={`/shop?category=${product.category_slug || category}`} className="pdp-see-all-link">
+                See all →
+              </Link>
+            </div>
+            <div className="product-grid shop-product-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
               {relatedProducts.map((item) => (
                 <ProductCard key={getProductRenderKey(item)} product={item} currencySymbol={currencySymbol} />
               ))}
@@ -385,13 +464,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </section>
       )}
 
-      {/* Customer Reviews Section */}
-      <ProductReviews
-        productName={product.name}
-        productSlug={product.slug}
-        initialAverage={Number(product.avg_rating || 0)}
-        initialCount={Number(product.review_count || 0)}
-      />
+      {/* ── REVIEWS ── */}
+      <div id="reviews">
+        <ProductReviews
+          productName={product.name}
+          productSlug={product.slug}
+          initialAverage={Number(product.avg_rating || 0)}
+          initialCount={Number(product.review_count || 0)}
+        />
+      </div>
     </main>
   );
 }

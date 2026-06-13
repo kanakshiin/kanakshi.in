@@ -13,7 +13,25 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const thumbRailRef = useRef<HTMLDivElement>(null);
+
+  const switchImage = (index: number) => {
+    if (index === activeIndex) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setActiveIndex(index);
+      setIsTransitioning(false);
+    }, 160);
+    // Scroll active thumb into view in the vertical rail
+    if (thumbRailRef.current) {
+      const thumbEl = thumbRailRef.current.children[index] as HTMLElement;
+      if (thumbEl) {
+        thumbEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+  };
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -32,70 +50,81 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     document.body.style.overflow = "";
   };
 
-  const nextImage = (e?: React.MouseEvent) => {
+  const nextLightboxImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setLightboxIndex((prev) => (prev + 1) % images.length);
   };
 
-  const prevImage = (e?: React.MouseEvent) => {
+  const prevLightboxImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  // Keyboard navigation for standard accessibility
+  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        nextImage();
-      } else if (e.key === "ArrowLeft") {
-        prevImage();
-      } else if (e.key === "Escape") {
-        closeLightbox();
-      }
+      if (e.key === "ArrowRight") nextLightboxImage();
+      else if (e.key === "ArrowLeft") prevLightboxImage();
+      else if (e.key === "Escape") closeLightbox();
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, images.length]);
 
   return (
     <div className="product-detail-media-gallery">
+      {/* Vertical Thumbnail Rail — Desktop */}
       {images.length > 1 ? (
-        <div className="product-thumb-row interactive-thumbs product-thumb-rail">
+        <div className="gallery-thumb-rail" ref={thumbRailRef}>
           {images.map((image, index) => (
             <button
               key={`gallery-thumb-${index}`}
               type="button"
               className={`gallery-thumb-btn ${activeIndex === index ? "active" : ""}`}
-              onClick={() => setActiveIndex(index)}
-              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => switchImage(index)}
+              onMouseEnter={() => switchImage(index)}
               aria-label={`Show product image ${index + 1}`}
             >
               <Image
                 src={image}
                 alt={`${productName} ${index + 1}`}
-                width={180}
-                height={180}
-                sizes="(max-width: 900px) 22vw, 88px"
+                width={100}
+                height={100}
+                sizes="88px"
+                loading="lazy"
               />
             </button>
           ))}
         </div>
       ) : null}
 
+      {/* Main Image Stage */}
       <div className="gallery-main-stage">
-        <div className="gallery-main-wrapper" onClick={() => openLightbox(activeIndex)}>
+        <div
+          className={`gallery-main-wrapper${isTransitioning ? " gallery-fade-out" : ""}`}
+          onClick={() => openLightbox(activeIndex)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openLightbox(activeIndex)}
+          aria-label="Click to expand gallery"
+        >
           <Image
             src={images[activeIndex] || PRODUCT_PLACEHOLDER_IMAGE}
             alt={productName}
             className="product-detail-main interactive-zoom"
             width={1200}
-            height={1344}
+            height={1200}
             priority
             sizes="(max-width: 900px) 100vw, 50vw"
           />
+
+          {/* Image Counter Badge */}
+          {images.length > 1 && (
+            <div className="gallery-counter-badge">
+              {activeIndex + 1} / {images.length}
+            </div>
+          )}
 
           <button
             type="button"
@@ -107,25 +136,35 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             aria-label="Expand gallery to full screen"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="expand-svg-icon">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              <line x1="11" y1="8" x2="11" y2="14" />
-              <line x1="8" y1="11" x2="14" y2="11" />
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
             </svg>
-            <span>Expand View</span>
+            <span>View All Photos</span>
           </button>
         </div>
+
+        {/* Mobile Dot Indicators */}
+        {images.length > 1 && (
+          <div className="gallery-mobile-dots">
+            {images.map((_, index) => (
+              <button
+                key={`dot-${index}`}
+                type="button"
+                className={`gallery-dot${activeIndex === index ? " active" : ""}`}
+                onClick={() => switchImage(index)}
+                aria-label={`Go to image ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Fullscreen Lightbox Dialog */}
       <dialog
         ref={dialogRef}
         className="premium-lightbox-dialog"
         onClose={closeLightbox}
         onClick={(e) => {
-          // Native light-dismiss: close on overlay backdrop click
-          if (e.target === dialogRef.current) {
-            closeLightbox();
-          }
+          if (e.target === dialogRef.current) closeLightbox();
         }}
       >
         <div className="lightbox-viewport">
@@ -142,11 +181,10 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           </button>
 
           <div className="lightbox-content-grid">
-            {/* Previous Arrow */}
             <button
               type="button"
               className="lightbox-nav-btn prev"
-              onClick={prevImage}
+              onClick={prevLightboxImage}
               aria-label="Previous image"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -154,7 +192,6 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               </svg>
             </button>
 
-            {/* Active Image Box */}
             <div className="lightbox-display-frame">
               <img
                 src={images[lightboxIndex] || PRODUCT_PLACEHOLDER_IMAGE}
@@ -168,11 +205,10 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               </div>
             </div>
 
-            {/* Next Arrow */}
             <button
               type="button"
               className="lightbox-nav-btn next"
-              onClick={nextImage}
+              onClick={nextLightboxImage}
               aria-label="Next image"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -181,7 +217,6 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             </button>
           </div>
 
-          {/* Inline Slider Indicators / Thumbnails */}
           {images.length > 1 && (
             <div className="lightbox-carousel-row">
               {images.map((image, index) => (
@@ -192,7 +227,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
                   onClick={() => setLightboxIndex(index)}
                   aria-label={`View fullscreen image ${index + 1}`}
                 >
-                    <img
+                  <img
                     src={image || PRODUCT_PLACEHOLDER_IMAGE}
                     alt={`Thumbnail indicator ${index + 1}`}
                     className="lightbox-carousel-thumb-img"

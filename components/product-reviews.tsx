@@ -132,7 +132,7 @@ export function ProductReviews({
         <div className="product-reviews-head">
           <div>
             <p className="eyebrow">Customer Reviews</p>
-            <h2>Verified reviews for {productName}</h2>
+            <h2>Verified Customer Reviews</h2>
             <p className="product-reviews-intro">
               Only customers who purchased this product can leave a rating, comment, and photo review.
             </p>
