@@ -249,16 +249,27 @@ export default async function HomePage() {
       {isHeroEnabled ? (
         <section className="hero-section">
           <div className="container hero-grid">
-            <div className="hero-visual">
-              <HeroSlider
-                slides={finalHeroSlides}
-                autoplayMs={heroConfig.slider_settings?.autoplay_ms || 3500}
-                navGap={heroConfig.slider_settings?.nav_gap || 34}
-                showArrows={heroConfig.slider_settings?.show_arrows !== false}
-                showDots={heroConfig.slider_settings?.show_dots === true}
-                showText={heroConfig.slider_settings?.show_text !== false}
-              />
-              <div className="hero-cta-overlay">
+            <div className="hero-primary-stack">
+              <div className="hero-visual">
+                <HeroSlider
+                  slides={finalHeroSlides}
+                  autoplayMs={heroConfig.slider_settings?.autoplay_ms || 3500}
+                  navGap={heroConfig.slider_settings?.nav_gap || 34}
+                  showArrows={heroConfig.slider_settings?.show_arrows !== false}
+                  showDots={heroConfig.slider_settings?.show_dots === true}
+                  showText={heroConfig.slider_settings?.show_text !== false}
+                />
+                <div className="hero-cta-overlay">
+                  <h1 className="hero-cta-headline">{heroHeadline}</h1>
+                  <p className="hero-cta-sub">{heroDescription}</p>
+                  <div className="hero-cta-actions">
+                    <Link href={heroPrimaryButtonUrl} className="primary-button">{heroPrimaryButtonText}</Link>
+                    <Link href={heroSecondaryButtonUrl} className="secondary-button">{heroSecondaryButtonText}</Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hero-cta-mobile" aria-label="Hero call to action">
                 <h1 className="hero-cta-headline">{heroHeadline}</h1>
                 <p className="hero-cta-sub">{heroDescription}</p>
                 <div className="hero-cta-actions">

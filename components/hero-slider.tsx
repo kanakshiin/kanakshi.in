@@ -31,6 +31,37 @@ export function HeroSlider({
   showText = true,
 }: HeroSliderProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [viewportKey, setViewportKey] = useState("desktop");
+
+  useEffect(() => {
+    const resolveViewportKey = () => {
+      if (window.innerWidth <= 768) {
+        return "mobile";
+      }
+
+      if (window.innerWidth <= 991) {
+        return "tablet";
+      }
+
+      return "desktop";
+    };
+
+    const syncViewport = () => {
+      setViewportKey((current) => {
+        const next = resolveViewportKey();
+        return current === next ? current : next;
+      });
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+    };
+  }, []);
 
   useEffect(() => {
     if (slides.length <= 1) {
@@ -50,9 +81,13 @@ export function HeroSlider({
     }
   }, [activeIndex, slides.length]);
 
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [viewportKey]);
+
   return (
-    <div className="hero-slider">
-      <div className="hero-slider-stage">
+    <div className="hero-slider" data-viewport={viewportKey}>
+      <div className="hero-slider-stage" key={viewportKey}>
         {slides.map((slide, index) => (
           <div
             key={`${slide.image}-${index}`}
@@ -66,6 +101,7 @@ export function HeroSlider({
                   alt={slide.alt}
                   fill
                   priority={index === 0}
+                  unoptimized={slide.image.startsWith("http")}
                   sizes="(max-width: 900px) 100vw, 70vw"
                 />
               </Link>
@@ -75,6 +111,7 @@ export function HeroSlider({
                 alt={slide.alt}
                 fill
                 priority={index === 0}
+                unoptimized={slide.image.startsWith("http")}
                 sizes="(max-width: 900px) 100vw, 70vw"
               />
             )}
