@@ -19,6 +19,7 @@ type SiteHeaderProps = {
     slug: string;
   }>;
   menuItems: NavigationItem[];
+  mobileMenuItems?: NavigationItem[];
   settings: SiteSettings;
 };
 
@@ -34,7 +35,7 @@ type NavDisplayItem = {
   }>;
 };
 
-export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings }: SiteHeaderProps) {
+export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMenuItems = [], settings }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
   const [offerIndex, setOfferIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -86,6 +87,27 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
         submenu: []
       }));
   const fullNavItems: NavDisplayItem[] = menuSeed.map((item) => {
+    const matchedCategory = categoryMap.get(item.slug);
+    return {
+      ...item,
+      submenu: item.submenu || [],
+      slug: matchedCategory?.slug || item.slug,
+      href: item.href || `/shop?category=${matchedCategory?.slug || item.slug}`
+    };
+  });
+  const mobileSeed = (mobileMenuItems.length ? mobileMenuItems : menuItems).map((item, index) => ({
+    id: item.id || index,
+    name: item.title,
+    slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
+    href: typeof item.url === "string" ? item.url : "/shop",
+    submenu:
+      item.children?.map((child, childIndex) => ({
+        id: child.id || Number(`${item.id}${childIndex + 1}`),
+        name: child.title,
+        href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop")
+      })) || []
+  }));
+  const mobileNavItems: NavDisplayItem[] = mobileSeed.map((item) => {
     const matchedCategory = categoryMap.get(item.slug);
     return {
       ...item,
@@ -307,7 +329,7 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, settings
 
           <div className="mobile-nav-inner">
             <div className="mobile-nav-list">
-              {fullNavItems.map((item) => {
+              {mobileNavItems.map((item) => {
                 const hasSubmenu = item.submenu.length > 0;
                 const isOpen = openMobileSectionId === item.id;
 

@@ -10,6 +10,7 @@ import {
   submitWarrantyClaim,
   submitBuybackRequest,
 } from "../../lib/registry-api";
+import { getSettings } from "../../lib/api";
 
 /* ─────────────────────────────────────────────
    PAGE SHELL — full-height, no scroll
@@ -20,8 +21,12 @@ function WarrantyPortalContent() {
   const initialTab = normalizeTab(searchParams.get("tab"));
   const codeParam = searchParams.get("code") || "";
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const [buybackEnabled, setBuybackEnabled] = useState(true);
 
   const changeTab = (t: TabKey) => {
+    if (t === "buyback" && !buybackEnabled) {
+      return;
+    }
     setTab(t);
     const params = new URLSearchParams({ tab: t });
     if (codeParam) {
@@ -29,6 +34,34 @@ function WarrantyPortalContent() {
     }
     router.replace(`/warranty-portal?${params.toString()}`);
   };
+
+  useEffect(() => {
+    let active = true;
+
+    getSettings()
+      .then((settings) => {
+        if (!active) {
+          return;
+        }
+
+        const enabled = settings.registry_allow_buyback !== false;
+        setBuybackEnabled(enabled);
+
+        if (!enabled && initialTab === "buyback") {
+          setTab("register");
+          router.replace("/warranty-portal?tab=register");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setBuybackEnabled(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initialTab, router]);
 
   /* Left-panel copy per tab */
   const leftContent: Record<TabKey, { eyebrow: string; heading: string; body: string }> = {
@@ -91,7 +124,7 @@ function WarrantyPortalContent() {
         <main className="wp-right">
           {/* Tab bar */}
           <div className="wp-tabs" role="tablist">
-            {(["register", "status", "claim", "buyback"] as TabKey[]).map((t) => (
+            {(["register", "status", "claim", ...(buybackEnabled ? ["buyback"] : [])] as TabKey[]).map((t) => (
               <button
                 key={t}
                 role="tab"

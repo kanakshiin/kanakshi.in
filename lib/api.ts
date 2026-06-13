@@ -311,6 +311,7 @@ type PublicSettingsPayload = {
   data?: SiteSettings & {
     header_menu?: NavigationItem[];
     footer_menu?: NavigationItem[];
+    mobile_menu?: NavigationItem[];
     social_links?: SocialLink[];
   };
 };
@@ -469,6 +470,11 @@ export async function getLayoutData() {
     headerMenu: data.header_menu?.length
       ? data.header_menu
       : (STOREFRONT_FALLBACKS_ENABLED ? fallbackHeaderMenu : []),
+    mobileMenu: data.mobile_menu?.length
+      ? data.mobile_menu
+      : (data.header_menu?.length
+        ? data.header_menu
+        : (STOREFRONT_FALLBACKS_ENABLED ? fallbackHeaderMenu : [])),
     footerMenu: data.footer_menu?.length
       ? data.footer_menu
       : (STOREFRONT_FALLBACKS_ENABLED ? fallbackFooterMenu : []),

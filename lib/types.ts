@@ -39,6 +39,7 @@ export type SiteSettings = {
   topbar_text_color?: string | null;
   topbar_offers?: string[];
   payment_gateways?: PaymentGatewayPublic[];
+  registry_allow_buyback?: boolean;
 };
 
 export type PaymentGatewayPublic = {

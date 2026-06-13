@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getActiveCoupons } from "../lib/api";
 import { Coupon } from "../lib/types";
 
 type OffersWidgetProps = {
   coupons?: Coupon[];
+  autoFetch?: boolean;
 };
 
 type PromoCampaign = {
@@ -13,14 +15,44 @@ type PromoCampaign = {
   badge?: string;
 };
 
-export function OffersWidget({ coupons = [] }: OffersWidgetProps) {
+export function OffersWidget({ coupons, autoFetch = true }: OffersWidgetProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [loadedCoupons, setLoadedCoupons] = useState<Coupon[]>(coupons ?? []);
+  const couponList = coupons ?? loadedCoupons;
+
+  useEffect(() => {
+    setLoadedCoupons(coupons ?? []);
+  }, [coupons]);
+
+  useEffect(() => {
+    if (coupons || !autoFetch) {
+      return;
+    }
+
+    let active = true;
+
+    getActiveCoupons()
+      .then((items) => {
+        if (active) {
+          setLoadedCoupons(items);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setLoadedCoupons([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [autoFetch, coupons]);
 
   // Dynamic coupons mapped
-  const dynamicCampaigns: PromoCampaign[] = coupons.map((c) => ({
+  const dynamicCampaigns: PromoCampaign[] = couponList.map((c) => ({
     code: c.code,
-    description: `${c.value}${c.type === "percentage" ? "%" : " ₹"} off your order. ${c.description || ""}`,
-    badge: c.badge_text || (c.type === "percentage" ? "Special %" : "Direct Discount")
+    description: `${c.value}${c.type === "percent" || c.type === "percentage" ? "%" : " ₹"} off your order. ${c.description || ""}`.trim(),
+    badge: c.badge_text || (c.type === "percent" || c.type === "percentage" ? "Special %" : "Direct Discount")
   }));
 
   // Fallback high-converting boutique promotions
@@ -43,7 +75,10 @@ export function OffersWidget({ coupons = [] }: OffersWidgetProps) {
   ];
 
   // Merge so we always have at least a beautiful selection
-  const allCampaigns = [...dynamicCampaigns, ...fallbackCampaigns].slice(0, 3);
+  const allCampaigns = useMemo(
+    () => (dynamicCampaigns.length ? dynamicCampaigns.slice(0, 3) : fallbackCampaigns),
+    [dynamicCampaigns]
+  );
 
   const handleCopy = async (code: string) => {
     try {

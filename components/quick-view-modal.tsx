@@ -235,12 +235,12 @@ export function QuickViewModal({ product, isOpen, onClose, currencySymbol }: Qui
               </div>
             )}
 
-            {/* Exclusive Offers Widget */}
-            {isSellable ? (
-              <div className="quickview-offers-wrap" style={{ marginTop: "1rem" }}>
-                <OffersWidget />
-              </div>
-            ) : null}
+              {/* Exclusive Offers Widget */}
+              {isSellable ? (
+                <div className="quickview-offers-wrap" style={{ marginTop: "1rem" }}>
+                  <OffersWidget autoFetch />
+                </div>
+              ) : null}
           </div>
 
           <div className="quickview-details-footer">

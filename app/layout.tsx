@@ -42,7 +42,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { settings, categories, headerMenu, footerMenu, socialLinks } = await getLayoutData();
+  const { settings, categories, headerMenu, mobileMenu, footerMenu, socialLinks } = await getLayoutData();
   const brandName = getSiteName(settings);
   const siteUrl = getSiteUrl(settings);
   const siteDescription = getSiteDescription(settings);
@@ -134,7 +134,14 @@ fbq('track', 'PageView');`,
         <CartProvider>
           <WishlistProvider>
             <StructuredData data={[organizationJsonLd, websiteJsonLd]} />
-            <SiteHeader brandName={brandName} logoUrl={settings.logo_url} categories={categories} menuItems={headerMenu} settings={settings} />
+            <SiteHeader
+              brandName={brandName}
+              logoUrl={settings.logo_url}
+              categories={categories}
+              menuItems={headerMenu}
+              mobileMenuItems={mobileMenu}
+              settings={settings}
+            />
             {children}
             <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
             <FloatingWhatsappWidget phone={settings.site_phone || "919999999999"} />
