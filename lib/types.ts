@@ -132,6 +132,10 @@ export type Product = {
   is_sellable?: boolean;
   shipping_type?: "default" | "custom" | "free" | string | null;
   shipping_fee?: number | string | null;
+  amazon_link?: string | null;
+  amazon_button_enabled?: boolean;
+  amazon_price?: number | string | null;
+  amazon_price_fetched_at?: string | null;
 };
 
 export type ProductReview = {

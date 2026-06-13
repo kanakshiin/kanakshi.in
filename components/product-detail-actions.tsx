@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { Product } from "../lib/types";
-import { isProductSellable } from "../lib/api";
+import { formatPrice, isProductSellable } from "../lib/api";
 import { CartQuantityControl } from "./cart-quantity-control";
 import { useCart } from "./cart-provider";
 import { useWishlist } from "./wishlist-provider";
@@ -15,6 +15,8 @@ export function ProductDetailActions({ product }: { product: Product }) {
   const quantity = getItemQuantity(product.slug);
   const isWishlisted = hasItem(product.slug);
   const isSellable = isProductSellable(product);
+  const showAmazonButton = Boolean(product.amazon_button_enabled && product.amazon_link);
+  const amazonPriceLabel = product.amazon_price ? formatPrice(product.amazon_price, "₹") : null;
 
   return (
     <div className="detail-actions-deck">
@@ -38,7 +40,7 @@ export function ProductDetailActions({ product }: { product: Product }) {
         </svg>
       </button>
 
-      <div className="action-buttons-grid">
+      <div className={`action-buttons-grid${showAmazonButton ? " action-buttons-grid--with-amazon" : ""}`}>
         {isSellable ? (
           <>
             {quantity > 0 ? (
@@ -67,6 +69,19 @@ export function ProductDetailActions({ product }: { product: Product }) {
             >
               Buy Now
             </button>
+
+            {showAmazonButton ? (
+              <a
+                href={product.amazon_link as string}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="secondary-button amazon-buy-button"
+                style={{ width: "100%", margin: 0, textDecoration: "none" }}
+              >
+                <span>Buy on Amazon</span>
+                {amazonPriceLabel ? <small>{amazonPriceLabel}</small> : null}
+              </a>
+            ) : null}
           </>
         ) : (
           <>

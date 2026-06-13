@@ -4309,6 +4309,27 @@ h3 {
   align-items: stretch;
 }
 
+.action-buttons-grid--with-amazon {
+  grid-template-columns: 1fr 1fr;
+}
+
+.amazon-buy-button {
+  grid-column: 1 / -1;
+  min-height: 3.25rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
+.amazon-buy-button small {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: inherit;
+  opacity: 0.76;
+}
+
 .coming-soon-note {
   display: flex;
   align-items: center;
@@ -4346,6 +4367,11 @@ h3 {
     width: 100%;
     border-radius: var(--radius-full);
     height: 3rem;
+  }
+
+  .action-buttons-grid,
+  .action-buttons-grid--with-amazon {
+    grid-template-columns: 1fr;
   }
 }
 
