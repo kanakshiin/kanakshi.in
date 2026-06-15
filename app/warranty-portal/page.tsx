@@ -22,6 +22,12 @@ function WarrantyPortalContent() {
   const codeParam = searchParams.get("code") || "";
   const [tab, setTab] = useState<TabKey>(initialTab);
   const [buybackEnabled, setBuybackEnabled] = useState(true);
+  const [registrySettings, setRegistrySettings] = useState({
+    warrantyDurationMonths: 24,
+    allowedSources: ["website", "amazon", "offline_store", "other_marketplace"],
+    allowedFileTypes: ["pdf", "jpg", "jpeg", "png", "webp"],
+    maxUploadSizeMb: 5,
+  });
 
   const changeTab = (t: TabKey) => {
     if (t === "buyback" && !buybackEnabled) {
@@ -46,6 +52,16 @@ function WarrantyPortalContent() {
 
         const enabled = settings.registry_allow_buyback !== false;
         setBuybackEnabled(enabled);
+        setRegistrySettings({
+          warrantyDurationMonths: Number(settings.registry_warranty_duration_months || 24),
+          allowedSources: settings.registry_allowed_sources?.length
+            ? settings.registry_allowed_sources
+            : ["website", "amazon", "offline_store", "other_marketplace"],
+          allowedFileTypes: settings.registry_allowed_file_types?.length
+            ? settings.registry_allowed_file_types
+            : ["pdf", "jpg", "jpeg", "png", "webp"],
+          maxUploadSizeMb: Number(settings.registry_allowed_upload_size_mb || 5),
+        });
 
         if (!enabled && initialTab === "buyback") {
           setTab("register");
@@ -88,6 +104,9 @@ function WarrantyPortalContent() {
   };
 
   const { eyebrow, heading, body } = leftContent[tab];
+  const purchaseSourceOptions = registrySettings.allowedSources;
+  const maxUploadSizeText = `${registrySettings.maxUploadSizeMb}MB`;
+  const allowedFileTypesLabel = registrySettings.allowedFileTypes.map((item) => item.toUpperCase()).join(", ");
 
   return (
     <>
@@ -104,7 +123,7 @@ function WarrantyPortalContent() {
 
             <div className="wp-benefits">
               <div className="wp-benefit">
-                <strong>2-Year Service</strong>
+                <strong>{registrySettings.warrantyDurationMonths}-Month Service</strong>
                 <span>Free expert repolishing, structural repair, and tarnish remediation.</span>
               </div>
               <div className="wp-benefit">
@@ -139,10 +158,31 @@ function WarrantyPortalContent() {
 
           {/* Form area — scrolls independently if content tall */}
           <div className="wp-form-area">
-            {tab === "register" && <RegisterForm />}
+            {tab === "register" && (
+              <RegisterForm
+                allowedSources={purchaseSourceOptions}
+                allowedFileTypes={registrySettings.allowedFileTypes}
+                allowedFileTypesLabel={allowedFileTypesLabel}
+                maxUploadSizeText={maxUploadSizeText}
+              />
+            )}
             {tab === "status"   && <StatusForm  codeParam={codeParam} changeTab={changeTab} />}
-            {tab === "claim"    && <ClaimForm   codeParam={codeParam} />}
-            {tab === "buyback"  && <BuybackForm codeParam={codeParam} />}
+            {tab === "claim"    && (
+              <ClaimForm
+                codeParam={codeParam}
+                allowedFileTypes={registrySettings.allowedFileTypes}
+                allowedFileTypesLabel={allowedFileTypesLabel}
+                maxUploadSizeText={maxUploadSizeText}
+              />
+            )}
+            {tab === "buyback"  && (
+              <BuybackForm
+                codeParam={codeParam}
+                allowedFileTypes={registrySettings.allowedFileTypes}
+                allowedFileTypesLabel={allowedFileTypesLabel}
+                maxUploadSizeText={maxUploadSizeText}
+              />
+            )}
           </div>
         </main>
       </div>
@@ -268,7 +308,17 @@ function SuccessCard({ title, subtitle, lines, onReset, resetLabel }: {
 /* ─────────────────────────────────────────────
    FORM 1 — REGISTER
 ───────────────────────────────────────────── */
-function RegisterForm() {
+function RegisterForm({
+  allowedSources,
+  allowedFileTypes,
+  allowedFileTypesLabel,
+  maxUploadSizeText,
+}: {
+  allowedSources: string[];
+  allowedFileTypes: string[];
+  allowedFileTypesLabel: string;
+  maxUploadSizeText: string;
+}) {
   const [products, setProducts] = useState<{ id: number; name: string }[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [showDrop, setShowDrop] = useState(false);
@@ -289,6 +339,9 @@ function RegisterForm() {
   const [terms, setTerms] = useState(false);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [productImg, setProductImg] = useState<File | null>(null);
+
+  const uploadAccept = allowedFileTypes.map((item) => `.${item.toLowerCase()}`).join(",");
+  const sourceOptions = allowedSources.includes(source) ? allowedSources : [source, ...allowedSources];
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<any>(null);
@@ -381,10 +434,19 @@ function RegisterForm() {
       {/* Row 3 — Source */}
       <Field label="PURCHASE CHANNEL" required>
         <Select value={source} onChange={e => { setSource(e.target.value); setStoreName(""); setStoreCity(""); }}>
-          <option value="website">Little Divinity Website</option>
-          <option value="amazon">Amazon India</option>
-          <option value="offline_store">Official Physical Store</option>
-          <option value="other_marketplace">Other Marketplace / Seller</option>
+          {sourceOptions.map((option) => (
+            <option key={option} value={option}>
+              {option === "website"
+                ? "Little Divinity Website"
+                : option === "amazon"
+                  ? "Amazon India"
+                  : option === "offline_store"
+                    ? "Official Physical Store"
+                    : option === "other_marketplace"
+                      ? "Other Marketplace / Seller"
+                      : option.replace(/_/g, " ")}
+            </option>
+          ))}
         </Select>
       </Field>
 
@@ -451,15 +513,17 @@ function RegisterForm() {
       <div className="wp-row">
         <Field label={`UPLOAD INVOICE ${source === "website" ? "(OPTIONAL)" : "*"}`}>
           <label className="wp-file-label">
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required={source !== "website"} onChange={e => setInvoiceFile(e.target.files?.[0] ?? null)} style={{ display: "none" }} />
+            <input type="file" accept={uploadAccept} required={source !== "website"} onChange={e => setInvoiceFile(e.target.files?.[0] ?? null)} style={{ display: "none" }} />
             <span>{invoiceFile ? invoiceFile.name : "Choose file…"}</span>
           </label>
+          <small className="wp-hint">{allowedFileTypesLabel} · Max {maxUploadSizeText}</small>
         </Field>
         <Field label="PRODUCT PHOTO (OPTIONAL)">
           <label className="wp-file-label">
-            <input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={e => setProductImg(e.target.files?.[0] ?? null)} style={{ display: "none" }} />
+            <input type="file" accept={uploadAccept} onChange={e => setProductImg(e.target.files?.[0] ?? null)} style={{ display: "none" }} />
             <span>{productImg ? productImg.name : "Choose file…"}</span>
           </label>
+          <small className="wp-hint">{allowedFileTypesLabel} · Max {maxUploadSizeText}</small>
         </Field>
       </div>
 
@@ -576,7 +640,17 @@ function StatusForm({ codeParam, changeTab }: { codeParam: string; changeTab: (t
 /* ─────────────────────────────────────────────
    FORM 3 — SERVICE CLAIM
 ───────────────────────────────────────────── */
-function ClaimForm({ codeParam }: { codeParam: string }) {
+function ClaimForm({
+  codeParam,
+  allowedFileTypes,
+  allowedFileTypesLabel,
+  maxUploadSizeText,
+}: {
+  codeParam: string;
+  allowedFileTypes: string[];
+  allowedFileTypesLabel: string;
+  maxUploadSizeText: string;
+}) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [regCode, setRegCode] = useState(codeParam);
   const [regDetails, setRegDetails] = useState<any>(null);
@@ -587,6 +661,7 @@ function ClaimForm({ codeParam }: { codeParam: string }) {
   const [error, setError] = useState<string | null>(null);
   const [fe, setFe] = useState<Record<string, string[]>>({});
   const [claimCode, setClaimCode] = useState("");
+  const uploadAccept = allowedFileTypes.map((item) => `.${item.toLowerCase()}`).join(",");
 
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -672,10 +747,10 @@ function ClaimForm({ codeParam }: { codeParam: string }) {
             </Field>
             <Field label="UPLOAD VISUAL PROOF (REQUIRED)" required>
               <label className="wp-file-label">
-                <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" onChange={e => setImages(e.target.files)} style={{ display: "none" }} required />
+                <input type="file" multiple accept={uploadAccept} onChange={e => setImages(e.target.files)} style={{ display: "none" }} required />
                 <span>{images && images.length > 0 ? `${images.length} file(s) selected` : "Select damage photos…"}</span>
               </label>
-              <small className="wp-hint">Up to 5 images · JPG/PNG/WEBP · Max 5MB each</small>
+              <small className="wp-hint">Up to 5 images · {allowedFileTypesLabel} · Max {maxUploadSizeText} each</small>
             </Field>
             <div className="wp-row">
               <button type="button" onClick={() => setStep(1)} className="wp-btn-outline-sm wp-btn-flex">← Back</button>
@@ -691,7 +766,17 @@ function ClaimForm({ codeParam }: { codeParam: string }) {
 /* ─────────────────────────────────────────────
    FORM 4 — BUYBACK
 ───────────────────────────────────────────── */
-function BuybackForm({ codeParam }: { codeParam: string }) {
+function BuybackForm({
+  codeParam,
+  allowedFileTypes,
+  allowedFileTypesLabel,
+  maxUploadSizeText,
+}: {
+  codeParam: string;
+  allowedFileTypes: string[];
+  allowedFileTypesLabel: string;
+  maxUploadSizeText: string;
+}) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [regCode, setRegCode] = useState(codeParam);
   const [regDetails, setRegDetails] = useState<any>(null);
@@ -703,6 +788,7 @@ function BuybackForm({ codeParam }: { codeParam: string }) {
   const [error, setError] = useState<string | null>(null);
   const [fe, setFe] = useState<Record<string, string[]>>({});
   const [requestCode, setRequestCode] = useState("");
+  const uploadAccept = allowedFileTypes.map((item) => `.${item.toLowerCase()}`).join(",");
 
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -793,10 +879,10 @@ function BuybackForm({ codeParam }: { codeParam: string }) {
             </Field>
             <Field label="UPLOAD CONDITION PHOTOS" required>
               <label className="wp-file-label">
-                <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" onChange={e => setImages(e.target.files)} style={{ display: "none" }} required />
+                <input type="file" multiple accept={uploadAccept} onChange={e => setImages(e.target.files)} style={{ display: "none" }} required />
                 <span>{images && images.length > 0 ? `${images.length} file(s) selected` : "Select condition photos…"}</span>
               </label>
-              <small className="wp-hint">All angles · Up to 5 images · Max 5MB each</small>
+              <small className="wp-hint">All angles · Up to 5 images · {allowedFileTypesLabel} · Max {maxUploadSizeText} each</small>
             </Field>
             <div className="wp-row">
               <button type="button" onClick={() => setStep(1)} className="wp-btn-outline-sm wp-btn-flex">← Back</button>

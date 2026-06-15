@@ -3366,7 +3366,7 @@ h3 {
   letter-spacing: 0.08em;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 991px) {
   .hero-grid,
   .artisan-grid,
   .product-detail-grid,
@@ -8785,4 +8785,3 @@ h3 {
     margin-left: 0;
   }
 }
-

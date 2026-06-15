@@ -28,12 +28,18 @@ type NavDisplayItem = {
   name: string;
   slug: string;
   href: string;
+  target?: string;
+  cssClass?: string | null;
   submenu: Array<{
     id: number;
     name: string;
     href: string;
+    target?: string;
+    cssClass?: string | null;
   }>;
 };
+
+const MOBILE_LAYOUT_BREAKPOINT = 991;
 
 export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMenuItems = [], settings }: SiteHeaderProps) {
   const [offerVisible, setOfferVisible] = useState(true);
@@ -72,11 +78,15 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
         name: item.title,
         slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
         href: typeof item.url === "string" ? item.url : "/shop",
+        target: item.target || "_self",
+        cssClass: item.css_class || null,
         submenu:
           item.children?.map((child, childIndex) => ({
             id: child.id || Number(`${item.id}${childIndex + 1}`),
             name: child.title,
-            href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop")
+            href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop"),
+            target: child.target || "_self",
+            cssClass: child.css_class || null,
           })) || []
       }))
     : categories.slice(0, 6).map((category) => ({
@@ -100,11 +110,15 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
     name: item.title,
     slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
     href: typeof item.url === "string" ? item.url : "/shop",
+    target: item.target || "_self",
+    cssClass: item.css_class || null,
     submenu:
       item.children?.map((child, childIndex) => ({
         id: child.id || Number(`${item.id}${childIndex + 1}`),
         name: child.title,
-        href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop")
+        href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop"),
+        target: child.target || "_self",
+        cssClass: child.css_class || null,
       })) || []
   }));
   const mobileNavItems: NavDisplayItem[] = mobileSeed.map((item) => {
@@ -116,6 +130,12 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
       href: item.href || `/shop?category=${matchedCategory?.slug || item.slug}`
     };
   });
+  const registryTabs = [
+    { href: "/warranty-portal?tab=register", label: "Activate" },
+    { href: "/warranty-portal?tab=status", label: "Status" },
+    { href: "/warranty-portal?tab=claim", label: "Service Claim" },
+    ...(settings.registry_allow_buyback !== false ? [{ href: "/warranty-portal?tab=buyback", label: "Buyback" }] : [])
+  ];
 
   useEffect(() => {
     if (offers.length <= 1 || !offerVisible) {
@@ -142,6 +162,24 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
     };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    const syncDesktopLayout = () => {
+      if (window.innerWidth > MOBILE_LAYOUT_BREAKPOINT) {
+        setMobileMenuOpen(false);
+        setOpenMobileSectionId(null);
+      }
+    };
+
+    syncDesktopLayout();
+    window.addEventListener("resize", syncDesktopLayout);
+    window.addEventListener("orientationchange", syncDesktopLayout);
+
+    return () => {
+      window.removeEventListener("resize", syncDesktopLayout);
+      window.removeEventListener("orientationchange", syncDesktopLayout);
+    };
+  }, []);
+
   if (isRegistryRoute) {
     return (
       <header className="site-header registry-header">
@@ -159,10 +197,11 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
           </Link>
 
           <nav className="registry-header-nav" aria-label="Registry navigation">
-            <Link href="/warranty-portal?tab=register">Activate</Link>
-            <Link href="/warranty-portal?tab=status">Status</Link>
-            <Link href="/warranty-portal?tab=claim">Service Claim</Link>
-            <Link href="/warranty-portal?tab=buyback">Buyback</Link>
+            {registryTabs.map((tab) => (
+              <Link key={tab.href} href={tab.href}>
+                {tab.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="registry-header-actions">
@@ -221,7 +260,14 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
 
               return (
                 <div key={category.id} className={`nav-item-with-menu${hasSubmenu ? "" : " nav-item-plain"}`}>
-                  <Link href={category.href} className={hasSubmenu ? "nav-link-with-icon" : "nav-link-plain"}>
+                  <Link
+                    href={category.href}
+                    target={category.target || undefined}
+                    rel={category.target === "_blank" ? "noreferrer" : undefined}
+                    className={[hasSubmenu ? "nav-link-with-icon" : "nav-link-plain", category.cssClass]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
                     <span>{category.name}</span>
                     {hasSubmenu ? (
                       <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
@@ -236,7 +282,9 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
                         <Link
                           key={`${category.slug}-${item.id}`}
                           href={item.href}
-                          className="nav-submenu-link"
+                          target={item.target || undefined}
+                          rel={item.target === "_blank" ? "noreferrer" : undefined}
+                          className={["nav-submenu-link", item.cssClass].filter(Boolean).join(" ")}
                         >
                           {item.name}
                         </Link>
@@ -336,7 +384,13 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
                 return (
                   <div key={item.id} className="mobile-nav-entry">
                     <div className="mobile-nav-row">
-                      <Link href={item.href} className="mobile-nav-link" onClick={closeMobileMenu}>
+                      <Link
+                        href={item.href}
+                        target={item.target || undefined}
+                        rel={item.target === "_blank" ? "noreferrer" : undefined}
+                        className={["mobile-nav-link", item.cssClass].filter(Boolean).join(" ")}
+                        onClick={closeMobileMenu}
+                      >
                         {item.name}
                       </Link>
 
@@ -363,7 +417,9 @@ export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMe
                           <Link
                             key={`${item.slug}-${submenuItem.id}`}
                             href={submenuItem.href}
-                            className="mobile-nav-submenu-link"
+                            target={submenuItem.target || undefined}
+                            rel={submenuItem.target === "_blank" ? "noreferrer" : undefined}
+                            className={["mobile-nav-submenu-link", submenuItem.cssClass].filter(Boolean).join(" ")}
                             onClick={closeMobileMenu}
                           >
                             {submenuItem.name}

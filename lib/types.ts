@@ -1,6 +1,12 @@
 export type SiteSettings = {
   site_name?: string;
   site_tagline?: string;
+  business_name?: string | null;
+  business_email?: string | null;
+  business_phone?: string | null;
+  support_email?: string | null;
+  support_phone?: string | null;
+  whatsapp_number?: string | null;
   site_email?: string;
   site_phone?: string;
   default_shipping_cost?: string | number;
@@ -31,7 +37,9 @@ export type SiteSettings = {
   twitter_handle?: string | null;
   logo_url?: string | null;
   favicon_url?: string | null;
+  invoice_footer_note?: string | null;
   footer_copyright_text?: string | null;
+  show_logo_on_invoice?: boolean;
   custom_header_scripts?: string | null;
   custom_footer_scripts?: string | null;
   show_topbar?: boolean;
@@ -40,6 +48,11 @@ export type SiteSettings = {
   topbar_offers?: string[];
   payment_gateways?: PaymentGatewayPublic[];
   registry_allow_buyback?: boolean;
+  registry_warranty_duration_months?: number;
+  registry_allowed_sources?: string[];
+  registry_allowed_upload_size_mb?: number;
+  registry_allowed_file_types?: string[];
+  registry_auto_verify_website_orders?: boolean;
 };
 
 export type PaymentGatewayPublic = {

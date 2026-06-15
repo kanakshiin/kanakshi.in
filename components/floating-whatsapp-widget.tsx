@@ -17,6 +17,10 @@ export function FloatingWhatsappWidget({ phone }: FloatingWhatsappWidgetProps) {
 
   const normalizedPhone = useMemo(() => phone.replace(/\D/g, ""), [phone]);
 
+  if (!normalizedPhone) {
+    return null;
+  }
+
   if (isRegistryRoute) {
     return null;
   }

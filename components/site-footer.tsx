@@ -14,14 +14,25 @@ type SiteFooterProps = {
   settings: {
     site_email?: string;
     site_phone?: string;
+    support_email?: string | null;
+    support_phone?: string | null;
+    whatsapp_number?: string | null;
     address_line1?: string;
     city?: string;
     pincode?: string;
     site_name?: string;
+    site_tagline?: string;
+    business_name?: string | null;
     footer_copyright_text?: string | null;
+    registry_allow_buyback?: boolean;
+    payment_gateways?: Array<{
+      provider: string;
+      display_name: string;
+      is_test_mode?: boolean;
+    }>;
   };
-  footerMenu: Array<{ id: number; title: string; url: string }>;
-  socialLinks: Array<{ id: number; platform: string; url?: string | null }>;
+  footerMenu: Array<{ id: number; title: string; url: string; target?: string; css_class?: string | null }>;
+  socialLinks: Array<{ id: number; platform: string; title?: string | null; handle?: string | null; url?: string | null }>;
 };
 
 export function SiteFooter({ categories, settings, footerMenu, socialLinks }: SiteFooterProps) {
@@ -33,20 +44,41 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
     pathname === "/buyback-request";
   const footerCategories = categories.slice(0, 8);
   
-  let normalizedFooterMenu = [...footerMenu];
-  const extraLinks = [
-    { id: 999991, title: "Shipping Policy", url: "/pages/shipping-policy" },
-    { id: 999992, title: "Warranty & Buyback", url: "/warranty-portal" },
-    { id: 999993, title: "Live Auctions", url: "/live-auctions" },
-  ];
-
-  extraLinks.forEach((link) => {
-    if (!normalizedFooterMenu.some((item) => item.url === link.url)) {
-      normalizedFooterMenu.push(link);
-    }
-  });
-
   const paymentMethods = [
+    {
+      key: "cod",
+      label: "Cash on Delivery",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <rect x="4" y="5" width="36" height="18" rx="4" fill="#191919" fillOpacity="0.08" stroke="#191919" strokeOpacity="0.18" />
+          <text x="22" y="17" textAnchor="middle" fontSize="7.5" fontWeight="800" fill="#191919" fontFamily="Arial, sans-serif">
+            CASH
+          </text>
+        </svg>
+      )
+    },
+    {
+      key: "razorpay",
+      label: "Razorpay",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <path d="M12 20 19.8 8h7.2L19.2 20H12Z" fill="#2b6df8" />
+          <path d="M21.2 20 29 8h3L24.2 20h-3Z" fill="#1d4ed8" />
+        </svg>
+      )
+    },
+    {
+      key: "phonepe",
+      label: "PhonePe",
+      logo: (
+        <svg viewBox="0 0 44 28" aria-hidden="true">
+          <circle cx="22" cy="14" r="9" fill="#5f259f" />
+          <text x="22" y="17.4" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">
+            पे
+          </text>
+        </svg>
+      )
+    },
     {
       key: "mastercard",
       label: "Mastercard",
@@ -97,6 +129,18 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
       )
     }
   ];
+  const activePaymentMethods = settings.payment_gateways?.length
+    ? paymentMethods.filter((method) =>
+        settings.payment_gateways?.some((gateway) => gateway.provider.toLowerCase() === method.key)
+      )
+    : paymentMethods.filter((method) => ["cod", "razorpay", "phonepe"].includes(method.key));
+  const footerEmail = settings.support_email || settings.site_email || liveContactDefaults.email;
+  const footerPhone = settings.support_phone || settings.site_phone || liveContactDefaults.phone;
+  const whatsappNumber = settings.whatsapp_number?.replace(/\D/g, "") || "";
+  const footerSummary =
+    settings.site_tagline ||
+    "Crafted for homes that want warmth, symbolism, and gifting pieces that feel memorable.";
+  const registryBuybackEnabled = settings.registry_allow_buyback !== false;
 
 
   const socialIcon = (platform: string) => {
@@ -120,7 +164,11 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
         <div className="container registry-footer-shell">
           <div>
             <strong>{settings.site_name || "Little Divinity"}</strong>
-            <p>Official ownership registry, warranty service, and buyback verification for handcrafted brass pieces.</p>
+            <p>
+              Official ownership registry, warranty service,
+              {registryBuybackEnabled ? " and buyback verification " : " and product verification "}
+              for handcrafted brass pieces.
+            </p>
           </div>
           <Link href="/shop" className="registry-footer-link">
             Return to Storefront
@@ -143,7 +191,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
           </div>
           <div className="footer-usp-item">
             <strong>Talk To Us</strong>
-            <span>{settings.site_phone || liveContactDefaults.phone}</span>
+            <span>{footerPhone}</span>
           </div>
           <div className="footer-usp-item">
             <strong>Festive Gifting Ready</strong>
@@ -158,9 +206,9 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
 
       <div className="container footer-shell">
         <div className="footer-column footer-contact">
-          <h3>{settings.site_name || "Little Divinity"}</h3>
+          <h3>{settings.business_name || settings.site_name || "Little Divinity"}</h3>
           <p className="footer-copy">
-            Crafted for homes that want warmth, symbolism, and gifting pieces that feel memorable.
+            {footerSummary}
           </p>
           <p>
             Address:{" "}
@@ -169,17 +217,28 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
             </Link>
           </p>
           <p>
-            Phone: <a href={`tel:${(settings.site_phone || liveContactDefaults.phone).replace(/\s+/g, "")}`}>{settings.site_phone || liveContactDefaults.phone}</a>
+            Phone: <a href={`tel:${footerPhone.replace(/\s+/g, "")}`}>{footerPhone}</a>
           </p>
           <p>
-            E-mail: <a href={`mailto:${settings.site_email || liveContactDefaults.email}`}>{settings.site_email || liveContactDefaults.email}</a>
+            E-mail: <a href={`mailto:${footerEmail}`}>{footerEmail}</a>
           </p>
+          {whatsappNumber ? (
+            <p>
+              WhatsApp: <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">+{whatsappNumber}</a>
+            </p>
+          ) : null}
         </div>
 
         <div className="footer-column">
           <h3>Information</h3>
-          {normalizedFooterMenu.map((item) => (
-            <Link key={item.id} href={item.url}>
+          {footerMenu.map((item) => (
+            <Link
+              key={item.id}
+              href={item.url}
+              target={item.target || undefined}
+              rel={item.target === "_blank" ? "noreferrer" : undefined}
+              className={item.css_class || undefined}
+            >
               {item.title}
             </Link>
           ))}
@@ -203,7 +262,8 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
               <a
                 key={social.id}
                 href={social.url || "/pages/contact"}
-                aria-label={social.platform}
+                aria-label={social.title || social.handle || social.platform}
+                title={social.title || social.handle || social.platform}
                 className="footer-social-icon"
                 target={social.url ? "_blank" : undefined}
                 rel={social.url ? "noreferrer" : undefined}
@@ -220,7 +280,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
       <div className="container footer-bottom">
         <span>{settings.footer_copyright_text || "© 2026 Tadpole Story LLP. All rights reserved"}</span>
         <div className="footer-payment-strip" aria-label="Accepted payment methods">
-          {paymentMethods.map((method) => (
+          {activePaymentMethods.map((method) => (
             <span key={method.key} className="footer-payment-badge" title={method.label} aria-label={method.label}>
               {method.logo}
             </span>

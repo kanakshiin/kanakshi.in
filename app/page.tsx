@@ -104,6 +104,7 @@ export default async function HomePage() {
   const bestSellerSection = sectionMap.get("best-sellers");
   const newArrivalsSection = sectionMap.get("new-arrivals");
   const newArrivalsProductsSection = sectionMap.get("new-arrivals-products");
+  const hasAdminHomepageSections = homepageSections.length > 0;
 
   const heroConfig = (heroSection?.config as {
     slider_settings?: { show_text?: boolean; show_dots?: boolean; show_arrows?: boolean; autoplay_ms?: number; nav_gap?: number };
@@ -145,6 +146,9 @@ export default async function HomePage() {
     ? resolvedHeroPromos
     : heroPromos.map((promo) => ({ ...promo, image: resolveAssetUrl(promo.image) }));
   const isHeroEnabled = heroSection?.is_active !== false;
+  const showBestSellersSection = hasAdminHomepageSections ? Boolean(bestSellerSection) : true;
+  const showNewArrivalsPromoSection = hasAdminHomepageSections ? Boolean(newArrivalsSection) : true;
+  const showNewArrivalsProductsSection = hasAdminHomepageSections ? Boolean(newArrivalsProductsSection) : true;
 
   const circularCategories = [
     {
@@ -371,6 +375,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {showBestSellersSection ? (
       <section className="content-section" id="bestsellers">
         <div className="container">
           <div className="section-head">
@@ -390,6 +395,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       <section className="content-section white-section mobile-home-hidden">
         <div className="container">
@@ -445,6 +451,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {showNewArrivalsPromoSection ? (
       <section className="content-section white-section new-arrivals-showcase mobile-home-hidden">
         <div className="container new-arrivals-showcase-shell">
           <div className="section-head new-arrivals-heading">
@@ -467,7 +474,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {showNewArrivalsProductsSection ? (
       <section className="content-section new-arrivals-products mobile-home-hidden">
         <div className="container">
           <div className="section-head">
@@ -486,6 +495,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       <section className="content-section white-section mobile-home-hidden">
         <div className="container">

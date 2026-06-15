@@ -142,10 +142,19 @@ export default async function ContentPage({ params }: ContentPageProps) {
 
           {slug === "contact" ? (
             <div style={{ display: "grid", gap: "0.8rem", marginTop: "2rem", padding: "1.4rem 1.5rem", border: "1px solid var(--line)", borderRadius: "28px", background: "rgba(255,255,255,0.74)", maxWidth: "34rem" }}>
-              <p><strong>Trade name:</strong> {settings.site_name || liveContactDefaults.tradeName}</p>
-              <p><strong>Email:</strong> {settings.site_email || liveContactDefaults.email}</p>
-              <p><strong>Phone:</strong> {settings.site_phone || liveContactDefaults.phone}</p>
-              <p><strong>Address:</strong> {settings.address_line1 || liveContactDefaults.addressLine1}, {settings.city || liveContactDefaults.city} {settings.pincode || liveContactDefaults.pincode}, {settings.country || liveContactDefaults.country}</p>
+              <p><strong>Trade name:</strong> {settings.business_name || settings.site_name || liveContactDefaults.tradeName}</p>
+              <p><strong>Email:</strong> {settings.support_email || settings.site_email || liveContactDefaults.email}</p>
+              <p><strong>Phone:</strong> {settings.support_phone || settings.site_phone || liveContactDefaults.phone}</p>
+              {settings.whatsapp_number ? <p><strong>WhatsApp:</strong> {settings.whatsapp_number}</p> : null}
+              <p>
+                <strong>Address:</strong>{" "}
+                {settings.address_line1 || liveContactDefaults.addressLine1}
+                {settings.address_line2 ? `, ${settings.address_line2}` : ""}
+                , {settings.city || liveContactDefaults.city}
+                {settings.state ? `, ${settings.state}` : ""}
+                {" "}{settings.pincode || liveContactDefaults.pincode}
+                , {settings.country || liveContactDefaults.country}
+              </p>
             </div>
           ) : null}
 

@@ -1094,6 +1094,11 @@ function CheckoutPageContent() {
 
               <fieldset disabled={!user} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
               <div style={{ display: "grid", gap: "1rem" }}>
+                {!hasAnyPaymentGateway ? (
+                  <div style={{ padding: "1rem 1.1rem", borderRadius: "18px", border: "1px solid rgba(224, 90, 71, 0.25)", background: "rgba(224, 90, 71, 0.06)", color: "#8a3b30", fontSize: "0.95rem", lineHeight: 1.6 }}>
+                    No payment gateway is currently active in admin settings. Please enable at least one payment option to accept orders.
+                  </div>
+                ) : null}
                 
                 {/* Cash on Delivery */}
                 {hasGateway("cod") && (
@@ -1119,7 +1124,9 @@ function CheckoutPageContent() {
                     style={{ marginTop: "3px", accentColor: "var(--accent)" }}
                   />
                   <div>
-                    <strong style={{ display: "block", color: "var(--text)", fontSize: "1.05rem" }}>Cash On Delivery (COD)</strong>
+                    <strong style={{ display: "block", color: "var(--text)", fontSize: "1.05rem" }}>
+                      {gatewayMeta("cod")?.display_name || "Cash On Delivery (COD)"}
+                    </strong>
                     <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay with cash upon delivery. Recommended & fully functional gateway.</span>
                   </div>
                 </label>
@@ -1150,7 +1157,9 @@ function CheckoutPageContent() {
                   />
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>Razorpay (Cards / UPI / NetBanking)</strong>
+                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>
+                        {gatewayMeta("razorpay")?.display_name || "Razorpay (Cards / UPI / NetBanking)"}
+                      </strong>
                       <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
                         {gatewayMeta("razorpay")?.is_test_mode ? "Test Mode" : "Secure"}
                       </span>
@@ -1185,7 +1194,9 @@ function CheckoutPageContent() {
                   />
                   <div style={{ width: "100%" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>PhonePe UPI Gateway</strong>
+                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>
+                        {gatewayMeta("phonepe")?.display_name || "PhonePe UPI Gateway"}
+                      </strong>
                       <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
                         {gatewayMeta("phonepe")?.is_test_mode ? "Test Mode" : "UPI"}
                       </span>

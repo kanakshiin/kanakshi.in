@@ -51,15 +51,16 @@ export default async function RootLayout({
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: brandName,
+    name: settings.business_name || brandName,
     url: siteUrl,
     logo: getAbsoluteMediaUrl(settings.logo_url, settings) || `${siteUrl}/logo.jpg`,
-    email: settings.site_email || undefined,
-    telephone: settings.site_phone || undefined,
+    email: settings.support_email || settings.site_email || undefined,
+    telephone: settings.support_phone || settings.site_phone || undefined,
     address: {
       "@type": "PostalAddress",
       streetAddress: settings.address_line1 || undefined,
       addressLocality: settings.city || undefined,
+      addressRegion: settings.state || undefined,
       postalCode: settings.pincode || undefined,
       addressCountry: settings.country || "IN"
     }
@@ -144,7 +145,7 @@ fbq('track', 'PageView');`,
             />
             {children}
             <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
-            <FloatingWhatsappWidget phone={settings.site_phone || "919999999999"} />
+            <FloatingWhatsappWidget phone={settings.whatsapp_number || settings.site_phone || "919999999999"} />
             <AddToCartPopup />
           </WishlistProvider>
         </CartProvider>
