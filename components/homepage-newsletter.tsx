@@ -3,7 +3,23 @@
 import { FormEvent, useState } from "react";
 import { subscribeNewsletter } from "../lib/api";
 
-export function HomepageNewsletter() {
+type HomepageNewsletterProps = {
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  buttonText?: string;
+  placeholder?: string;
+  footnote?: string;
+};
+
+export function HomepageNewsletter({
+  eyebrow = "The Divinity Circle",
+  title = "Unlock 10% Off Your First Order",
+  description = "Subscribe to get early access to festive edits, curated gifting guides, care instructions, and exclusive subscriber-only collections.",
+  buttonText = "Claim Discount",
+  placeholder = "Enter your email address",
+  footnote = "Join 45,000+ happy homes. Free shipping above ₹999 nationwide.",
+}: HomepageNewsletterProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,12 +64,12 @@ export function HomepageNewsletter() {
   return (
     <section className="content-section soft-section homepage-newsletter-section" style={{ background: "var(--bg)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)", padding: "5rem 0" }}>
       <div className="container" style={{ maxWidth: "680px", margin: "0 auto", textAlign: "center" }}>
-        <p className="eyebrow" style={{ color: "var(--accent)", letterSpacing: "2px", fontWeight: 600, fontSize: "0.95rem" }}>The Divinity Circle</p>
+        <p className="eyebrow" style={{ color: "var(--accent)", letterSpacing: "2px", fontWeight: 600, fontSize: "0.95rem" }}>{eyebrow}</p>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(2rem, 4vw, 2.8rem)", color: "var(--accent-deep)", fontWeight: 600, marginTop: "0.5rem", marginBottom: "1rem" }}>
-          Unlock 10% Off Your First Order
+          {title}
         </h2>
         <p style={{ color: "var(--muted)", fontSize: "1.08rem", lineHeight: 1.7, marginBottom: "2.5rem" }}>
-          Subscribe to get early access to festive edits, curated gifting guides, care instructions, and exclusive subscriber-only collections.
+          {description}
         </p>
 
         {status === "success" ? (
@@ -73,7 +89,7 @@ export function HomepageNewsletter() {
           <form onSubmit={handleSubmit} className="homepage-newsletter-form" style={{ display: "flex", gap: "0.5rem", maxWidth: "520px", margin: "0 auto", flexWrap: "wrap" }}>
             <input
               type="email"
-              placeholder="Enter your email address"
+              placeholder={placeholder}
               value={value}
               onChange={(e) => setValue(e.target.value)}
               disabled={loading}
@@ -104,7 +120,7 @@ export function HomepageNewsletter() {
                 whiteSpace: "nowrap"
               }}
             >
-              {loading ? "Joining..." : "Claim Discount"}
+              {loading ? "Joining..." : buttonText}
             </button>
           </form>
         )}
@@ -116,7 +132,7 @@ export function HomepageNewsletter() {
         )}
 
         <p style={{ marginTop: "1.5rem", fontSize: "0.82rem", color: "var(--muted)" }}>
-          Join 45,000+ happy homes. Free shipping above ₹999 nationwide.
+          {footnote}
         </p>
       </div>
     </section>

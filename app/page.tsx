@@ -6,13 +6,14 @@ import { HeroSlider } from "../components/hero-slider";
 import { ProductCard } from "../components/product-card";
 import { HomepageNewsletter } from "../components/homepage-newsletter";
 import { getHomePageData, resolveAssetUrl } from "../lib/api";
+import { resolveFullHomepageContent } from "../lib/homepage-content";
 import { referenceAssets } from "../lib/reference-assets";
 import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { settings, categories, socialLinks, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
+  const { settings, socialLinks, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";
   const siteName = getSiteName(settings);
   const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
@@ -21,39 +22,6 @@ export default async function HomePage() {
     ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
     : "@littledivinity_official";
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
-  const curatedCollections = [
-    {
-      title: "God Idols",
-      subtitle: "Temple-inspired classics",
-      image: referenceAssets.collections.godIdols,
-      href: "/shop?category=god-idols"
-    },
-    {
-      title: "Home Decor",
-      subtitle: "Statement brass accents",
-      image: referenceAssets.collections.homeDecor,
-      href: "/shop?category=wall-decor"
-    },
-    {
-      title: "Pooja Decor",
-      subtitle: "Sacred corner essentials",
-      image: referenceAssets.collections.poojaDecor,
-      href: "/shop?category=pooja-decor"
-    },
-    {
-      title: "Kitchen & Utility",
-      subtitle: "Functional heirloom pieces",
-      image: referenceAssets.collections.homeKitchen,
-      href: "/shop?category=home-kitchen"
-    }
-  ];
-
-  const festiveMoments = [
-    { title: "Ganesh Chaturthi Edit", image: referenceAssets.occasions.ganeshChaturthi },
-    { title: "Diwali Styling Picks", image: referenceAssets.occasions.diwali },
-    { title: "Wedding Gifting", image: referenceAssets.founderAndBrand.weddingGift },
-    { title: "Artisan Craft Story", image: referenceAssets.founderAndBrand.artisans }
-  ];
 
   const heroPromos = [
     {
@@ -104,7 +72,9 @@ export default async function HomePage() {
   const bestSellerSection = sectionMap.get("best-sellers");
   const newArrivalsSection = sectionMap.get("new-arrivals");
   const newArrivalsProductsSection = sectionMap.get("new-arrivals-products");
+  const fullHomepageSection = sectionMap.get("full-homepage");
   const hasAdminHomepageSections = homepageSections.length > 0;
+  const homepageContent = resolveFullHomepageContent((fullHomepageSection?.config as Record<string, unknown> | null) || null);
 
   const heroConfig = (heroSection?.config as {
     slider_settings?: { show_text?: boolean; show_dots?: boolean; show_arrows?: boolean; autoplay_ms?: number; nav_gap?: number };
@@ -150,34 +120,6 @@ export default async function HomePage() {
   const showNewArrivalsPromoSection = hasAdminHomepageSections ? Boolean(newArrivalsSection) : true;
   const showNewArrivalsProductsSection = hasAdminHomepageSections ? Boolean(newArrivalsProductsSection) : true;
 
-  const circularCategories = [
-    {
-      title: "Ganesh Chaturthi",
-      image: referenceAssets.occasions.ganeshChaturthi,
-      href: "/shop?category=ganesh-chaturthi"
-    },
-    {
-      title: "Janmashtami",
-      image: referenceAssets.occasions.janmashtami,
-      href: "/shop?category=janmashtami"
-    },
-    {
-      title: "Navratri",
-      image: referenceAssets.occasions.navratri,
-      href: "/shop?category=navratri"
-    },
-    {
-      title: "Diwali",
-      image: referenceAssets.occasions.diwali,
-      href: "/shop?category=diwali"
-    },
-    {
-      title: "Dhanteras",
-      image: referenceAssets.occasions.dhanteras,
-      href: "/shop?category=dhanteras"
-    }
-  ];
-
   const twinPromos = [
     {
       title: "Serving Boxes & Trays",
@@ -204,32 +146,6 @@ export default async function HomePage() {
     }
   ];
 
-  const testimonials = [
-    {
-      title: "Excellent Quality",
-      quote: "The finish, weight, and carving detail immediately made the piece feel premium and gift-worthy.",
-      author: "Saikat Gaur"
-    },
-    {
-      title: "Great Collection",
-      quote: "A strong mix of god idols, decor, and gifting items that feels like a complete handcrafted store.",
-      author: "Sunita"
-    },
-    {
-      title: "Beautiful Design",
-      quote: "The styling and product presentation made it easy to pick a statement piece for our living room.",
-      author: "Rita Paria"
-    }
-  ];
-
-  const instagramTiles = [
-    referenceAssets.collections.homeDecor,
-    referenceAssets.hero.stonework,
-    referenceAssets.productHighlights.peacock,
-    referenceAssets.productHighlights.buddha,
-    referenceAssets.hero.candleStand,
-    referenceAssets.collections.godIdols
-  ];
   const homePageJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -300,22 +216,23 @@ export default async function HomePage() {
         </section>
       ) : null}
 
+      {homepageContent.collections.is_active ? (
       <section className="content-section" id="collections">
         <div className="container">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Collections</p>
-              <h2>Shop By Category</h2>
+              <p className="eyebrow">{homepageContent.collections.eyebrow}</p>
+              <h2>{homepageContent.collections.title}</h2>
             </div>
-            <Link href="/shop" className="text-link">
-              View all
+            <Link href={homepageContent.collections.button_url} className="text-link">
+              {homepageContent.collections.button_text}
             </Link>
           </div>
 
           <div className="category-grid">
-            {curatedCollections.map((collection) => (
+            {homepageContent.collections.items.map((collection) => (
               <Link key={collection.title} href={collection.href} className="category-card">
-                <Image src={collection.image} alt={collection.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" />
+                <Image src={resolveAssetUrl(collection.image)} alt={collection.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" />
                 <div>
                   <small>{collection.subtitle}</small>
                   <strong>{collection.title}</strong>
@@ -325,21 +242,23 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {homepageContent.occasions.is_active ? (
       <section className="content-section circle-category-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
-              <p className="eyebrow">Shop By Occasion</p>
-              <h2>Festival Categories</h2>
+              <p className="eyebrow">{homepageContent.occasions.eyebrow}</p>
+              <h2>{homepageContent.occasions.title}</h2>
             </div>
           </div>
 
           <div className="circle-category-grid">
-            {circularCategories.map((category) => (
+            {homepageContent.occasions.items.map((category) => (
               <Link key={category.title} href={category.href} className="circle-category-card">
                 <span className="circle-category-image">
-                  <Image src={category.image} alt={category.title} fill sizes="(max-width: 768px) 40vw, 16vw" />
+                  <Image src={resolveAssetUrl(category.image)} alt={category.title} fill sizes="(max-width: 768px) 40vw, 16vw" />
                 </span>
                 <strong>{category.title}</strong>
               </Link>
@@ -347,33 +266,25 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {homepageContent.editorial_picks.is_active ? (
       <section className="content-section soft-section mobile-home-hidden">
         <div className="container story-grid">
-          {categories.slice(0, 3).map((category, index) => (
-            <Link key={category.id} href={`/shop?category=${category.slug}`} className={`story-card story-card-${index}`}>
-              <Image
-                src={
-                  [
-                    referenceAssets.collections.godIdols,
-                    referenceAssets.founderAndBrand.woodenDecor,
-                    referenceAssets.productHighlights.superfineShiva
-                  ][index] || resolveAssetUrl(category.image || null)
-                }
-                alt={category.name}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
+          {homepageContent.editorial_picks.items.map((item, index) => (
+            <Link key={item.title} href={item.href} className={`story-card story-card-${index}`}>
+              <Image src={resolveAssetUrl(item.image)} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" />
               <div className="story-overlay" />
               <div className="story-copy">
-                <small>Editorial Pick</small>
-                <h3>{category.name}</h3>
-                <p>Discover our curated {category.name.toLowerCase()} collection — handcrafted with care for your home and sacred spaces.</p>
+                <small>{item.badge || "Editorial Pick"}</small>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
               </div>
             </Link>
           ))}
         </div>
       </section>
+      ) : null}
 
       {showBestSellersSection ? (
       <section className="content-section" id="bestsellers">
@@ -397,59 +308,50 @@ export default async function HomePage() {
       </section>
       ) : null}
 
+      {homepageContent.about_brand.is_active ? (
       <section className="content-section white-section mobile-home-hidden">
         <div className="container">
           <div className="section-head">
             <div>
-              <p className="eyebrow">About The Brand</p>
-              <h2>A Home For Handcrafted Brass And Heritage Decor</h2>
+              <p className="eyebrow">{homepageContent.about_brand.eyebrow}</p>
+              <h2>{homepageContent.about_brand.title}</h2>
             </div>
           </div>
 
           <div className="about-brand-grid">
             <div className="about-brand-image">
-              <Image src={referenceAssets.hero.primary} alt="About the brand" width={1200} height={900} sizes="(max-width: 900px) 100vw, 45vw" />
+              <Image src={resolveAssetUrl(homepageContent.about_brand.image)} alt="About the brand" width={1200} height={900} sizes="(max-width: 900px) 100vw, 45vw" />
             </div>
             <div className="about-brand-copy">
-              <p>
-                Little Divinity is a home for handcrafted brass idols, home decor, pooja essentials, and meaningful
-                gifting pieces. Every product is made by skilled Indian artisans using traditional techniques passed
-                down through generations.
-              </p>
-              <p>
-                Whether you&apos;re decorating a sacred corner, gifting a housewarming, or adding warmth to your living
-                space — we curate only the finest pieces in solid brass, wood, and stone. Trusted by over 45,000
-                happy customers across India.
-              </p>
-              <Link href="/shop" className="text-link">
-                Explore Our Collection
+              <p>{homepageContent.about_brand.paragraph_one}</p>
+              <p>{homepageContent.about_brand.paragraph_two}</p>
+              <Link href={homepageContent.about_brand.button_url} className="text-link">
+                {homepageContent.about_brand.button_text}
               </Link>
             </div>
           </div>
         </div>
       </section>
+      ) : null}
 
+      {homepageContent.founders.is_active ? (
       <section className="content-section artisan-section mobile-home-hidden">
         <div className="container artisan-grid">
           <div className="artisan-copy">
-            <p className="eyebrow">About The Founders</p>
-            <h2>Built Around Craft, Story, And Artisan Heritage</h2>
-            <p className="hero-text">
-              Every piece begins with a craftsperson&apos;s hands. We work directly with artisan families across
-              Rajasthan and Uttar Pradesh — preserving ancient metalworking traditions while bringing their finest
-              work to homes across India. Our 30+ years of craft expertise ensures every product meets the highest
-              standards of quality and authenticity.
-            </p>
-            <Link href="/shop" className="primary-button">
-              Shop Handcrafted Pieces
+            <p className="eyebrow">{homepageContent.founders.eyebrow}</p>
+            <h2>{homepageContent.founders.title}</h2>
+            <p className="hero-text">{homepageContent.founders.content}</p>
+            <Link href={homepageContent.founders.button_url} className="primary-button">
+              {homepageContent.founders.button_text}
             </Link>
           </div>
           <div className="artisan-stack">
-            <Image src={referenceAssets.founderAndBrand.artisans} alt="Artisans" className="artisan-main" width={900} height={1100} sizes="(max-width: 900px) 100vw, 40vw" />
-            <Image src={referenceAssets.founderAndBrand.founder} alt="Founder" className="artisan-side" width={900} height={1100} sizes="(max-width: 900px) 100vw, 20vw" />
+            <Image src={resolveAssetUrl(homepageContent.founders.main_image)} alt="Artisans" className="artisan-main" width={900} height={1100} sizes="(max-width: 900px) 100vw, 40vw" />
+            <Image src={resolveAssetUrl(homepageContent.founders.side_image)} alt="Founder" className="artisan-side" width={900} height={1100} sizes="(max-width: 900px) 100vw, 20vw" />
           </div>
         </div>
       </section>
+      ) : null}
 
       {showNewArrivalsPromoSection ? (
       <section className="content-section white-section new-arrivals-showcase mobile-home-hidden">
@@ -497,19 +399,20 @@ export default async function HomePage() {
       </section>
       ) : null}
 
+      {homepageContent.testimonials.is_active ? (
       <section className="content-section white-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
-              <p className="eyebrow">Testimonials</p>
-              <h2>Customers Love Our Products</h2>
+              <p className="eyebrow">{homepageContent.testimonials.eyebrow}</p>
+              <h2>{homepageContent.testimonials.title}</h2>
             </div>
           </div>
 
           <div className="testimonial-grid">
-            {testimonials.map((testimonial) => (
+            {homepageContent.testimonials.items.map((testimonial) => (
               <article key={testimonial.author} className="testimonial-card">
-                <span className="testimonial-stars">★★★★★</span>
+                <span className="testimonial-stars">{testimonial.stars}</span>
                 <h3>{testimonial.title}</h3>
                 <p>{testimonial.quote}</p>
                 <strong>{testimonial.author}</strong>
@@ -518,28 +421,39 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       {/* Premium Homepage Lead Opt-in Banner */}
+      {homepageContent.newsletter.is_active ? (
       <div className="mobile-home-hidden">
-        <HomepageNewsletter />
+        <HomepageNewsletter
+          eyebrow={homepageContent.newsletter.eyebrow}
+          title={homepageContent.newsletter.title}
+          description={homepageContent.newsletter.description}
+          buttonText={homepageContent.newsletter.button_text}
+          placeholder={homepageContent.newsletter.placeholder}
+          footnote={homepageContent.newsletter.footnote}
+        />
       </div>
+      ) : null}
 
+      {homepageContent.instagram.is_active ? (
       <section className="content-section instagram-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center instagram-head">
             <div>
-              <p className="eyebrow">Follow Us On</p>
-              <h2>Instagram</h2>
+              <p className="eyebrow">{homepageContent.instagram.eyebrow}</p>
+              <h2>{homepageContent.instagram.title}</h2>
             </div>
-            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-link">{instagramLabel}</a>
+            <a href={homepageContent.instagram.profile_url || instagramUrl} target="_blank" rel="noopener noreferrer" className="text-link">{homepageContent.instagram.profile_label || instagramLabel}</a>
           </div>
 
           <div className="instagram-grid">
-            {instagramTiles.map((tile, index) => (
-              <a key={`${tile}-${index}`} href={instagramUrl} target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
+            {homepageContent.instagram.tiles.map((tile, index) => (
+              <a key={`${tile.image}-${index}`} href={homepageContent.instagram.profile_url || instagramUrl} target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
                 <Image
-                  src={tile}
-                  alt={["Brass god idol handcrafted","Home decor brass collection","Peacock brass wall art","Buddha statue brass","Candle stand brass","God idols collection"][index] || `Handcrafted product ${index + 1}`}
+                  src={resolveAssetUrl(tile.image)}
+                  alt={tile.alt || `Handcrafted product ${index + 1}`}
                   width={700}
                   height={700}
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
@@ -549,53 +463,47 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {homepageContent.stats.is_active ? (
       <section className="content-section white-section stats-section mobile-home-hidden">
         <div className="container">
           <div className="section-head section-head-center">
             <div>
-              <p className="eyebrow">Trusted By Thousands</p>
-              <h2>Why Customers Choose Little Divinity</h2>
+              <p className="eyebrow">{homepageContent.stats.eyebrow}</p>
+              <h2>{homepageContent.stats.title}</h2>
             </div>
           </div>
 
           <div className="stats-grid">
-            <article className="stat-card">
-              <strong>50000+</strong>
-              <span>Orders Fulfilled</span>
-            </article>
-            <article className="stat-card">
-              <strong>45000+</strong>
-              <span>Happy Customers</span>
-            </article>
-            <article className="stat-card">
-              <strong>30+</strong>
-              <span>Years Experience</span>
-            </article>
-            <article className="stat-card">
-              <strong>10000+</strong>
-              <span>Products Available</span>
-            </article>
+            {homepageContent.stats.items.map((item) => (
+              <article key={`${item.value}-${item.label}`} className="stat-card">
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </article>
+            ))}
           </div>
         </div>
       </section>
+      ) : null}
 
+      {homepageContent.festive_edits.is_active ? (
       <section className="content-section mobile-home-hidden">
         <div className="container">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Festive Edits</p>
-              <h2>Occasions, Gifting, And Seasonal Stories</h2>
+              <p className="eyebrow">{homepageContent.festive_edits.eyebrow}</p>
+              <h2>{homepageContent.festive_edits.title}</h2>
             </div>
-            <Link href="/shop" className="text-link">View All</Link>
+            <Link href={homepageContent.festive_edits.button_url} className="text-link">{homepageContent.festive_edits.button_text}</Link>
           </div>
 
           <div className="occasion-grid">
-            {festiveMoments.map((moment) => (
-              <Link key={moment.title} href="/shop?category=gifting-edit" className="occasion-card">
+            {homepageContent.festive_edits.items.map((moment) => (
+              <Link key={moment.title} href={moment.href} className="occasion-card">
                 <Image src={resolveAssetUrl(moment.image)} alt={moment.title} width={700} height={700} sizes="(max-width: 768px) 100vw, 25vw" />
                 <div>
-                  <small>Curated Edit</small>
+                  <small>{moment.badge || "Curated Edit"}</small>
                   <strong>{moment.title}</strong>
                 </div>
               </Link>
@@ -603,6 +511,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
     </main>
   );
 }
