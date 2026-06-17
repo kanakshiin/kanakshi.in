@@ -334,7 +334,7 @@ export default function CheckoutSuccessPage() {
     <main className="content-section" style={{ minHeight: "75vh", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)", display: "flex", alignItems: "center", padding: "4rem 0" }}>
       <Suspense fallback={
         <div style={{ margin: "0 auto", textAlign: "center", padding: "3rem" }}>
-          <p className="eyebrow">Little Divinity</p>
+          <p className="eyebrow">Kanakshi.in</p>
           <h2 className="auth-title">Preparing Order Receipt…</h2>
         </div>
       }>

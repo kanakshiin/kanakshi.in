@@ -5,9 +5,9 @@ import { CustomerAddress, CustomerAuthConfig, CustomerUser } from "./types";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "https://ecombeckend.saaszo.in/api/v1";
+  "https://backend.kanakshi.in/api/v1";
 
-const CUSTOMER_TOKEN_KEY = "little-divinity-customer-token";
+const CUSTOMER_TOKEN_KEY = "kanakshi-customer-token";
 
 type AuthResponse<T> = {
   success?: boolean;

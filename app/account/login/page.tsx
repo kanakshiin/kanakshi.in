@@ -98,7 +98,7 @@ export default function CustomerLoginPage() {
     <Suspense fallback={
       <main className="content-section auth-page" style={{ justifyContent: "center", alignItems: "center", display: "flex", minHeight: "60vh" }}>
         <div style={{ textAlign: "center", padding: "3rem" }}>
-          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
           <h2 className="auth-title">Preparing secure login…</h2>
         </div>
       </main>

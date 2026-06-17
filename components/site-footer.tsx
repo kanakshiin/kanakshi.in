@@ -163,7 +163,7 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
       <footer className="site-footer registry-footer">
         <div className="container registry-footer-shell">
           <div>
-            <strong>{settings.site_name || "Little Divinity"}</strong>
+            <strong>{settings.site_name || "Kanakshi.in"}</strong>
             <p>
               Official ownership registry, warranty service,
               {registryBuybackEnabled ? " and buyback verification " : " and product verification "}
@@ -206,19 +206,25 @@ export function SiteFooter({ categories, settings, footerMenu, socialLinks }: Si
 
       <div className="container footer-shell">
         <div className="footer-column footer-contact">
-          <h3>{settings.business_name || settings.site_name || "Little Divinity"}</h3>
+          <h3>{settings.business_name || settings.site_name || "Kanakshi.in"}</h3>
           <p className="footer-copy">
             {footerSummary}
           </p>
-          <p>
-            Address:{" "}
-            <Link href="/pages/contact">
-              {settings.address_line1 || liveContactDefaults.addressLine1}, {settings.city || liveContactDefaults.city} {settings.pincode || liveContactDefaults.pincode}
-            </Link>
-          </p>
-          <p>
-            Phone: <a href={`tel:${footerPhone.replace(/\s+/g, "")}`}>{footerPhone}</a>
-          </p>
+          {settings.address_line1 || liveContactDefaults.addressLine1 ? (
+            <p>
+              Address:{" "}
+              <Link href="/pages/contact">
+                {settings.address_line1 || liveContactDefaults.addressLine1}
+                {settings.city || liveContactDefaults.city ? `, ${settings.city || liveContactDefaults.city}` : ""}
+                {settings.pincode || liveContactDefaults.pincode ? ` ${settings.pincode || liveContactDefaults.pincode}` : ""}
+              </Link>
+            </p>
+          ) : null}
+          {footerPhone ? (
+            <p>
+              Phone: <a href={`tel:${footerPhone.replace(/\s+/g, "")}`}>{footerPhone}</a>
+            </p>
+          ) : null}
           <p>
             E-mail: <a href={`mailto:${footerEmail}`}>{footerEmail}</a>
           </p>

@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
-const REVALIDATE_SECRET_FALLBACK = "little-divinity-homepage-revalidate";
+const REVALIDATE_SECRET_FALLBACK = "kanakshi-homepage-revalidate";
 
 function normalizePaths(input: unknown): string[] {
   if (!Array.isArray(input)) {

@@ -17,10 +17,10 @@ export default async function HomePage() {
   const currencySymbol = settings.site_currency_symbol || "₹";
   const siteName = getSiteName(settings);
   const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
-  const instagramUrl = instagramLink?.url || "https://www.instagram.com/littledivinity_official/";
+  const instagramUrl = instagramLink?.url || "https://kanakshi.in";
   const instagramLabel = instagramLink?.handle
     ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
-    : "@littledivinity_official";
+    : "kanakshi.in";
   const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
 
   const heroPromos = [

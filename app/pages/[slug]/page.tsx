@@ -14,13 +14,13 @@ const pageContent = {
     eyebrow: "About Us",
     title: "A handcrafted home for meaningful decor and gifting.",
     body: [
-      "Little Divinity curates brass decor, pooja accents, and gifting pieces with a warmer, handcrafted visual language. The idea is simple: products should feel personal, display-worthy, and rooted in Indian craft culture.",
+      "Kanakshi.in curates brass decor, pooja accents, and gifting pieces with a warmer, handcrafted visual language. The idea is simple: products should feel personal, display-worthy, and rooted in Indian craft culture.",
       "Our storefront brings together sacred pieces, home styling accents, and festive gifting options so customers can browse one place with confidence. Over time, these sections can be fully driven from admin or CMS data."
     ]
   },
   contact: {
     eyebrow: "Contact",
-    title: "Reach the Little Divinity team.",
+    title: "Reach the Kanakshi.in team.",
     body: [
       "For product questions, order help, gifting support, or wholesale conversations, customers can contact the store using the details below."
     ]
@@ -48,10 +48,10 @@ const pageContent = {
 } as const;
 
 const policyDescriptions = {
-  "privacy-policy": "Read how Little Divinity collects, uses, and protects your personal information.",
-  "terms-conditions": "Read the store use, ordering, billing, and service terms for Little Divinity.",
-  "refund-policy": "Read the return, exchange, and refund process for Little Divinity orders.",
-  "shipping-policy": "Read the domestic and international shipping timelines, tracking, and delivery information for Little Divinity orders.",
+  "privacy-policy": "Read how Kanakshi.in collects, uses, and protects your personal information.",
+  "terms-conditions": "Read the store use, ordering, billing, and service terms for Kanakshi.in.",
+  "refund-policy": "Read the return, exchange, and refund process for Kanakshi.in orders.",
+  "shipping-policy": "Read the domestic and international shipping timelines, tracking, and delivery information for Kanakshi.in orders.",
 } as const;
 
 type ContentPageProps = {
@@ -73,13 +73,13 @@ export async function generateMetadata({ params }: ContentPageProps): Promise<Me
 
   return {
     title: content.eyebrow,
-    description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Little Divinity.",
+    description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi.in.",
     alternates: {
       canonical: `/pages/${slug}`
     },
     openGraph: {
       title: `${content.eyebrow} | ${getSiteName(settings)}`,
-      description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Little Divinity.",
+      description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi.in.",
       url: getCanonicalUrl(`/pages/${slug}`, settings)
     }
   };

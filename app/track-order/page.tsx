@@ -457,7 +457,7 @@ export default function TrackOrderPage() {
           
           <Suspense fallback={
             <div style={{ textAlign: "center", padding: "3rem" }}>
-              <p className="eyebrow">Little Divinity</p>
+              <p className="eyebrow">Kanakshi.in</p>
               <h2 className="auth-title">Preparing shipment details lookup…</h2>
             </div>
           }>

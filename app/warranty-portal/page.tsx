@@ -1,5 +1,5 @@
 "use client";
-// Theme: Little Divinity — accent #f1a720 golden, text #191919, bg #f7f2ea
+// Theme: Kanakshi.in — accent #f1a720 golden, text #191919, bg #f7f2ea
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -84,7 +84,7 @@ function WarrantyPortalContent() {
     register: {
       eyebrow: "OFFICIAL VERIFICATION REGISTRY",
       heading: "Preserving Sacred Metalware",
-      body: "Every genuine Little Divinity brass artifact is handcrafted by generational masters. Active registration logs your purchase inside the Atelier database to activate our 2-Year Restoration Service and verify buyback authentication.",
+      body: "Every genuine Kanakshi.in brass artifact is handcrafted by generational masters. Active registration logs your purchase inside the Atelier database to activate our 2-Year Restoration Service and verify buyback authentication.",
     },
     status: {
       eyebrow: "GUARANTEE LOOKUP DIRECTORY",
@@ -94,7 +94,7 @@ function WarrantyPortalContent() {
     claim: {
       eyebrow: "WARRANTY SERVICE CENTRE",
       heading: "File a Repair or Polish Claim",
-      body: "Submit a structural repair, metal polishing, or casting restoration request under your 2-Year official Little Divinity guarantee. Claims are audited within 24 business hours.",
+      body: "Submit a structural repair, metal polishing, or casting restoration request under your 2-Year official Kanakshi.in guarantee. Claims are audited within 24 business hours.",
     },
     buyback: {
       eyebrow: "RETURN-TO-VAULT EXCHANGE",
@@ -437,7 +437,7 @@ function RegisterForm({
           {sourceOptions.map((option) => (
             <option key={option} value={option}>
               {option === "website"
-                ? "Little Divinity Website"
+                ? "Kanakshi.in Website"
                 : option === "amazon"
                   ? "Amazon India"
                   : option === "offline_store"
@@ -535,7 +535,7 @@ function RegisterForm({
 
       <label className="wp-check">
         <input type="checkbox" checked={terms} onChange={e => setTerms(e.target.checked)} required />
-        <span>I certify this is a genuine Little Divinity purchase and accept registry terms. *</span>
+        <span>I certify this is a genuine Kanakshi.in purchase and accept registry terms. *</span>
       </label>
 
       <SubmitBtn loading={loading} label="REGISTER GUARANTEE CARD" loadingLabel="Activating…" />

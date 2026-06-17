@@ -18,10 +18,10 @@ export async function generateMetadata() {
   const brandName = getSiteName(settings);
   return {
     title: `Spiritual & Editorial Blog | ${brandName}`,
-    description: "Discover handcrafted styling tips, spiritual wellness insights, pooja room decoration ideas, and heritage blogs from Little Divinity.",
+    description: "Discover handcrafted styling tips, spiritual wellness insights, pooja room decoration ideas, and heritage blogs from Kanakshi.in.",
     openGraph: {
       title: `Spiritual & Editorial Blog | ${brandName}`,
-      description: "Discover handcrafted styling tips, spiritual wellness insights, pooja room decoration ideas, and heritage blogs from Little Divinity.",
+      description: "Discover handcrafted styling tips, spiritual wellness insights, pooja room decoration ideas, and heritage blogs from Kanakshi.in.",
       type: "website",
     },
   };
@@ -92,7 +92,7 @@ export default async function BlogListingPage({ searchParams }: PageProps) {
             The Journal
           </span>
           <h1 className="page-title" style={{ margin: 0, color: "var(--accent-deep)", fontFamily: "var(--font-heading)" }}>
-            {activeFilterLabel || "Little Divinity Blog"}
+            {activeFilterLabel || "Kanakshi.in Blog"}
           </h1>
         </div>
 

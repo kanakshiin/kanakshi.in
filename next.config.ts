@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "ecombeckend.saaszo.in",
+        hostname: "backend.kanakshi.in",
         pathname: "/**"
       },
       {

@@ -387,7 +387,7 @@ function CheckoutPageContent() {
     return (
       <main className="content-section auth-page" style={{ justifyContent: "center" }}>
         <div style={{ textAlign: "center", padding: "3rem" }}>
-          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
           <h2 className="auth-title">Preparing your secure checkout…</h2>
           <p className="auth-muted">Loading product availability, shipping parameters and user profile.</p>
         </div>
@@ -656,7 +656,7 @@ function CheckoutPageContent() {
                 key: config.public_key,
                 amount: Math.round(res.data.total_amount * 100),
                 currency: "INR",
-                name: "Little Divinity",
+                name: "Kanakshi.in",
                 description: `Order #${res.data.order_number}`,
                 order_id: config.provider_order_id,
                 handler: async function (response: any) {
@@ -1503,7 +1503,7 @@ export default function CheckoutPage() {
       fallback={
         <main className="content-section auth-page" style={{ justifyContent: "center" }}>
           <div style={{ textAlign: "center", padding: "3rem" }}>
-            <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+            <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
             <h2 className="auth-title">Preparing your secure checkout…</h2>
             <p className="auth-muted">Loading payment methods, saved addresses, and delivery details.</p>
           </div>

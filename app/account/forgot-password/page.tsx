@@ -38,7 +38,7 @@ function ForgotPasswordForm() {
 
         setConfig(nextConfig);
         if (!nextConfig.customer_email_active || !nextConfig.email_otp_enabled) {
-          setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+          setError("Password reset by email is temporarily unavailable. Please contact Kanakshi.in support.");
         }
       } catch (err) {
         if (!active) {
@@ -71,7 +71,7 @@ function ForgotPasswordForm() {
     }
 
     if (!passwordResetAvailable) {
-      setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      setError("Password reset by email is temporarily unavailable. Please contact Kanakshi.in support.");
       return;
     }
 
@@ -93,7 +93,7 @@ function ForgotPasswordForm() {
   async function handleResetPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!passwordResetAvailable) {
-      setError("Password reset by email is temporarily unavailable. Please contact Little Divinity support.");
+      setError("Password reset by email is temporarily unavailable. Please contact Kanakshi.in support.");
       return;
     }
 
@@ -137,7 +137,7 @@ function ForgotPasswordForm() {
         <section className="auth-card auth-wide-card">
           <small className="eyebrow">Forgot Password</small>
           <h1 className="auth-title">Reset Customer Password</h1>
-          <p className="auth-muted">Request a reset OTP first, then set your new password. Little Divinity sends this OTP to your registered email.</p>
+          <p className="auth-muted">Request a reset OTP first, then set your new password. Kanakshi.in sends this OTP to your registered email.</p>
           {configLoading ? <p className="auth-muted">Checking reset availability…</p> : null}
           <div className="auth-stack">
             <form className="auth-form" onSubmit={handleSendOtp}>
@@ -216,7 +216,7 @@ export default function CustomerForgotPasswordPage() {
     <Suspense fallback={
       <main className="content-section auth-page auth-suspense-shell">
         <div className="auth-suspense-card">
-          <p className="eyebrow auth-pulse">Little Divinity</p>
+          <p className="eyebrow auth-pulse">Kanakshi.in</p>
           <h2 className="auth-title">Preparing password reset…</h2>
         </div>
       </main>

@@ -70,7 +70,7 @@ function RegisterForm() {
       <div className="container">
         <section className="auth-card auth-wide-card">
           <small className="eyebrow">Create Account</small>
-          <h1 className="auth-title">Start Your Little Divinity Account</h1>
+          <h1 className="auth-title">Start Your Kanakshi.in Account</h1>
           <p className="auth-muted">Use your email to create a customer account. Verification rules follow the admin-configured settings.</p>
           <form className="auth-form auth-grid-form" onSubmit={handleSubmit}>
             <label className="auth-field">
@@ -151,7 +151,7 @@ export default function CustomerRegisterPage() {
     <Suspense fallback={
       <main className="content-section auth-page" style={{ justifyContent: "center", alignItems: "center", display: "flex", minHeight: "60vh" }}>
         <div style={{ textAlign: "center", padding: "3rem" }}>
-          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Little Divinity</p>
+          <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
           <h2 className="auth-title">Preparing secure registration…</h2>
         </div>
       </main>

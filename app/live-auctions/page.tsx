@@ -105,7 +105,7 @@ export default function LiveAuctionsPage() {
           <div className="la-hero-inner">
             <p className="la-hero-eyebrow">🔨 AUTHENTICATED ONE-OF-ONE BRASS AUCTIONS</p>
             <h1 className="la-hero-heading">Live Auctions</h1>
-            <p className="la-hero-sub">Rare handcrafted brass artifacts auctioned to the highest bidder. Each piece verified and authenticated by Little Divinity ateliers.</p>
+            <p className="la-hero-sub">Rare handcrafted brass artifacts auctioned to the highest bidder. Each piece verified and authenticated by Kanakshi.in ateliers.</p>
             {liveCount > 0 && (
               <div className="la-live-ticker">
                 <span className="la-live-dot" />

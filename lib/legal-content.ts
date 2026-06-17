@@ -1,17 +1,17 @@
 export const liveContactDefaults = {
-  tradeName: "Little Divinity",
-  email: "ujjwalagrain@gmail.com",
-  phone: "+91 9473420536",
-  addressLine1: "Sector 46",
-  city: "Noida",
-  state: "UP",
-  pincode: "201303",
+  tradeName: "Kanakshi.in",
+  email: "support@kanakshi.in",
+  phone: "",
+  addressLine1: "",
+  city: "",
+  state: "",
+  pincode: "",
   country: "India",
 };
 
 export const livePrivacyPolicyHtml = `
 <p>Last updated: January 15, 2026</p>
-<p>This Privacy Policy describes how Little Divinity (the "Site", "we", "us", or "our") collects, uses, and discloses your personal information when you visit, use our services, or make a purchase from littledivinity.com (the "Site") or otherwise communicate with us regarding the Site (collectively, the "Services"). For purposes of this Privacy Policy, "you" and "your" means you as the user of the Services, whether you are a customer, website visitor, or another individual whose information we have collected pursuant to this Privacy Policy.</p>
+<p>This Privacy Policy describes how Kanakshi.in (the "Site", "we", "us", or "our") collects, uses, and discloses your personal information when you visit, use our services, or make a purchase from kanakshi.in (the "Site") or otherwise communicate with us regarding the Site (collectively, the "Services"). For purposes of this Privacy Policy, "you" and "your" means you as the user of the Services, whether you are a customer, website visitor, or another individual whose information we have collected pursuant to this Privacy Policy.</p>
 <p>Please read this Privacy Policy carefully.</p>
 <h2>Changes to This Privacy Policy</h2>
 <p>We may update this Privacy Policy from time to time, including to reflect changes to our practices or for other operational, legal, or regulatory reasons. We will post the revised Privacy Policy on the Site, update the "Last updated" date and take any other steps required by applicable law.</p>
@@ -70,11 +70,11 @@ export const livePrivacyPolicyHtml = `
 <h2>International Users</h2>
 <p>Your personal information may be transferred, stored, and processed outside your home country, including through staff and service providers in other countries, subject to recognized safeguards where applicable.</p>
 <h2>Contact</h2>
-<p>If you have questions about our privacy practices or this Privacy Policy, please call or email us at ujjwalagrain@gmail.com or contact us at Mahagun Mywoods Gaur City 2, 14014, Greater Noida, UP, 201303, IN.</p>
+<p>If you have questions about our privacy practices or this Privacy Policy, please email us at support@kanakshi.in.</p>
 `;
 
 export const liveTermsHtml = `
-<p><strong>OVERVIEW</strong><br>This website is operated by Little Divinity. Throughout the site, the terms “we”, “us” and “our” refer to Little Divinity. Little Divinity offers this website, including all information, tools and Services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.</p>
+<p><strong>OVERVIEW</strong><br>This website is operated by Kanakshi.in. Throughout the site, the terms “we”, “us” and “our” refer to Kanakshi.in. Kanakshi.in offers this website, including all information, tools and Services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.</p>
 <p>By visiting our site and/or purchasing something from us, you engage in our “Service” and agree to be bound by the following terms and conditions (“Terms of Service”, “Terms”). These Terms of Service apply to all users of the site, including browsers, vendors, customers, merchants, and contributors of content.</p>
 <p>Please read these Terms of Service carefully before accessing or using our website. If you do not agree to all the terms and conditions of this agreement, then you may not access the website or use any Services.</p>
 <p>Any new features or tools which are added to the current store shall also be subject to the Terms of Service. We reserve the right to update, change or replace any part of these Terms of Service by posting updates and changes to our website.</p>
@@ -92,26 +92,26 @@ export const liveTermsHtml = `
 <p><strong>SECTION 11 - ERRORS, INACCURACIES AND OMISSIONS</strong><br>Occasionally there may be typographical errors, inaccuracies, or omissions relating to product descriptions, pricing, promotions, shipping charges, transit times, and availability. We reserve the right to correct such issues at any time.</p>
 <p><strong>SECTION 12 - PROHIBITED USES</strong><br>You are prohibited from using the site or its content for unlawful, abusive, fraudulent, harmful, discriminatory, malicious, or security-circumventing purposes.</p>
 <p><strong>SECTION 13 - DISCLAIMER OF WARRANTIES; LIMITATION OF LIABILITY</strong><br>We do not guarantee that your use of our Service will be uninterrupted, timely, secure or error-free. The Service and all products are provided “as is” and “as available”.</p>
-<p><strong>SECTION 14 - INDEMNIFICATION</strong><br>You agree to indemnify and hold harmless Little Divinity and its affiliates, partners, officers, directors, agents, contractors, licensors, suppliers, and employees from any claim arising out of your breach of these Terms.</p>
+<p><strong>SECTION 14 - INDEMNIFICATION</strong><br>You agree to indemnify and hold harmless Kanakshi.in and its affiliates, partners, officers, directors, agents, contractors, licensors, suppliers, and employees from any claim arising out of your breach of these Terms.</p>
 <p><strong>SECTION 15 - SEVERABILITY</strong><br>If any provision of these Terms is determined to be unlawful, void, or unenforceable, the remaining provisions shall remain valid and enforceable.</p>
 <p><strong>SECTION 16 - TERMINATION</strong><br>These Terms are effective unless and until terminated by either you or us. We may terminate this agreement at any time if you fail to comply with any term or provision.</p>
 <p><strong>SECTION 17 - ENTIRE AGREEMENT</strong><br>These Terms of Service and any policies or operating rules posted by us constitute the entire agreement and understanding between you and us.</p>
 <p><strong>SECTION 18 - GOVERNING LAW</strong><br>These Terms of Service and any separate agreements whereby we provide you Services shall be governed by and construed in accordance with the laws of India.</p>
 <p><strong>SECTION 19 - CHANGES TO TERMS OF SERVICE</strong><br>We reserve the right to update, change or replace any part of these Terms of Service by posting updates and changes to our website.</p>
-<p><strong>SECTION 20 - CONTACT INFORMATION</strong><br>Questions about the Terms of Service should be sent to us at ujjwalagrain@gmail.com.</p>
+<p><strong>SECTION 20 - CONTACT INFORMATION</strong><br>Questions about the Terms of Service should be sent to us at support@kanakshi.in.</p>
 `;
 
 export const liveRefundPolicyHtml = `
 <p>We have a 30-day return policy, which means you have 30 days after receiving your item to request a return.</p>
 <p>To be eligible for a return, your item must be in the same condition that you received it, unworn or unused, with tags, and in its original packaging. You’ll also need the receipt or proof of purchase.</p>
-<p>To start a return, you can contact us at <a href="mailto:giri.sujata@gmail.com">giri.sujata@gmail.com</a>. Please note that returns will need to be sent to the following address: A 509, Sector 46, Noida.</p>
+<p>To start a return, you can contact us at <a href="mailto:support@kanakshi.in">support@kanakshi.in</a>.</p>
 <p>If your return is accepted, we’ll send you a return shipping label, as well as instructions on how and where to send your package. Items sent back to us without first requesting a return will not be accepted.</p>
-<p>You can always contact us for any return question at <a href="mailto:giri.sujata@gmail.com">giri.sujata@gmail.com</a>.</p>
+<p>You can always contact us for any return question at <a href="mailto:support@kanakshi.in">support@kanakshi.in</a>.</p>
 <p><strong>Damages and issues</strong><br>Please inspect your order upon reception and contact us immediately if the item is defective, damaged or if you receive the wrong item, so that we can evaluate the issue and make it right.</p>
 <p><strong>Exceptions / non-returnable items</strong><br>Certain types of items cannot be returned, like perishable goods, custom products, and personal care goods. We also do not accept returns for hazardous materials, flammable liquids, or gases. Unfortunately, we cannot accept returns on sale items or gift cards.</p>
 <p><strong>Exchanges</strong><br>The fastest way to ensure you get what you want is to return the item you have, and once the return is accepted, make a separate purchase for the new item.</p>
 <p><strong>European Union 14 day cooling off period</strong><br>If the merchandise is being shipped into the European Union, you have the right to cancel or return your order within 14 days for any reason and without justification, subject to the same return condition requirements.</p>
-<p><strong>Refunds</strong><br>We will notify you once we’ve received and inspected your return, and let you know if the refund was approved or not. If approved, you’ll be automatically refunded on your original payment method within 10 business days. If more than 15 business days have passed since approval, please contact us at ujjwalagrain@gmail.com.</p>
+<p><strong>Refunds</strong><br>We will notify you once we’ve received and inspected your return, and let you know if the refund was approved or not. If approved, you’ll be automatically refunded on your original payment method within 10 business days. If more than 15 business days have passed since approval, please contact us at support@kanakshi.in.</p>
 `;
 
 export const liveShippingPolicyHtml = `
@@ -130,6 +130,6 @@ export const liveShippingPolicyHtml = `
 <p><strong>Order Confirmation:</strong> You will receive an order confirmation email once your purchase is complete.</p>
 <p><strong>Order Changes &amp; Cancellations:</strong> If you need to change or cancel your order, please contact us within 24 hours of placing the order. We will do our best to accommodate your request.</p>
 <p><strong>Damaged or Lost Packages:</strong> In the rare event your package arrives damaged or is lost in transit, please contact us immediately. We will work with the shipping carrier to resolve the issue and ensure you receive your order.</p>
-<p><strong>Contact Us:</strong> For any questions or concerns about your order, please contact our customer service team at <a href="mailto:ujjwalagrain@gmail.com">ujjwalagrain@gmail.com</a> or call <a href="tel:+919473420536">+91 9473420536</a>. We are here to help.</p>
+<p><strong>Contact Us:</strong> For any questions or concerns about your order, please contact our customer service team at <a href="mailto:support@kanakshi.in">support@kanakshi.in</a>. We are here to help.</p>
 <p>Thank you for shopping with us. We strive to provide you with the best possible service and ensure your satisfaction with every purchase.</p>
 `;

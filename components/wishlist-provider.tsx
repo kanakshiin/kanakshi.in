@@ -5,7 +5,8 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { getPrimaryImage } from "../lib/api";
 import { Product } from "../lib/types";
 
-const WISHLIST_STORAGE_KEY = "little-divinity-wishlist";
+const WISHLIST_STORAGE_KEY = "kanakshi-wishlist";
+const WISHLIST_UPDATED_EVENT = "kanakshi-wishlist-updated";
 
 export type WishlistItem = {
   id: number;
@@ -54,7 +55,7 @@ function writeWishlist(items: WishlistItem[]) {
   }
 
   window.localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent("little-divinity-wishlist-updated"));
+  window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT));
 }
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
@@ -65,11 +66,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     sync();
     window.addEventListener("storage", sync);
-    window.addEventListener("little-divinity-wishlist-updated", sync as EventListener);
+    window.addEventListener(WISHLIST_UPDATED_EVENT, sync as EventListener);
 
     return () => {
       window.removeEventListener("storage", sync);
-      window.removeEventListener("little-divinity-wishlist-updated", sync as EventListener);
+      window.removeEventListener(WISHLIST_UPDATED_EVENT, sync as EventListener);
     };
   }, []);
 

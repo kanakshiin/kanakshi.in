@@ -6,12 +6,12 @@ import { Category, Coupon, HomepageSection, NavigationItem, Product, ProductList
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "https://ecombeckend.saaszo.in/api/v1";
+  "https://backend.kanakshi.in/api/v1";
 
 const BACKEND_SITE_URL =
   process.env.NEXT_PUBLIC_BACKEND_SITE_URL ||
   process.env.BACKEND_SITE_URL ||
-  "https://ecombeckend.saaszo.in";
+  "https://backend.kanakshi.in";
 
 const STOREFRONT_FALLBACKS_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_STOREFRONT_FALLBACKS === "true" ||
@@ -23,7 +23,7 @@ const PUBLIC_READ_REVALIDATE_SECONDS = 60;
 export const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.svg";
 
 const fallbackSettings: SiteSettings = {
-  site_name: "Little Divinity",
+  site_name: "Kanakshi.in",
   site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
   site_currency_symbol: "₹",
   default_shipping_cost: "99",
@@ -61,12 +61,7 @@ const fallbackFooterMenu: NavigationItem[] = [
   { id: 30009, title: "Live Auctions", url: "/live-auctions" }
 ];
 
-const fallbackSocialLinks: SocialLink[] = [
-  { id: 40001, platform: "facebook", url: "https://www.facebook.com/uniquebrasscollection" },
-  { id: 40002, platform: "instagram", url: "https://www.instagram.com/littledivinity/" },
-  { id: 40003, platform: "youtube", url: "https://www.youtube.com/@littledivinity" },
-  { id: 40004, platform: "linkedin", url: "https://www.linkedin.com/company/little-divinity/" }
-];
+const fallbackSocialLinks: SocialLink[] = [];
 
 const fallbackCategories: Category[] = [
   { id: 1, parent_id: null, name: "God Idols", slug: "god-idols", image: referenceAssets.collections.godIdols },
@@ -80,15 +75,15 @@ const fallbackCategories: Category[] = [
 const fallbackProducts: Product[] = [
   {
     id: 101,
-    name: "Little Divinity Brass Decor Demo",
-    slug: "little-divinity-brass-decor-demo",
+    name: "Kanakshi.in Brass Decor Demo",
+    slug: "kanakshi-brass-decor-demo",
     price: 11999,
     sale_price: 7999,
     effective_price: 7999,
     category_name: "Demo Product",
     short_desc: "A real product photo from your local collection so the storefront card can be checked visually.",
     description:
-      "This demo product is added only to preview how real Little Divinity photography looks inside the current shop and product page design.",
+      "This demo product is added only to preview how real Kanakshi.in photography looks inside the current shop and product page design.",
     images: ["/demo-products/little-divinity-real-1.jpg"]
   },
   {

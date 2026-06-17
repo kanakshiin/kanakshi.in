@@ -8,4 +8,4 @@ Disallow: /checkout/
 Disallow: /api/
 Disallow: /cart
 
-Sitemap: https://littledivinity.com/sitemap.xml
+Sitemap: https://kanakshi.in/sitemap.xml

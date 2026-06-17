@@ -400,7 +400,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <p className="eyebrow">Crafted With Purpose</p>
               <h2>Designed To Feel Special The Moment It Is Placed</h2>
               <p>
-                Each piece from Little Divinity is carefully selected for its finish quality, weight,
+                Each piece from Kanakshi.in is carefully selected for its finish quality, weight,
                 and display presence. Whether placed on an altar, gifted at a celebration, or styled
                 as a statement piece — our brass and heritage decor is built to last a lifetime and
                 tell a story worth sharing.

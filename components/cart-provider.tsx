@@ -5,7 +5,8 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { getPrimaryImage } from "../lib/api";
 import { Product } from "../lib/types";
 
-const CART_STORAGE_KEY = "little-divinity-cart";
+const CART_STORAGE_KEY = "kanakshi-cart";
+const CART_UPDATED_EVENT = "kanakshi-cart-updated";
 
 export type CartProductInput = Pick<
   Product,
@@ -64,7 +65,7 @@ function writeCart(items: CartItem[]) {
   }
 
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent("little-divinity-cart-updated"));
+  window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -77,11 +78,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     sync();
     window.addEventListener("storage", sync);
-    window.addEventListener("little-divinity-cart-updated", sync as EventListener);
+    window.addEventListener(CART_UPDATED_EVENT, sync as EventListener);
 
     return () => {
       window.removeEventListener("storage", sync);
-      window.removeEventListener("little-divinity-cart-updated", sync as EventListener);
+      window.removeEventListener(CART_UPDATED_EVENT, sync as EventListener);
     };
   }, []);
 

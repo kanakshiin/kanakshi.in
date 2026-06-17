@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 import { Product, SiteSettings } from "./types";
 
-const fallbackSiteUrl = "https://littledivinity.in";
-const fallbackSiteName = "Little Divinity";
+const fallbackSiteUrl = "https://kanakshi.in";
+const fallbackSiteName = "Kanakshi.in";
 const fallbackSiteDescription =
   "Handcrafted brass decor, pooja accents, and meaningful gifting pieces for home styling and festive gifting.";
 const fallbackBackendSiteUrl =
   process.env.NEXT_PUBLIC_BACKEND_SITE_URL ||
   process.env.BACKEND_SITE_URL ||
-  "https://ecombeckend.saaszo.in";
+  "https://backend.kanakshi.in";
 
 function normalizeUrl(value?: string | null): string {
   const raw =
