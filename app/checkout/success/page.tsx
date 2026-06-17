@@ -136,7 +136,7 @@ function SuccessReceiptContent() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)", paddingBottom: "1rem" }}>
             <div>
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>ORDER NUMBER</span>
-              <strong style={{ fontSize: "1.25rem", color: "var(--text)" }}>{orderNumber || "LD-SAMPLE-NUMBER"}</strong>
+              <strong style={{ fontSize: "1.25rem", color: "var(--text)" }}>{orderNumber || "KAN-SAMPLE-NUMBER"}</strong>
             </div>
             <button
               onClick={handleCopy}

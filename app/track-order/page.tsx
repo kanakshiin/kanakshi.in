@@ -138,7 +138,7 @@ function LiveTrackerContent() {
               required
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="e.g. LD-20260522-ABCD"
+              placeholder="e.g. KAN-20260522-ABCD"
               style={{ minHeight: "50px" }}
             />
           </div>

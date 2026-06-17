@@ -454,7 +454,7 @@ function RegisterForm({
       <div className="wp-row">
         <Field label={source === "website" ? "ORDER ID *" : "AMAZON ORDER ID / RECEIPT ID *"} required>
           <Input
-            placeholder={source === "website" ? "e.g. LD-XXXXX" : "e.g. 402-1234567..."}
+            placeholder={source === "website" ? "e.g. KAN-XXXXX" : "e.g. 402-1234567..."}
             value={orderId}
             onChange={e => setOrderId(e.target.value)}
             className="wp-input wp-mono"
@@ -594,7 +594,7 @@ function StatusForm({ codeParam, changeTab }: { codeParam: string; changeTab: (t
       )}
       {method === "order" && (
         <Field label="ORDER / BILL NUMBER" required>
-          <Input placeholder="LD-XXXXX or Amazon Order ID" value={order} onChange={e => setOrder(e.target.value)} className="wp-input wp-mono" required />
+          <Input placeholder="KAN-XXXXX or Amazon Order ID" value={order} onChange={e => setOrder(e.target.value)} className="wp-input wp-mono" required />
         </Field>
       )}
       {method === "contact" && (
