@@ -119,10 +119,11 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
     },
     icons: {
       icon: [
-        { url: favicon },
+        { url: favicon || "/favicon.ico", sizes: "any" },
+        { url: "/favicon.svg", type: "image/svg+xml" }
       ],
-      shortcut: [favicon],
-      apple: [favicon],
+      shortcut: [favicon || "/favicon.ico"],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }]
     },
     keywords: [
       "fine jewellery",

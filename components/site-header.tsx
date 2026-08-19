@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { NavigationItem, SiteSettings } from "../lib/types";
+import { NavigationItem, Product, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
 import { useWishlist } from "./wishlist-provider";
 import { KanakshiPincodeModal } from "./kanakshi-pincode-modal";
@@ -40,6 +40,9 @@ export function SiteHeader({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [liveProducts, setLiveProducts] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
   const [pincodeModalOpen, setPincodeModalOpen] = useState(false);
   const [selectedPincode, setSelectedPincode] = useState("110001");
   const [selectedCity, setSelectedCity] = useState("Delhi NCR");
@@ -64,6 +67,35 @@ export function SiteHeader({
     }, 3600);
     return () => clearInterval(interval);
   }, [offers]);
+
+  // Debounced Live Product Search (fires after user stops typing)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setLiveProducts([]);
+      setIsSearching(false);
+      setTotalResults(0);
+      return;
+    }
+
+    setIsSearching(true);
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLiveProducts(data.products || []);
+          setTotalResults(data.total || (data.products ? data.products.length : 0));
+        }
+      } catch (err) {
+        console.error("Live search error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,24 +141,21 @@ export function SiteHeader({
                 aria-label="Close announcement"
                 title="Dismiss banner"
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                ✕
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Header */}
-      <header className="kanakshi-header-wrapper">
+      {/* Main Sticky Header */}
+      <header className="kanakshi-header">
         <div className="kanakshi-container">
           <div className="kanakshi-main-header">
-            {/* Mobile Hamburger Toggle */}
+            {/* Mobile Menu Toggle Button */}
             <button
               type="button"
-              className="kanakshi-mobile-nav-toggle"
+              className="kanakshi-mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -158,7 +187,7 @@ export function SiteHeader({
               </div>
             </button>
 
-            {/* Search Bar */}
+            {/* Functional Debounced Search Bar */}
             <div className="kanakshi-search-box">
               <form onSubmit={handleSearchSubmit}>
                 <div className="kanakshi-search-input-wrap">
@@ -173,13 +202,17 @@ export function SiteHeader({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                    onBlur={() => setTimeout(() => setSearchFocused(false), 260)}
                   />
                   {searchQuery && (
                     <button
                       type="button"
-                      onClick={() => setSearchQuery("")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--kanakshi-text-muted)", display: "flex" }}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setLiveProducts([]);
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--kanakshi-text-muted)", display: "flex", padding: "2px" }}
+                      aria-label="Clear search"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -192,36 +225,126 @@ export function SiteHeader({
 
               {/* Instant Search Dropdown */}
               {searchFocused && (
-                <div className="kanakshi-search-dropdown">
-                  <div className="kanakshi-search-section-title">Trending Searches</div>
-                  <div className="kanakshi-search-chips">
-                    {popularSearches.map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="kanakshi-search-chip"
-                        onMouseDown={() => {
-                          setSearchQuery(item);
-                          router.push(`/shop?q=${encodeURIComponent(item)}`);
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
+                <div
+                  className="kanakshi-search-dropdown"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {searchQuery.trim().length > 0 ? (
+                    <div>
+                      <div className="kanakshi-search-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>
+                          {isSearching
+                            ? "Searching..."
+                            : liveProducts.length > 0
+                            ? `Matching Products (${totalResults || liveProducts.length})`
+                            : "No Results"}
+                        </span>
+                        {isSearching && (
+                          <span className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px" }} />
+                        )}
+                      </div>
 
-                  <div className="kanakshi-search-section-title">Shop by Metal</div>
-                  <div style={{ display: "flex", gap: "12px", fontSize: "0.85rem" }}>
-                    <Link href="/shop/silver-jewellery" style={{ color: "var(--kanakshi-pink-dark)", fontWeight: "600" }}>
-                      • 925 Sterling Silver
-                    </Link>
-                    <Link href="/shop/gold-lab-diamonds" style={{ color: "var(--kanakshi-gold-dark)", fontWeight: "600" }}>
-                      • 18K Real Gold
-                    </Link>
-                    <Link href="/shop/necklaces" style={{ color: "var(--kanakshi-pink)", fontWeight: "600" }}>
-                      • Rose Gold Edit
-                    </Link>
-                  </div>
+                      {isSearching ? (
+                        <div style={{ padding: "16px 8px", textAlign: "center", color: "#888888", fontSize: "0.85rem" }}>
+                          Searching Kanakshi fine jewellery...
+                        </div>
+                      ) : liveProducts.length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", maxHeight: "320px", overflowY: "auto" }}>
+                          {liveProducts.map((product) => {
+                            const img = Array.isArray(product.images)
+                              ? (product.images[0] || "/product-placeholder.svg")
+                              : (typeof product.images === "string" ? product.images : "/product-placeholder.svg");
+                            const catName = product.category_name || "";
+                            const currentPrice = Number(product.sale_price || product.price || 0);
+                            const originalPrice = product.sale_price ? Number(product.price || 0) : null;
+
+                            return (
+                              <Link
+                                key={product.id}
+                                href={`/product/${product.slug}`}
+                                className="kanakshi-search-item"
+                                onClick={() => {
+                                  setSearchFocused(false);
+                                  setSearchQuery("");
+                                }}
+                              >
+                                <img
+                                  src={img}
+                                  alt={product.name || "Jewellery"}
+                                  className="kanakshi-search-thumb"
+                                />
+                                <div className="kanakshi-search-info">
+                                  <div className="kanakshi-search-name">{product.name}</div>
+                                  <div className="kanakshi-search-meta">
+                                    {catName && <span className="kanakshi-search-cat">{catName}</span>}
+                                    <span className="kanakshi-search-price">₹{currentPrice.toLocaleString("en-IN")}</span>
+                                    {originalPrice && originalPrice > currentPrice && (
+                                      <span className="kanakshi-search-original-price">₹{originalPrice.toLocaleString("en-IN")}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kanakshi-pink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                              </Link>
+                            );
+                          })}
+
+                          <button
+                            type="button"
+                            className="kanakshi-search-view-all"
+                            onClick={() => {
+                              setSearchFocused(false);
+                              router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+                            }}
+                          >
+                            <span>View all results for &ldquo;{searchQuery}&rdquo; →</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ padding: "16px 8px", textAlign: "center" }}>
+                          <p style={{ margin: "0 0 8px", color: "#444444", fontSize: "0.9rem" }}>
+                            No jewellery found matching <strong>&ldquo;{searchQuery}&rdquo;</strong>
+                          </p>
+                          <p style={{ margin: 0, color: "#888888", fontSize: "0.8rem" }}>
+                            Try searching for <em>Rings, Earrings, 925 Silver, Solitaires, or Bracelets</em>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="kanakshi-search-section-title">Trending Searches</div>
+                      <div className="kanakshi-search-chips">
+                        {popularSearches.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="kanakshi-search-chip"
+                            onMouseDown={() => {
+                              setSearchQuery(item);
+                              router.push(`/shop?q=${encodeURIComponent(item)}`);
+                            }}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="kanakshi-search-section-title">Shop by Metal &amp; Collection</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "0.85rem" }}>
+                        <Link href="/shop?category=silver-jewellery" style={{ color: "var(--kanakshi-pink-dark)", fontWeight: "600" }}>
+                          • 925 Sterling Silver
+                        </Link>
+                        <Link href="/shop?category=gold-lab-diamonds" style={{ color: "var(--kanakshi-gold-dark)", fontWeight: "600" }}>
+                          • 18K Real Gold
+                        </Link>
+                        <Link href="/shop?category=necklaces" style={{ color: "var(--kanakshi-pink)", fontWeight: "600" }}>
+                          • Rose Gold Edit
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
