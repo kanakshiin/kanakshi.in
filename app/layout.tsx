@@ -132,7 +132,7 @@ fbq('track', 'PageView');`,
             />
             {children}
             <SiteFooter categories={categories} settings={settings} footerMenu={footerMenu} socialLinks={socialLinks} />
-            <FloatingWhatsappWidget phone={settings.whatsapp_number || settings.site_phone || "919999999999"} />
+            <FloatingWhatsappWidget phone={settings.whatsapp_number || settings.site_phone || "+91 85868 98691"} />
             <AddToCartPopup />
           </WishlistProvider>
         </CartProvider>

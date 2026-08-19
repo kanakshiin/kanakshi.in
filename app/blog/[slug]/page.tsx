@@ -338,7 +338,7 @@ export default async function BlogDetailsPage({ params }: PageProps) {
                   <div className="blog-card-media">
                     <Link href={`/blog/${rPost.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
                       <Image
-                        src={getAbsoluteMediaUrl(rPost.featured_image, settings) || "/demo-products/little-divinity-real-1.jpg"}
+                        src={getAbsoluteMediaUrl(rPost.featured_image, settings) || "/jewellery/solitaire-ring.jpg"}
                         alt={rPost.featured_image_alt || rPost.title}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 991px) 50vw, 33vw"

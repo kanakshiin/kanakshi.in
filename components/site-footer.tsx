@@ -19,9 +19,9 @@ export function SiteFooter({ categories = [], settings, footerMenu = [], socialL
     settings.footer_copyright_text ||
     `© ${new Date().getFullYear()} Kanakshi Fine Jewellery. All Rights Reserved.`;
 
-  const phone = settings.support_phone || settings.site_phone || "+91 98765 43210";
+  const phone = settings.support_phone || settings.site_phone || "+91 85868 98691";
   const email = settings.support_email || settings.site_email || "care@kanakshi.in";
-  const whatsapp = settings.whatsapp_number || "+91 98765 43210";
+  const whatsapp = settings.whatsapp_number || "+91 85868 98691";
   const address1 = settings.address_line1 || "Kanakshi Flagship Studio, Ground Floor, DLF Horizon Plaza";
   const address2 = settings.address_line2 || "Golf Course Road, Sector 43";
   const city = settings.city || "Gurugram";

@@ -138,7 +138,7 @@ export default async function BlogListingPage({ searchParams }: PageProps) {
           <div className="blog-featured-media">
             <Link href={`/blog/${featuredPost.slug}`}>
               <Image
-                src={getAbsoluteMediaUrl(featuredPost.featured_image) || "/demo-products/little-divinity-real-1.jpg"}
+                src={getAbsoluteMediaUrl(featuredPost.featured_image) || "/jewellery/solitaire-ring.jpg"}
                 alt={featuredPost.featured_image_alt || featuredPost.title}
                 fill
                 priority
@@ -189,7 +189,7 @@ export default async function BlogListingPage({ searchParams }: PageProps) {
                 <div className="blog-card-media">
                   <Link href={`/blog/${post.slug}`} style={{ display: "block", width: "100%", height: "100%" }}>
                     <Image
-                      src={getAbsoluteMediaUrl(post.featured_image) || "/demo-products/little-divinity-real-1.jpg"}
+                      src={getAbsoluteMediaUrl(post.featured_image) || "/jewellery/solitaire-ring.jpg"}
                       alt={post.featured_image_alt || post.title}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 991px) 50vw, 33vw"

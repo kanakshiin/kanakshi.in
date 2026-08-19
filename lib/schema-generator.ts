@@ -143,7 +143,7 @@ export function generateOrganizationJsonLd(
     image: `${siteUrl}/og-image.jpg`,
     description: getSiteDescription(settings),
     priceRange: "₹₹",
-    telephone: settings?.support_phone || settings?.site_phone || "+919876543210",
+    telephone: settings?.support_phone || settings?.site_phone || "+91 85868 98691",
     email: settings?.support_email || settings?.site_email || "support@kanakshi.in",
     address: {
       "@type": "PostalAddress",

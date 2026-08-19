@@ -103,9 +103,9 @@ export default function LiveAuctionsPage() {
       <div className="la-page">
         <div className="la-hero">
           <div className="la-hero-inner">
-            <p className="la-hero-eyebrow">AUTHENTICATED ONE-OF-ONE BRASS AUCTIONS</p>
+            <p className="la-hero-eyebrow">AUTHENTICATED ONE-OF-ONE FINE JEWELLERY AUCTIONS</p>
             <h1 className="la-hero-heading">Live Auctions</h1>
-            <p className="la-hero-sub">Rare handcrafted brass artifacts auctioned to the highest bidder. Each piece verified and authenticated by Kanakshi.in ateliers.</p>
+            <p className="la-hero-sub">Rare handcrafted 925 sterling silver and hallmarked gold jewellery auctioned to the highest bidder. Each piece verified and authenticated with certified purity cards.</p>
             {liveCount > 0 && (
               <div className="la-live-ticker">
                 <span className="la-live-dot" />
