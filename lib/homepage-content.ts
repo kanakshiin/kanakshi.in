@@ -171,7 +171,7 @@ export const defaultFullHomepageContent: FullHomepageContent = {
     items: [
       { title: "Stunning Solitaire!", quote: "The diamond brilliance is mind-blowing! I wear it daily to office and it hasn't tarnished at all. Beautiful packaging too.", author: "Ananya Sharma", stars: "★★★★★", product: "Silver Classic Solitaire Ring" },
       { title: "Perfect Anniversary Gift", quote: "Got the rose gold heart pendant for my wife. She absolutely loved the velvet box and authenticity card. 10/10!", author: "Rohan Malhotra", stars: "★★★★★", product: "Rose Gold Heart Loop Necklace" },
-      { title: "Real 925 Silver Feel", quote: "Heavy, premium, and hallmarked. The 30-day return policy gave me total peace of mind. Will order again!", author: "Pooja Hegde", stars: "★★★★★", product: "Tennis Charm Bracelet" },
+      { title: "Real 925 Silver Feel", quote: "Heavy, premium, and hallmarked. The 7-day doorstep return policy gave me total peace of mind. Will order again!", author: "Pooja Hegde", stars: "★★★★★", product: "Tennis Charm Bracelet" },
     ],
   },
   newsletter: {
@@ -206,7 +206,7 @@ export const defaultFullHomepageContent: FullHomepageContent = {
       { value: "2,00,000+", label: "Happy Customers" },
       { value: "100%", label: "BIS Hallmarked & Certified" },
       { value: "4.8 ★", label: "Average Review Rating" },
-      { value: "30 Days", label: "Hassle-Free Returns" },
+      { value: "7 Days", label: "Hassle-Free Returns" },
     ],
   },
   festive_edits: {

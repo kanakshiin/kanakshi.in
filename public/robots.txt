@@ -1,11 +1,29 @@
+# *
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /admin/
-Disallow: /account/
+Disallow: /admin/*
+Disallow: /account
 Disallow: /checkout
-Disallow: /checkout/
-Disallow: /api/
-Disallow: /cart
+Disallow: /api/*
 
+# Googlebot
+User-agent: Googlebot
+Allow: /
+
+# Googlebot-Image
+User-agent: Googlebot-Image
+Allow: /
+Allow: /jewellery/*
+Allow: /images/*
+Allow: /*.jpg
+Allow: /*.png
+Allow: /*.svg
+
+# Host
+Host: http://localhost:3000
+
+# Sitemaps
+Sitemap: http://localhost:3000/sitemap.xml
 Sitemap: https://kanakshi.in/sitemap.xml
+Sitemap: https://kanakshi.in/api/google-shopping-feed
