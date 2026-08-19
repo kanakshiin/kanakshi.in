@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { FooterNewsletterForm } from "./footer-newsletter-form";
-import { SiteSettings, Category, NavigationItem, SocialLink } from "../lib/types";
 import { BrandLogo } from "./brand-logo";
+import { PaymentBadges } from "./payment-badges";
+import type { SiteSettings, Category, NavigationItem, SocialLink } from "../lib/types";
 
 type SiteFooterProps = {
   categories: Category[];
@@ -243,17 +244,7 @@ export function SiteFooter({ categories = [], settings, footerMenu = [], socialL
         <div className="kanakshi-footer-bottom">
           <div>{copyright}</div>
 
-          <div className="kanakshi-payment-icons">
-            <span className="kanakshi-payment-pill">UPI</span>
-            <span className="kanakshi-payment-pill">GPay</span>
-            <span className="kanakshi-payment-pill">PhonePe</span>
-            <span className="kanakshi-payment-pill">Paytm</span>
-            <span className="kanakshi-payment-pill">VISA</span>
-            <span className="kanakshi-payment-pill">MASTERCARD</span>
-            <span className="kanakshi-payment-pill">RUPAY</span>
-            <span className="kanakshi-payment-pill">NETBANKING</span>
-            <span className="kanakshi-payment-pill">COD</span>
-          </div>
+          <PaymentBadges />
         </div>
       </div>
     </footer>

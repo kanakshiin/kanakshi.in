@@ -9,6 +9,7 @@ import { getProductPath } from "../lib/site";
 import { Coupon, Product, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
 import { ProductCard } from "./product-card";
+import { PaymentBadges } from "./payment-badges";
 
 type CartViewProps = {
   settings: SiteSettings;
@@ -509,6 +510,13 @@ export function CartView({ settings, offers = [], recommendedProducts = [] }: Ca
                 </div>
                 <span>256-Bit Bank Grade SSL</span>
               </div>
+            </div>
+
+            <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid #f1eeea" }}>
+              <span style={{ display: "block", textAlign: "center", fontSize: "0.72rem", color: "#888888", marginBottom: "8px", fontWeight: "600", letterSpacing: "0.03em" }}>
+                100% SECURE CHECKOUT WITH
+              </span>
+              <PaymentBadges />
             </div>
           </div>
         </aside>
