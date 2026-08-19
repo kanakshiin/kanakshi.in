@@ -56,10 +56,13 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://checkout.razorpay.com" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icon-32x32.png?v=2" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icon-16x16.png?v=2" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" sizes="180x180" />
+        <link rel="shortcut icon" href="/favicon.ico?v=2" />
+        <link rel="manifest" href="/site.webmanifest?v=2" />
         <meta name="theme-color" content="#e9718b" />
         {gtmId && (
           <Script
