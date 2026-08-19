@@ -77,6 +77,11 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://checkout.razorpay.com" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#e9718b" />
         {gtmId && (
           <Script
             id="gtm-base"

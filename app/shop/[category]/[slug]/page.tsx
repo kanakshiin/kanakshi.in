@@ -23,7 +23,7 @@ import {
   getActiveCoupons,
   isProductSellable,
 } from "../../../../lib/api";
-import { getCanonicalUrl, getProductPath, getSiteDescription, getSiteName } from "../../../../lib/site";
+import { getAbsoluteMediaUrl, getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getSiteUrl } from "../../../../lib/site";
 
 export const revalidate = 60;
 
@@ -56,8 +56,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 
   const description = product.meta_desc || product.short_desc || product.description || fallbackDescription;
-  const image = getPrimaryImage(product);
+  const rawImage = getPrimaryImage(product);
+  const absoluteImage = getAbsoluteMediaUrl(rawImage, settings) || rawImage;
   const canonicalPath = getProductPath(product);
+  const pageUrl = getCanonicalUrl(canonicalPath, settings);
 
   return {
     title: `${product.name} | ${siteName}`,
@@ -66,14 +68,25 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     openGraph: {
       title: `${product.name} | ${siteName}`,
       description,
-      url: getCanonicalUrl(canonicalPath, settings),
-      images: [{ url: image, alt: product.name }],
+      url: pageUrl,
+      siteName,
+      type: "website",
+      images: [
+        {
+          url: absoluteImage,
+          alt: product.name,
+          width: 800,
+          height: 800,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${product.name} | ${siteName}`,
       description,
-      images: [image],
+      images: [absoluteImage],
+      site: "@KanakshiJewels",
+      creator: "@KanakshiJewels",
     },
   };
 }

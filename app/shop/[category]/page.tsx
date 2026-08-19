@@ -7,7 +7,7 @@ import { ShopProductList } from "../../../components/shop-product-list";
 import { ShopSortSelect, ShopPriceFilter } from "../../../components/shop-controls";
 import { KanakshiTrustBadges } from "../../../components/kanakshi-trust-badges";
 import { getCategories, getProducts, getSettings } from "../../../lib/api";
-import { getCanonicalUrl, getSiteDescription, getSiteName } from "../../../lib/site";
+import { getAbsoluteMediaUrl, getCanonicalUrl, getSiteDescription, getSiteName, getSiteUrl } from "../../../lib/site";
 import { referenceAssets } from "../../../lib/reference-assets";
 
 export const revalidate = 60;
@@ -101,6 +101,8 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   const title = `${fallback.title} | ${siteName}`;
   const canonicalPath = `/shop/${category}`;
+  const siteUrl = getSiteUrl(settings);
+  const bannerUrl = getAbsoluteMediaUrl(fallback.banner, settings) || `${siteUrl}/og-image.jpg`;
 
   return {
     title,
@@ -110,6 +112,24 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
       title,
       description: fallback.description,
       url: getCanonicalUrl(canonicalPath, settings),
+      siteName,
+      type: "website",
+      images: [
+        {
+          url: bannerUrl,
+          width: 1200,
+          height: 630,
+          alt: `${fallback.title} - ${siteName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: fallback.description,
+      images: [bannerUrl],
+      site: "@KanakshiJewels",
+      creator: "@KanakshiJewels",
     },
   };
 }

@@ -95,14 +95,14 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
   const siteName = getSiteName(settings);
   const description = getSiteDescription(settings);
   const siteUrl = getSiteUrl(settings);
-  const title = settings?.meta_title || siteName;
-  const ogTitle = settings?.og_title || settings?.meta_title || siteName;
+  const title = settings?.meta_title || `${siteName} | Everyday Luxury Fine Jewellery`;
+  const ogTitle = settings?.og_title || settings?.meta_title || `${siteName} | Everyday Luxury Fine Jewellery`;
   const ogDescription = settings?.og_description || description;
-  const ogImage = getAbsoluteMediaUrl(settings?.og_image || settings?.logo_url, settings) || `${siteUrl}/logo.jpg`;
-  const twitterTitle = settings?.twitter_title || settings?.og_title || settings?.meta_title || siteName;
-  const twitterDescription = settings?.twitter_description || settings?.og_description || description;
-  const twitterImage = getAbsoluteMediaUrl(settings?.twitter_image || settings?.og_image || settings?.logo_url, settings) || ogImage;
-  const twitterHandle = settings?.twitter_handle?.trim() || undefined;
+  const ogImage = getAbsoluteMediaUrl(settings?.og_image || "/og-image.jpg", settings) || `${siteUrl}/og-image.jpg`;
+  const twitterTitle = settings?.twitter_title || ogTitle;
+  const twitterDescription = settings?.twitter_description || ogDescription;
+  const twitterImage = getAbsoluteMediaUrl(settings?.twitter_image || settings?.og_image || "/og-image.jpg", settings) || ogImage;
+  const twitterHandle = settings?.twitter_handle?.trim() || "@KanakshiJewels";
   const favicon = getAbsoluteMediaUrl(settings?.favicon_url, settings) || "/favicon.ico";
   const logo = getAbsoluteMediaUrl(settings?.logo_url, settings) || `${siteUrl}/logo.jpg`;
 
@@ -110,20 +110,25 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
     metadataBase: new URL(siteUrl),
     title: {
       default: title,
-      template: `%s | ${siteName}`
+      template: `%s | ${siteName}`,
     },
     description,
     applicationName: siteName,
     alternates: {
-      canonical: "/"
+      canonical: "/",
     },
+    manifest: "/site.webmanifest",
     icons: {
       icon: [
-        { url: favicon || "/favicon.ico", sizes: "any" },
-        { url: "/favicon.svg", type: "image/svg+xml" }
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
       ],
-      shortcut: [favicon || "/favicon.ico"],
-      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }]
+      shortcut: ["/favicon.ico"],
+      apple: [
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      ],
     },
     keywords: [
       "fine jewellery",
@@ -133,7 +138,8 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       "gold jewellery",
       "silver earrings",
       "tennis bracelet",
-      siteName
+      "kanakshi jewellery",
+      siteName,
     ],
     openGraph: {
       type: "website",
@@ -144,9 +150,12 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       images: [
         {
           url: ogImage,
-          alt: settings?.seasonal_campaign_name || siteName
-        }
-      ]
+          width: 1200,
+          height: 630,
+          alt: `${siteName} Fine Jewellery Collection`,
+          type: "image/jpeg",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
@@ -154,7 +163,7 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       description: twitterDescription,
       images: [twitterImage],
       site: twitterHandle,
-      creator: twitterHandle
+      creator: twitterHandle,
     },
     other: {
       "logo": logo,
@@ -168,8 +177,8 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
         noimageindex: false,
         "max-image-preview": "large",
         "max-snippet": -1,
-        "max-video-preview": -1
-      }
-    }
+        "max-video-preview": -1,
+      },
+    },
   };
 }

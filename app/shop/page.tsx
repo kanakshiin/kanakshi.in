@@ -7,7 +7,7 @@ import { ShopSortSelect, ShopPriceFilter } from "../../components/shop-controls"
 import { HeroSlider } from "../../components/hero-slider";
 import { KanakshiTrustBadges } from "../../components/kanakshi-trust-badges";
 import { getCategories, getProducts, getSettings, resolveAssetUrl } from "../../lib/api";
-import { getCanonicalUrl, getSiteDescription, getSiteName } from "../../lib/site";
+import { getAbsoluteMediaUrl, getCanonicalUrl, getSiteDescription, getSiteName, getSiteUrl } from "../../lib/site";
 import { referenceAssets } from "../../lib/reference-assets";
 
 export const revalidate = 60;
@@ -31,17 +31,40 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
     ? `Shop ${activeCategory.name.toLowerCase()} in 925 sterling silver, gold, and certified lab diamonds from ${siteName}.`
     : getSiteDescription(settings);
 
+  const canonicalPath = activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop";
+  const siteUrl = getSiteUrl(settings);
+  const ogImage = getAbsoluteMediaUrl(settings?.og_image || "/og-image.jpg", settings) || `${siteUrl}/og-image.jpg`;
+  const pageTitle = activeCategory ? `${activeCategory.name} Collection | ${siteName}` : `Fine Jewellery Shop | ${siteName}`;
+
   return {
-    title: activeCategory ? `${activeCategory.name} Collection | ${siteName}` : `Fine Jewellery Shop | ${siteName}`,
+    title: pageTitle,
     description,
     alternates: {
-      canonical: activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop"
+      canonical: canonicalPath,
     },
     openGraph: {
-      title: activeCategory ? `${activeCategory.name} Collection | ${siteName}` : `${siteName} Shop`,
+      title: pageTitle,
       description,
-      url: getCanonicalUrl(activeCategory ? `/shop?category=${activeCategory.slug}` : "/shop", settings)
-    }
+      url: getCanonicalUrl(canonicalPath, settings),
+      siteName,
+      type: "website",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${pageTitle} - ${siteName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle,
+      description,
+      images: [ogImage],
+      site: "@KanakshiJewels",
+      creator: "@KanakshiJewels",
+    },
   };
 }
 
