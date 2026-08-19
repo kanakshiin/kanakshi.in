@@ -37,40 +37,30 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
         </div>
       </div>
 
-      {/* Infinite Loop Story Marquee */}
+      {/* Infinite Loop Story Marquee (4 continuous tracks for 100% seamless zero-gap loop) */}
       <div className="kanakshi-stories-infinite-container">
         <div className="kanakshi-stories-infinite-track">
-          {/* Set 1 */}
-          {items.map((item, index) => (
-            <Link key={`story-1-${item.slug || index}`} href={item.href} className="kanakshi-story-item">
-              <div className="kanakshi-story-avatar-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="kanakshi-story-img"
-                  loading="lazy"
-                />
-              </div>
-              <span className="kanakshi-story-label">{item.title}</span>
-            </Link>
-          ))}
-
-          {/* Set 2 (for seamless continuous infinite loop) */}
-          {items.map((item, index) => (
-            <Link key={`story-2-${item.slug || index}`} href={item.href} className="kanakshi-story-item" aria-hidden="true">
-              <div className="kanakshi-story-avatar-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="kanakshi-story-img"
-                  loading="lazy"
-                />
-              </div>
-              <span className="kanakshi-story-label">{item.title}</span>
-            </Link>
-          ))}
+          {[1, 2, 3, 4].map((setNum) =>
+            items.map((item, index) => (
+              <Link
+                key={`story-${setNum}-${item.slug || index}`}
+                href={item.href}
+                className="kanakshi-story-item"
+                aria-hidden={setNum > 1 ? "true" : undefined}
+              >
+                <div className="kanakshi-story-avatar-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="kanakshi-story-img"
+                    loading="lazy"
+                  />
+                </div>
+                <span className="kanakshi-story-label">{item.title}</span>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </section>

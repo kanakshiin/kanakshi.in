@@ -419,28 +419,50 @@ ul, ol {
 }
 
 .kanakshi-topbar-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
 }
 
+.kanakshi-topbar-left {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .kanakshi-topbar-left {
+    display: block;
+  }
+}
+
 .kanakshi-topbar-ticker {
+  grid-column: 2;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   font-weight: 500;
-  margin: 0 auto;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .kanakshi-topbar-ticker strong {
   color: #fce7eb;
 }
 
+.kanakshi-topbar-right {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
 .kanakshi-topbar-links {
   display: none;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   font-size: 0.78rem;
   color: #cccccc;
 }
@@ -454,6 +476,25 @@ ul, ol {
 .kanakshi-topbar-links a:hover {
   color: #ffffff;
   text-decoration: underline;
+}
+
+.kanakshi-topbar-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #cccccc;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.kanakshi-topbar-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
 }
 
 /* ==========================================================================

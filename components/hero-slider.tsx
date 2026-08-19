@@ -70,7 +70,7 @@ export function HeroSlider({ slides, autoplayMs = 4500 }: HeroSliderProps) {
           </div>
         </div>
 
-        {/* Slider Controls / Arrows */}
+        {/* Slider Controls / Luxury Indicators & Navigation */}
         {slides.length > 1 && (
           <div
             style={{
@@ -80,47 +80,80 @@ export function HeroSlider({ slides, autoplayMs = 4500 }: HeroSliderProps) {
               zIndex: 4,
               display: "flex",
               alignItems: "center",
-              gap: "8px"
+              gap: "8px",
+              background: "rgba(255, 255, 255, 0.8)",
+              backdropFilter: "blur(12px)",
+              padding: "6px 10px",
+              borderRadius: "30px",
+              border: "1px solid rgba(255, 255, 255, 0.6)",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)"
             }}
           >
             <button
+              type="button"
               onClick={() => setActiveIndex((activeIndex - 1 + slides.length) % slides.length)}
               style={{
-                width: "40px",
-                height: "40px",
+                width: "32px",
+                height: "32px",
                 borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.9)",
-                boxShadow: "var(--shadow-sm)",
+                background: "rgba(255, 255, 255, 0.95)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "1.2rem",
-                color: "var(--kanakshi-black)"
+                color: "var(--kanakshi-black)",
+                transition: "all 0.2s ease",
+                cursor: "pointer"
               }}
               aria-label="Previous slide"
             >
-              ‹
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
             </button>
-            <div style={{ fontSize: "0.85rem", fontWeight: "700", padding: "0 8px", color: "var(--kanakshi-black)" }}>
-              {activeIndex + 1} / {slides.length}
+
+            {/* Luxury Expanding Progress Pills */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "0 6px" }}>
+              {slides.map((_, idx) => (
+                <button
+                  key={`slide-pill-${idx}`}
+                  type="button"
+                  onClick={() => setActiveIndex(idx)}
+                  style={{
+                    height: "6px",
+                    width: activeIndex === idx ? "26px" : "8px",
+                    borderRadius: "4px",
+                    background: activeIndex === idx ? "var(--kanakshi-pink, #e9718b)" : "rgba(0, 0, 0, 0.2)",
+                    boxShadow: activeIndex === idx ? "0 0 8px rgba(233, 113, 139, 0.45)" : "none",
+                    transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    border: "none",
+                    padding: 0
+                  }}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
             </div>
+
             <button
+              type="button"
               onClick={() => setActiveIndex((activeIndex + 1) % slides.length)}
               style={{
-                width: "40px",
-                height: "40px",
+                width: "32px",
+                height: "32px",
                 borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.9)",
-                boxShadow: "var(--shadow-sm)",
+                background: "rgba(255, 255, 255, 0.95)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "1.2rem",
-                color: "var(--kanakshi-black)"
+                color: "var(--kanakshi-black)",
+                transition: "all 0.2s ease",
+                cursor: "pointer"
               }}
               aria-label="Next slide"
             >
-              ›
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </button>
           </div>
         )}

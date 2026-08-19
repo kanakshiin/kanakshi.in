@@ -76,27 +76,21 @@ export function KanakshiMarqueeStrip() {
   return (
     <div className="kanakshi-marquee-container" aria-label="Customer trust highlights">
       <div className="kanakshi-marquee-track">
-        {/* First set of items */}
-        {marqueeItems.map((item, idx) => (
-          <div key={`marquee-1-${idx}`} className="kanakshi-marquee-item">
-            <div className="kanakshi-marquee-icon-wrap">{item.icon}</div>
-            <div className="kanakshi-marquee-text">
-              <span className="kanakshi-marquee-label">{item.label}</span>
-              <span className="kanakshi-marquee-sub">{item.sublabel}</span>
+        {[1, 2, 3, 4].map((setNum) =>
+          marqueeItems.map((item, idx) => (
+            <div
+              key={`marquee-${setNum}-${idx}`}
+              className="kanakshi-marquee-item"
+              aria-hidden={setNum > 1 ? "true" : undefined}
+            >
+              <div className="kanakshi-marquee-icon-wrap">{item.icon}</div>
+              <div className="kanakshi-marquee-text">
+                <span className="kanakshi-marquee-label">{item.label}</span>
+                <span className="kanakshi-marquee-sub">{item.sublabel}</span>
+              </div>
             </div>
-          </div>
-        ))}
-
-        {/* Duplicate second set for seamless infinity loop */}
-        {marqueeItems.map((item, idx) => (
-          <div key={`marquee-2-${idx}`} className="kanakshi-marquee-item" aria-hidden="true">
-            <div className="kanakshi-marquee-icon-wrap">{item.icon}</div>
-            <div className="kanakshi-marquee-text">
-              <span className="kanakshi-marquee-label">{item.label}</span>
-              <span className="kanakshi-marquee-sub">{item.sublabel}</span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

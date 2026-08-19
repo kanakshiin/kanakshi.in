@@ -35,6 +35,7 @@ export function SiteHeader({
   const { count: wishlistCount } = useWishlist();
 
   const [offerIndex, setOfferIndex] = useState(0);
+  const [topbarDismissed, setTopbarDismissed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -84,20 +85,38 @@ export function SiteHeader({
 
   return (
     <>
-      {/* Top Announcement Bar */}
-      <div className="kanakshi-topbar">
-        <div className="kanakshi-container kanakshi-topbar-inner">
-          <div className="kanakshi-topbar-ticker">
-            <span>{offers[offerIndex]}</span>
-          </div>
+      {/* Top Announcement Bar (Center Aligned with Dismiss Option) */}
+      {!topbarDismissed && (
+        <div className="kanakshi-topbar">
+          <div className="kanakshi-container kanakshi-topbar-inner">
+            <div className="kanakshi-topbar-left" aria-hidden="true" />
 
-          <div className="kanakshi-topbar-links">
-            <Link href="/track-order">Track Order</Link>
-            <Link href="/returns">Easy Returns</Link>
-            <Link href="/pages/contact">Need Help?</Link>
+            <div className="kanakshi-topbar-ticker">
+              <span>{offers[offerIndex]}</span>
+            </div>
+
+            <div className="kanakshi-topbar-right">
+              <div className="kanakshi-topbar-links">
+                <Link href="/track-order">Track Order</Link>
+                <Link href="/returns">Easy Returns</Link>
+                <Link href="/pages/contact">Need Help?</Link>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTopbarDismissed(true)}
+                className="kanakshi-topbar-close"
+                aria-label="Close announcement"
+                title="Dismiss banner"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Header */}
       <header className="kanakshi-header-wrapper">
