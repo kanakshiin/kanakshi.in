@@ -11,11 +11,12 @@ interface ProductGalleryProps {
 
 export function ProductGallery({ images, productName }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const thumbRailRef = useRef<HTMLDivElement>(null);
+
+  const displayImages = images.length > 0 ? images : [PRODUCT_PLACEHOLDER_IMAGE];
 
   const switchImage = (index: number) => {
     if (index === activeIndex) return;
@@ -23,12 +24,12 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     setTimeout(() => {
       setActiveIndex(index);
       setIsTransitioning(false);
-    }, 160);
-    // Scroll active thumb into view in the vertical rail
+    }, 150);
+
     if (thumbRailRef.current) {
       const thumbEl = thumbRailRef.current.children[index] as HTMLElement;
       if (thumbEl) {
-        thumbEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        thumbEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       }
     }
   };
@@ -36,31 +37,24 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setIsOpen(true);
-    if (dialogRef.current) {
-      dialogRef.current.showModal();
-      document.body.style.overflow = "hidden";
-    }
+    document.body.style.overflow = "hidden";
   };
 
   const closeLightbox = () => {
     setIsOpen(false);
-    if (dialogRef.current) {
-      dialogRef.current.close();
-    }
     document.body.style.overflow = "";
   };
 
   const nextLightboxImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setLightboxIndex((prev) => (prev + 1) % images.length);
+    setLightboxIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const prevLightboxImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
+    setLightboxIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,174 +64,200 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, images.length]);
+  }, [isOpen, displayImages.length]);
 
   return (
-    <div className="product-detail-media-gallery">
-      {/* Vertical Thumbnail Rail — Desktop */}
-      {images.length > 1 ? (
-        <div className="gallery-thumb-rail" ref={thumbRailRef}>
-          {images.map((image, index) => (
+    <div className="kanakshi-pdp-gallery-container">
+      {/* Desktop Thumbnail Column (Left side) */}
+      {displayImages.length > 1 && (
+        <div className="kanakshi-gallery-thumbnails-rail" ref={thumbRailRef}>
+          {displayImages.map((image, index) => (
             <button
-              key={`gallery-thumb-${index}`}
+              key={`thumb-${index}`}
               type="button"
-              className={`gallery-thumb-btn ${activeIndex === index ? "active" : ""}`}
+              className={`kanakshi-gallery-thumb-btn ${activeIndex === index ? "is-active" : ""}`}
               onClick={() => switchImage(index)}
               onMouseEnter={() => switchImage(index)}
-              aria-label={`Show product image ${index + 1}`}
+              aria-label={`View photo ${index + 1} of ${productName}`}
             >
               <Image
                 src={image}
-                alt={`${productName} ${index + 1}`}
-                width={100}
-                height={100}
-                sizes="88px"
+                alt={`${productName} thumbnail ${index + 1}`}
+                width={80}
+                height={80}
+                className="kanakshi-thumb-img"
                 loading="lazy"
               />
             </button>
           ))}
         </div>
-      ) : null}
+      )}
 
-      {/* Main Image Stage */}
-      <div className="gallery-main-stage">
+      {/* Main Showcase Stage */}
+      <div className="kanakshi-gallery-stage-wrapper">
         <div
-          className={`gallery-main-wrapper${isTransitioning ? " gallery-fade-out" : ""}`}
+          className={`kanakshi-gallery-stage ${isTransitioning ? "is-transitioning" : ""}`}
           onClick={() => openLightbox(activeIndex)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && openLightbox(activeIndex)}
-          aria-label="Click to expand gallery"
+          aria-label="Click to expand photo gallery"
         >
           <Image
-            src={images[activeIndex] || PRODUCT_PLACEHOLDER_IMAGE}
+            src={displayImages[activeIndex] || PRODUCT_PLACEHOLDER_IMAGE}
             alt={productName}
-            className="product-detail-main interactive-zoom"
-            width={1200}
-            height={1200}
+            className="kanakshi-gallery-main-img"
+            width={1000}
+            height={1000}
             priority
             sizes="(max-width: 900px) 100vw, 50vw"
           />
 
-          {/* Image Counter Badge */}
-          {images.length > 1 && (
-            <div className="gallery-counter-badge">
-              {activeIndex + 1} / {images.length}
-            </div>
-          )}
+          {/* Top-Right Tag: 100% Certified / Hallmarked */}
+          <div className="kanakshi-gallery-badge-top">
+            <span>925 Hallmarked</span>
+          </div>
 
-          <button
-            type="button"
-            className="gallery-expand-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              openLightbox(activeIndex);
-            }}
-            aria-label="Expand gallery to full screen"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="expand-svg-icon">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-            </svg>
-            <span>View All Photos</span>
-          </button>
+          {/* Bottom Floating Bar */}
+          <div className="kanakshi-gallery-bottom-bar">
+            {displayImages.length > 1 && (
+              <span className="kanakshi-gallery-counter-pill">
+                {activeIndex + 1} / {displayImages.length}
+              </span>
+            )}
+
+            <button
+              type="button"
+              className="kanakshi-gallery-expand-pill"
+              onClick={(e) => {
+                e.stopPropagation();
+                openLightbox(activeIndex);
+              }}
+              title="Full screen view"
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+              <span>View All {displayImages.length > 1 ? `${displayImages.length} ` : ""}Photos</span>
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Dot Indicators */}
-        {images.length > 1 && (
-          <div className="gallery-mobile-dots">
-            {images.map((_, index) => (
+        {/* Mobile Thumbnails / Dots strip */}
+        {displayImages.length > 1 && (
+          <div className="kanakshi-gallery-mobile-strip">
+            {displayImages.map((image, index) => (
               <button
-                key={`dot-${index}`}
+                key={`mobile-thumb-${index}`}
                 type="button"
-                className={`gallery-dot${activeIndex === index ? " active" : ""}`}
+                className={`kanakshi-gallery-mobile-thumb ${activeIndex === index ? "is-active" : ""}`}
                 onClick={() => switchImage(index)}
                 aria-label={`Go to image ${index + 1}`}
-              />
+              >
+                <Image
+                  src={image}
+                  alt=""
+                  width={56}
+                  height={56}
+                  className="kanakshi-mobile-thumb-img"
+                />
+              </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Fullscreen Lightbox Dialog */}
-      <dialog
-        ref={dialogRef}
-        className="premium-lightbox-dialog"
-        onClose={closeLightbox}
-        onClick={(e) => {
-          if (e.target === dialogRef.current) closeLightbox();
-        }}
-      >
-        <div className="lightbox-viewport">
-          <button
-            type="button"
-            className="lightbox-close-btn"
-            onClick={closeLightbox}
-            aria-label="Close fullscreen gallery"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-
-          <div className="lightbox-content-grid">
-            <button
-              type="button"
-              className="lightbox-nav-btn prev"
-              onClick={prevLightboxImage}
-              aria-label="Previous image"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-
-            <div className="lightbox-display-frame">
-              <img
-                src={images[lightboxIndex] || PRODUCT_PLACEHOLDER_IMAGE}
-                alt={`${productName} fullscreen view ${lightboxIndex + 1}`}
-                className="lightbox-active-img"
-              />
-              <div className="lightbox-counter-badge">
-                <span>{lightboxIndex + 1}</span>
-                <span className="divider">/</span>
-                <span>{images.length}</span>
-              </div>
+      {/* Fullscreen Lightbox Modal */}
+      {isOpen && (
+        <div className="kanakshi-lightbox-backdrop" onClick={closeLightbox}>
+          <div className="kanakshi-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            {/* Top Toolbar */}
+            <div className="kanakshi-lightbox-header">
+              <span className="kanakshi-lightbox-title">
+                {productName} ({lightboxIndex + 1} of {displayImages.length})
+              </span>
+              <button
+                type="button"
+                className="kanakshi-lightbox-close-btn"
+                onClick={closeLightbox}
+                aria-label="Close lightbox"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
-            <button
-              type="button"
-              className="lightbox-nav-btn next"
-              onClick={nextLightboxImage}
-              aria-label="Next image"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
-
-          {images.length > 1 && (
-            <div className="lightbox-carousel-row">
-              {images.map((image, index) => (
+            {/* Center Image with Navigation */}
+            <div className="kanakshi-lightbox-stage">
+              {displayImages.length > 1 && (
                 <button
-                  key={`lightbox-carousel-thumb-${index}`}
                   type="button"
-                  className={`lightbox-carousel-thumb-btn ${lightboxIndex === index ? "active" : ""}`}
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`View fullscreen image ${index + 1}`}
+                  className="kanakshi-lightbox-nav-btn prev"
+                  onClick={prevLightboxImage}
+                  aria-label="Previous image"
                 >
-                  <img
-                    src={image || PRODUCT_PLACEHOLDER_IMAGE}
-                    alt={`Thumbnail indicator ${index + 1}`}
-                    className="lightbox-carousel-thumb-img"
-                  />
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
                 </button>
-              ))}
+              )}
+
+              <div className="kanakshi-lightbox-img-wrapper">
+                <Image
+                  src={displayImages[lightboxIndex] || PRODUCT_PLACEHOLDER_IMAGE}
+                  alt={`${productName} full view`}
+                  width={1400}
+                  height={1400}
+                  className="kanakshi-lightbox-main-img"
+                  priority
+                />
+              </div>
+
+              {displayImages.length > 1 && (
+                <button
+                  type="button"
+                  className="kanakshi-lightbox-nav-btn next"
+                  onClick={nextLightboxImage}
+                  aria-label="Next image"
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )}
             </div>
-          )}
+
+            {/* Bottom Lightbox Thumbnail Carousel */}
+            {displayImages.length > 1 && (
+              <div className="kanakshi-lightbox-footer">
+                <div className="kanakshi-lightbox-thumbs">
+                  {displayImages.map((image, index) => (
+                    <button
+                      key={`lb-thumb-${index}`}
+                      type="button"
+                      className={`kanakshi-lightbox-thumb ${lightboxIndex === index ? "is-active" : ""}`}
+                      onClick={() => setLightboxIndex(index)}
+                    >
+                      <Image
+                        src={image}
+                        alt=""
+                        width={60}
+                        height={60}
+                        className="kanakshi-lb-thumb-img"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </dialog>
+      )}
     </div>
   );
 }

@@ -104,16 +104,33 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const relatedProductsResponse = await getProducts(
-    `category=${encodeURIComponent(product.category_slug || category)}&per_page=8`
-  );
-  const relatedProducts = relatedProductsResponse.items
-    .filter((item) => item.id !== product.id)
-    .filter((item) => {
-      const imgs = parseProductImages(item.images);
-      return imgs.length > 0;
-    })
-    .slice(0, 4);
+  const [categoryProductsResponse, popularProductsResponse] = await Promise.all([
+    getProducts(`category=${encodeURIComponent(product.category_slug || category)}&per_page=8`),
+    getProducts("sort=popular&per_page=8"),
+  ]);
+
+  const existingIds = new Set([product.id]);
+  const relatedProducts: typeof categoryProductsResponse.items = [];
+
+  // First add products from same category
+  for (const item of categoryProductsResponse.items) {
+    if (!existingIds.has(item.id)) {
+      existingIds.add(item.id);
+      relatedProducts.push(item);
+      if (relatedProducts.length >= 4) break;
+    }
+  }
+
+  // If still less than 4, backfill with popular store products
+  if (relatedProducts.length < 4) {
+    for (const item of popularProductsResponse.items) {
+      if (!existingIds.has(item.id)) {
+        existingIds.add(item.id);
+        relatedProducts.push(item);
+        if (relatedProducts.length >= 4) break;
+      }
+    }
+  }
 
   const currencySymbol = settings.site_currency_symbol || "₹";
   const isSellable = isProductSellable(product);
