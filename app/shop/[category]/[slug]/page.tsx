@@ -24,6 +24,7 @@ import {
   isProductSellable,
 } from "../../../../lib/api";
 import { getAbsoluteMediaUrl, getCanonicalUrl, getProductPath, getSiteDescription, getSiteName, getSiteUrl } from "../../../../lib/site";
+import { generateProductJsonLd, generateBreadcrumbJsonLd } from "../../../../lib/schema-generator";
 
 export const revalidate = 60;
 
@@ -139,27 +140,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const emiPerMonth = Math.round(Number(product.effective_price ?? product.price) / 3);
   const isRingCategory = category.toLowerCase().includes("ring") || (product.category_name || "").toLowerCase().includes("ring");
 
-  const productJsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.meta_title || product.name,
-    description,
-    image: images,
-    category: product.category_name || undefined,
-    sku: product.slug,
-    brand: { "@type": "Brand", name: getSiteName(settings) },
-    offers: {
-      "@type": "Offer",
-      priceCurrency: settings.site_currency || "INR",
-      price: Number(product.effective_price ?? product.price ?? 0),
-      availability: isSellable ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
-      url: getCanonicalUrl(canonicalPath, settings),
-    },
-  };
+  const productJsonLd = generateProductJsonLd(product, settings);
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: getCanonicalUrl("/", settings) },
+    { name: "Shop", url: getCanonicalUrl("/shop", settings) },
+    { name: product.category_name || category, url: getCanonicalUrl(`/shop?category=${product.category_slug || category}`, settings) },
+    { name: product.name, url: getCanonicalUrl(canonicalPath, settings) },
+  ]);
 
   return (
     <main className="kanakshi-container" style={{ paddingTop: "24px", paddingBottom: "72px" }}>
-      <StructuredData data={productJsonLd} />
+      <StructuredData data={[productJsonLd, breadcrumbJsonLd]} />
 
       {/* Breadcrumb Navigation */}
       <nav style={{ display: "flex", gap: "8px", fontSize: "0.82rem", color: "var(--kanakshi-text-muted)", marginBottom: "20px" }}>

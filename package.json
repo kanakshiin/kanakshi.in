@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.1.6",
+    "next-sitemap": "^4.2.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "schema-dts": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

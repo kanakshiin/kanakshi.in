@@ -10,6 +10,7 @@ import { FloatingWhatsappWidget } from "../components/floating-whatsapp-widget";
 import { AddToCartPopup } from "../components/add-to-cart-popup";
 import { getLayoutData } from "../lib/api";
 import { buildStoreMetadata, getAbsoluteMediaUrl, getSiteDescription, getSiteName, getSiteUrl } from "../lib/site";
+import { generateOrganizationJsonLd, generateWebSiteJsonLd } from "../lib/schema-generator";
 import "./globals.css";
 
 function BodyHtmlSnippet({ html }: { html?: string | null }) {
@@ -48,30 +49,8 @@ export default async function RootLayout({
   const siteDescription = getSiteDescription(settings);
   const gtmId = settings.google_tag_manager_id?.trim() || "";
   const pixelId = settings.facebook_pixel_id?.trim() || "";
-  const organizationJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: settings.business_name || brandName,
-    url: siteUrl,
-    logo: getAbsoluteMediaUrl(settings.logo_url, settings) || `${siteUrl}/logo.jpg`,
-    email: settings.support_email || settings.site_email || undefined,
-    telephone: settings.support_phone || settings.site_phone || undefined,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: settings.address_line1 || undefined,
-      addressLocality: settings.city || undefined,
-      addressRegion: settings.state || undefined,
-      postalCode: settings.pincode || undefined,
-      addressCountry: settings.country || "IN"
-    }
-  };
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: brandName,
-    url: siteUrl,
-    description: siteDescription
-  };
+  const organizationJsonLd = generateOrganizationJsonLd(settings);
+  const websiteJsonLd = generateWebSiteJsonLd(settings);
 
   return (
     <html lang="en">

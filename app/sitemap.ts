@@ -1,158 +1,76 @@
 import { MetadataRoute } from "next";
-import {
-  getBlogAuthors,
-  getBlogCategories,
-  getBlogPosts,
-  getBlogTags,
-  getCategories,
-  getProducts,
-  getSettings
-} from "../lib/api";
-import { getSiteUrl } from "../lib/site";
+import { getCategories, getProducts, getSettings } from "../lib/api";
+import { getProductPath, getSiteUrl } from "../lib/site";
 
-async function getAllProducts() {
-  const firstPage = await getProducts("per_page=48&sort=popular");
-  const initialProducts = firstPage.items || [];
-  const lastPage = Math.max(firstPage.pagination?.last_page || 1, 1);
-
-  if (lastPage === 1) {
-    return initialProducts;
-  }
-
-  const requests: Promise<Awaited<ReturnType<typeof getProducts>>>[] = [];
-  for (let page = 2; page <= lastPage; page += 1) {
-    requests.push(getProducts(`per_page=48&sort=popular&page=${page}`));
-  }
-
-  const pages = await Promise.all(requests);
-  const allProducts = [...initialProducts];
-  for (const page of pages) {
-    allProducts.push(...(page.items || []));
-  }
-
-  const seen = new Set<string>();
-  return allProducts.filter((product) => {
-    if (!product.slug || seen.has(product.slug)) {
-      return false;
-    }
-
-    seen.add(product.slug);
-    return true;
-  });
-}
-
-async function getAllBlogPosts() {
-  const firstPage = await getBlogPosts({ page: 1, per_page: 100 });
-  const initialPosts = firstPage.data?.data || [];
-  const lastPage = Math.max(firstPage.data?.last_page || 1, 1);
-
-  if (lastPage === 1) {
-    return initialPosts;
-  }
-
-  const requests: Promise<Awaited<ReturnType<typeof getBlogPosts>>>[] = [];
-  for (let page = 2; page <= lastPage; page += 1) {
-    requests.push(getBlogPosts({ page, per_page: 100 }));
-  }
-
-  const pages = await Promise.all(requests);
-  const allPosts = [...initialPosts];
-  for (const page of pages) {
-    allPosts.push(...(page.data?.data || []));
-  }
-
-  const seen = new Set<string>();
-  return allPosts.filter((post) => {
-    if (seen.has(post.slug)) {
-      return false;
-    }
-    seen.add(post.slug);
-    return true;
-  });
-}
+export const revalidate = 3600; // revalidate every 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [settings, products, categories, blogPosts, blogCategoriesData, blogTagsData, blogAuthorsData] = await Promise.all([
+  const [settings, categories, productsResponse] = await Promise.all([
     getSettings(),
-    getAllProducts(),
-    getCategories(24),
-    getAllBlogPosts(),
-    getBlogCategories(),
-    getBlogTags(),
-    getBlogAuthors()
+    getCategories(),
+    getProducts("per_page=1000&sort=newest"),
   ]);
 
-  const siteUrl = getSiteUrl(settings);
+  const baseUrl = getSiteUrl(settings);
 
+  // 1. Static high priority marketing pages
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-    { url: `${siteUrl}/shop`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteUrl}/track-order`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/account/login`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
-    { url: `${siteUrl}/account/register`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
-    { url: `${siteUrl}/pages/shipping-policy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/pages/refund-policy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/pages/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/shop`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/about-us`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact-us`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/live-auctions`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
   ];
 
-  const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: `${siteUrl}/shop?category=${category.slug}`,
+  // 2. Category routes
+  const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({
+    url: `${baseUrl}/shop/${cat.slug}`,
     lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8
+    changeFrequency: "daily",
+    priority: 0.85,
   }));
 
-  const productRoutes: MetadataRoute.Sitemap = products
-    .filter((product) => product.category_slug && product.slug)
-    .map((product) => ({
-      url: `${siteUrl}/shop/${product.category_slug}/${product.slug}`,
+  // 3. Product detail pages
+  const productRoutes: MetadataRoute.Sitemap = productsResponse.items.map((prod) => {
+    const path = getProductPath(prod);
+    return {
+      url: `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.75
-    }));
+      changeFrequency: "weekly",
+      priority: 0.9,
+    };
+  });
 
-  const blogPostRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: `${siteUrl}/blog/${post.slug}`,
-    lastModified: post.updated_at ? new Date(post.updated_at) : new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.7
-  }));
-
-  const blogCategoryRoutes: MetadataRoute.Sitemap = (blogCategoriesData.data || [])
-    .filter((category) => (category.posts_count || 0) > 0)
-    .map((category) => ({
-      url: `${siteUrl}/blog/category/${category.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6
-    }));
-
-  const blogTagRoutes: MetadataRoute.Sitemap = (blogTagsData.data || [])
-    .filter((tag) => (tag.posts_count || 0) > 0)
-    .map((tag) => ({
-      url: `${siteUrl}/blog/tag/${tag.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.55
-    }));
-
-  const blogAuthorRoutes: MetadataRoute.Sitemap = (blogAuthorsData.data || [])
-    .filter((author) => (author.posts_count || 0) > 0)
-    .map((author) => ({
-      url: `${siteUrl}/blog/author/${author.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.55
-    }));
-
-  return [
-    ...staticRoutes,
-    ...categoryRoutes,
-    ...productRoutes,
-    ...blogPostRoutes,
-    ...blogCategoryRoutes,
-    ...blogTagRoutes,
-    ...blogAuthorRoutes
-  ];
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
 }
