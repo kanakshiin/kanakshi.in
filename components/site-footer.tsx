@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FooterNewsletterForm } from "./footer-newsletter-form";
 import { SiteSettings, Category, NavigationItem, SocialLink } from "../lib/types";
+import { BrandLogo } from "./brand-logo";
 
 type SiteFooterProps = {
   categories: Category[];
@@ -44,11 +45,7 @@ export function SiteFooter({ categories = [], settings, footerMenu = [], socialL
           {/* Col 1: Brand & Social */}
           <div>
             <div className="kanakshi-logo" style={{ marginBottom: "16px" }}>
-              <img
-                src="/images/kanakshi-logo-white.svg"
-                alt="Kanakshi Fine Jewellery"
-                style={{ height: "40px", width: "auto", objectFit: "contain", display: "block", marginBottom: "8px" }}
-              />
+              <BrandLogo theme="white" height={40} />
             </div>
             <p style={{ fontSize: "0.85rem", lineHeight: "1.6", color: "#a0a0a0", marginBottom: "20px" }}>
               India&apos;s destination for everyday fine jewellery. 100% BIS Hallmarked 925 Sterling Silver, 18K Solid Gold, and Certified Lab Diamonds.

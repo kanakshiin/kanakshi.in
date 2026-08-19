@@ -9,6 +9,7 @@ import { NavigationItem, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
 import { useWishlist } from "./wishlist-provider";
 import { KanakshiPincodeModal } from "./kanakshi-pincode-modal";
+import { BrandLogo } from "./brand-logo";
 
 type SiteHeaderProps = {
   brandName: string;
@@ -137,22 +138,8 @@ export function SiteHeader({
             </button>
 
             {/* Logo */}
-            <Link href="/" className="kanakshi-logo" aria-label="Kanakshi Fine Jewellery">
-              <img
-                src={settings.logo_url || "/images/kanakshi-logo.svg"}
-                alt="Kanakshi Fine Jewellery"
-                className="kanakshi-logo-img"
-                style={{ height: "44px", width: "auto", objectFit: "contain", display: "block" }}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                  const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = "flex";
-                }}
-              />
-              <div className="kanakshi-logo-text-fallback" style={{ display: "none", flexDirection: "column" }}>
-                <span className="kanakshi-logo-title">{brandName.replace("Fine Jewellery", "").trim() || "KANAKSHI"}</span>
-                <span className="kanakshi-logo-sub">FINE JEWELLERY</span>
-              </div>
+            <Link href="/" className="kanakshi-logo" aria-label="Kanakshi Fine Jewellery" style={{ textDecoration: "none" }}>
+              <BrandLogo height={42} logoUrl={settings.logo_url} theme="dark" />
             </Link>
 
             {/* Delivery Pincode Box */}
