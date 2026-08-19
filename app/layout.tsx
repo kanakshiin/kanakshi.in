@@ -1,4 +1,4 @@
-import { Josefin_Sans } from "next/font/google";
+import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 
 import { SiteFooter } from "../components/site-footer";
@@ -20,13 +20,13 @@ function BodyHtmlSnippet({ html }: { html?: string | null }) {
   return <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-const headingFont = Josefin_Sans({
+const headingFont = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-heading"
 });
 
-const bodyFont = Josefin_Sans({
+const bodyFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-body"

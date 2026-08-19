@@ -83,7 +83,7 @@ export function HomepageNewsletter({
             fontSize: "1.05rem",
             animation: "fadeIn 0.3s ease"
           }}>
-            ✓ {message}
+            {message}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="homepage-newsletter-form" style={{ display: "flex", gap: "0.5rem", maxWidth: "520px", margin: "0 auto", flexWrap: "wrap" }}>
@@ -127,7 +127,7 @@ export function HomepageNewsletter({
 
         {message && status === "error" && (
           <p style={{ marginTop: "1rem", color: "#e05a47", fontSize: "0.95rem", fontWeight: 500 }}>
-            ⚠️ {message}
+            {message}
           </p>
         )}
 

@@ -98,16 +98,16 @@ export function ShopProductList({ initialProducts, initialPagination, baseQuery,
 
   if (!items.length) {
     return (
-      <div className="shop-empty-state">
-        <h3>No products found</h3>
-        <p>Try changing the category, price range, or sorting option.</p>
+      <div className="kanakshi-empty-state" style={{ textAlign: "center", padding: "64px 24px", background: "#ffffff", borderRadius: "var(--radius-lg)", border: "1px solid var(--kanakshi-border)", margin: "32px 0" }}>
+        <h3 style={{ fontSize: "1.4rem", fontWeight: "700", marginBottom: "8px", color: "var(--kanakshi-black)" }}>No products found</h3>
+        <p style={{ fontSize: "0.9rem", color: "var(--kanakshi-text-muted)" }}>Try adjusting your filters or search criteria.</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="product-grid shop-product-grid">
+      <div className="kanakshi-product-grid">
         {items.map((product) => (
           <ProductCard key={getShopProductKey(product)} product={product} currencySymbol={currencySymbol} />
         ))}

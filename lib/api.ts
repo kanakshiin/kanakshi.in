@@ -23,10 +23,10 @@ const PUBLIC_READ_REVALIDATE_SECONDS = 60;
 export const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.svg";
 
 const fallbackSettings: SiteSettings = {
-  site_name: "Kanakshi.in",
-  site_tagline: "Handcrafted brass decor, pooja accents, and meaningful gifting pieces.",
+  site_name: "Kanakshi Fine Jewellery",
+  site_tagline: "Everyday Luxury Fine Jewellery | 925 Sterling Silver, Gold & Lab-Grown Diamonds",
   site_currency_symbol: "₹",
-  default_shipping_cost: "99",
+  default_shipping_cost: "0",
   min_order_free_shipping: "499",
   site_email: liveContactDefaults.email,
   site_phone: liveContactDefaults.phone,
@@ -38,209 +38,591 @@ const fallbackSettings: SiteSettings = {
   privacy_policy: livePrivacyPolicyHtml,
   terms_conditions: liveTermsHtml,
   return_policy: liveRefundPolicyHtml,
+  show_topbar: true,
+  topbar_offers: [
+    "FLAT ₹500 OFF on Orders Above ₹2,999 | Code: SPARKLE500",
+    "Free Insured Express Delivery Across India",
+    "100% Certified 925 Sterling Silver & Hallmarked Gold",
+    "Easy 7-Day Doorstep Returns Across India"
+  ]
 };
 
 const fallbackHeaderMenu: NavigationItem[] = [
-  { id: 20001, title: "Hindu Deities", url: "/shop?category=hindu-dieties", children: [{ id: 21001, title: "Ganesha Idols", url: "/shop?category=hindu-dieties" }, { id: 21002, title: "Krishna Idols", url: "/shop?category=hindu-dieties" }, { id: 21003, title: "Ram Darbar", url: "/shop?category=hindu-dieties" }] },
-  { id: 20002, title: "Home Kitchen", url: "/shop?category=home-kitchen", children: [{ id: 22001, title: "Spice Boxes", url: "/shop?category=home-kitchen" }, { id: 22002, title: "Serving Trays", url: "/shop?category=home-kitchen" }, { id: 22003, title: "Utility Decor", url: "/shop?category=home-kitchen" }] },
-  { id: 20003, title: "Home Decor", url: "/shop?category=home-decor", children: [{ id: 23001, title: "Wall Decor", url: "/shop?category=home-decor" }, { id: 23002, title: "Table Decor", url: "/shop?category=home-decor" }, { id: 23003, title: "Candle Stands", url: "/shop?category=home-decor" }] },
-  { id: 20004, title: "Pooja Decor", url: "/shop?category=pooja-decor", children: [{ id: 24001, title: "Brass Singhasan", url: "/shop?category=pooja-decor" }, { id: 24002, title: "Incense Stand", url: "/shop?category=pooja-decor" }, { id: 24003, title: "Pooja Thali", url: "/shop?category=pooja-decor" }] },
-  { id: 20005, title: "Mother's Day collection", url: "/shop?category=mothers-day-collection", children: [{ id: 25001, title: "Gifting Picks", url: "/shop?category=mothers-day-collection" }] },
-  { id: 20006, title: "More", url: "/shop", children: [{ id: 26001, title: "New Arrivals", url: "/shop" }, { id: 26002, title: "Festival Categories", url: "/shop" }] }
+  {
+    id: 20001,
+    title: "All Jewellery",
+    url: "/shop",
+    children: [
+      { id: 21001, title: "All Rings", url: "/shop?category=rings" },
+      { id: 21002, title: "All Earrings", url: "/shop?category=earrings" },
+      { id: 21003, title: "All Necklaces", url: "/shop?category=necklaces" },
+      { id: 21004, title: "All Bracelets", url: "/shop?category=bracelets" },
+      { id: 21005, title: "Solitaires", url: "/shop?category=solitaires" },
+      { id: 21006, title: "Best Sellers", url: "/shop?sort=bestseller" }
+    ]
+  },
+  {
+    id: 20002,
+    title: "Gold & Lab Diamonds",
+    url: "/shop?category=gold-lab-diamonds",
+    children: [
+      { id: 22001, title: "14K & 18K Gold Rings", url: "/shop?category=gold-lab-diamonds&sub=rings" },
+      { id: 22002, title: "Lab Diamond Pendants", url: "/shop?category=gold-lab-diamonds&sub=pendants" },
+      { id: 22003, title: "Diamond Studs", url: "/shop?category=gold-lab-diamonds&sub=earrings" },
+      { id: 22004, title: "Tennis Bracelets", url: "/shop?category=gold-lab-diamonds&sub=bracelets" },
+      { id: 22005, title: "Solitaire Engagement", url: "/shop?category=gold-lab-diamonds&sub=engagement" }
+    ]
+  },
+  {
+    id: 20003,
+    title: "925 Silver",
+    url: "/shop?category=silver-jewellery",
+    children: [
+      { id: 23001, title: "Silver Rings", url: "/shop?category=rings" },
+      { id: 23002, title: "Silver Earrings", url: "/shop?category=earrings" },
+      { id: 23003, title: "Silver Pendants", url: "/shop?category=necklaces" },
+      { id: 23004, title: "Silver Bracelets & Bangles", url: "/shop?category=bracelets" },
+      { id: 23005, title: "Oxidised Silver", url: "/shop?category=silver-jewellery&sub=oxidised" }
+    ]
+  },
+  {
+    id: 20004,
+    title: "Rings",
+    url: "/shop?category=rings",
+    children: [
+      { id: 24001, title: "Solitaire Rings", url: "/shop?category=rings&type=solitaire" },
+      { id: 24002, title: "Couple Promise Bands", url: "/shop?category=rings&type=couple" },
+      { id: 24003, title: "Adjustable Rings", url: "/shop?category=rings&type=adjustable" },
+      { id: 24004, title: "Floral & Heart Rings", url: "/shop?category=rings&type=heart" }
+    ]
+  },
+  {
+    id: 20005,
+    title: "Earrings",
+    url: "/shop?category=earrings",
+    children: [
+      { id: 25001, title: "Solitaire Studs", url: "/shop?category=earrings&type=studs" },
+      { id: 25002, title: "Hoops & Huggies", url: "/shop?category=earrings&type=hoops" },
+      { id: 25003, title: "Drops & Danglers", url: "/shop?category=earrings&type=drops" },
+      { id: 25004, title: "Heritage Jhumkas", url: "/shop?category=earrings&type=jhumkas" }
+    ]
+  },
+  {
+    id: 20006,
+    title: "Necklaces",
+    url: "/shop?category=necklaces",
+    children: [
+      { id: 26001, title: "Heart & Infinity Pendants", url: "/shop?category=necklaces&type=heart" },
+      { id: 26002, title: "Solitaire Necklaces", url: "/shop?category=necklaces&type=solitaire" },
+      { id: 26003, title: "Modern Mangalsutras", url: "/shop?category=mangalsutra" },
+      { id: 26004, title: "Personalised Name Necklaces", url: "/shop?category=personalised-jewellery" }
+    ]
+  },
+  {
+    id: 20007,
+    title: "Men's Jewellery",
+    url: "/shop?category=mens-jewellery",
+    children: [
+      { id: 27001, title: "Silver Chains", url: "/shop?category=mens-jewellery&type=chains" },
+      { id: 27002, title: "Men's Bracelets", url: "/shop?category=mens-jewellery&type=bracelets" },
+      { id: 27003, title: "Men's Rings", url: "/shop?category=mens-jewellery&type=rings" },
+      { id: 27004, title: "Pendants for Men", url: "/shop?category=mens-jewellery&type=pendants" }
+    ]
+  },
+  {
+    id: 20008,
+    title: "Gifts & Offers",
+    url: "/shop?category=gifting-edits",
+    children: [
+      { id: 28001, title: "Gifts for Her", url: "/shop?category=gifts-for-her" },
+      { id: 28002, title: "Gifts for Him", url: "/shop?category=mens-jewellery" },
+      { id: 28003, title: "Under ₹1,999", url: "/shop?price=under-1999" },
+      { id: 28004, title: "Under ₹2,999", url: "/shop?price=under-2999" },
+      { id: 28005, title: "Luxury Box Sets", url: "/shop?category=gifting-edits" }
+    ]
+  }
 ];
 
 const fallbackFooterMenu: NavigationItem[] = [
   { id: 30001, title: "About Us", url: "/pages/about-us" },
-  { id: 30002, title: "Contact", url: "/pages/contact" },
-  { id: 30003, title: "Privacy Policy", url: "/pages/privacy-policy" },
-  { id: 30004, title: "Terms & Conditions", url: "/pages/terms-conditions" },
-  { id: 30005, title: "Refund Policy", url: "/pages/refund-policy" },
-  { id: 30006, title: "Shipping Policy", url: "/pages/shipping-policy" },
-  { id: 30007, title: "Track Your Order", url: "/track-order" },
-  { id: 30008, title: "Warranty & Buyback", url: "/warranty-portal" },
-  { id: 30009, title: "Live Auctions", url: "/live-auctions" }
+  { id: 30002, title: "Contact Us", url: "/pages/contact" },
+  { id: 30003, title: "Track Your Order", url: "/track-order" },
+  { id: 30004, title: "7-Day Returns & Exchange", url: "/pages/refund-policy" },
+  { id: 30005, title: "Certificate of Authenticity", url: "/pages/about-us" },
+  { id: 30006, title: "Jewellery Care Guide", url: "/pages/about-us" },
+  { id: 30007, title: "Privacy Policy", url: "/pages/privacy-policy" },
+  { id: 30008, title: "Terms & Conditions", url: "/pages/terms-conditions" },
+  { id: 30009, title: "Shipping & Delivery Policy", url: "/pages/shipping-policy" }
 ];
 
-const fallbackSocialLinks: SocialLink[] = [];
+const fallbackSocialLinks: SocialLink[] = [
+  { id: 40001, platform: "Instagram", handle: "@kanakshi.in", url: "https://instagram.com/kanakshi.in" },
+  { id: 40002, platform: "Facebook", handle: "kanakshi.in", url: "https://facebook.com/kanakshi.in" },
+  { id: 40003, platform: "Pinterest", handle: "kanakshi.in", url: "https://pinterest.com/kanakshi.in" },
+  { id: 40004, platform: "YouTube", handle: "@kanakshi.in", url: "https://youtube.com/@kanakshi.in" },
+  { id: 40005, platform: "WhatsApp", handle: "+91 98765 43210", url: "https://wa.me/919876543210" }
+];
 
 const fallbackCategories: Category[] = [
-  { id: 1, parent_id: null, name: "God Idols", slug: "god-idols", image: referenceAssets.collections.godIdols },
-  { id: 2, parent_id: null, name: "Wall Decor", slug: "wall-decor", image: referenceAssets.hero.wallDecor },
-  { id: 3, parent_id: null, name: "Table Decor", slug: "table-decor", image: referenceAssets.productHighlights.frame },
-  { id: 4, parent_id: null, name: "Pooja Decor", slug: "pooja-decor", image: referenceAssets.collections.poojaDecor },
-  { id: 5, parent_id: null, name: "Home Kitchen", slug: "home-kitchen", image: referenceAssets.collections.homeKitchen },
-  { id: 6, parent_id: null, name: "Gifting Edit", slug: "gifting-edit", image: referenceAssets.founderAndBrand.weddingGift }
+  { id: 1, parent_id: null, name: "Rings", slug: "rings", image: referenceAssets.categories.rings, description: "Solitaires, couple bands, cocktail & everyday 925 silver rings." },
+  { id: 2, parent_id: null, name: "Earrings", slug: "earrings", image: referenceAssets.categories.earrings, description: "Studs, hoops, huggies, drops & heritage jhumkas." },
+  { id: 3, parent_id: null, name: "Necklaces & Pendants", slug: "necklaces", image: referenceAssets.categories.necklaces, description: "Heart lockets, chains, chokers & solitaire pendants." },
+  { id: 4, parent_id: null, name: "Bracelets & Bangles", slug: "bracelets", image: referenceAssets.categories.bracelets, description: "Tennis bracelets, charm cuffs, evil eye & link bracelets." },
+  { id: 5, parent_id: null, name: "Gold & Lab Diamonds", slug: "gold-lab-diamonds", image: referenceAssets.categories.gold, description: "14K & 18K real solid gold set with certified lab-grown diamonds." },
+  { id: 6, parent_id: null, name: "925 Sterling Silver", slug: "silver-jewellery", image: referenceAssets.categories.silver, description: "Pure 925 sterling silver hallmarked with anti-tarnish rhodium finish." },
+  { id: 7, parent_id: null, name: "Modern Mangalsutra", slug: "mangalsutra", image: referenceAssets.categories.mangalsutra, description: "Minimalist evil eye and solitaire daily-wear mangalsutras." },
+  { id: 8, parent_id: null, name: "Men's Jewellery", slug: "mens-jewellery", image: referenceAssets.categories.men, description: "Cuban link chains, rugged rings, studs & bracelets for men." },
+  { id: 9, parent_id: null, name: "Gifts & Hampers", slug: "gifting-edits", image: referenceAssets.categories.gifts, description: "Curated gift boxes with velvet pouch, message card & certificate." }
 ];
 
 const fallbackProducts: Product[] = [
   {
-    id: 101,
-    name: "Kanakshi.in Brass Decor Demo",
-    slug: "kanakshi-brass-decor-demo",
-    price: 11999,
-    sale_price: 7999,
-    effective_price: 7999,
-    category_name: "Demo Product",
-    short_desc: "A real product photo from your local collection so the storefront card can be checked visually.",
-    description:
-      "This demo product is added only to preview how real Kanakshi.in photography looks inside the current shop and product page design.",
-    images: ["/demo-products/little-divinity-real-1.jpg"]
-  },
-  {
     id: 1,
-    name: "Brass Protection Buddha",
-    slug: "brass-protection-buddha",
-    price: 14999,
-    sale_price: 11499,
-    effective_price: 11499,
-    category_name: "Best Seller",
-    short_desc: "An ornate brass centrepiece created to anchor meditation corners and entry consoles.",
+    name: "Silver Classic Solitaire Ring",
+    slug: "silver-classic-solitaire-ring",
+    price: 3499,
+    sale_price: 1999,
+    effective_price: 1999,
+    category_name: "Rings",
+    category_slug: "rings",
+    material: "925 Sterling Silver • AAA+ CZ Solitaire",
+    avg_rating: 4.9,
+    review_count: 1420,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "A breathtaking 6-prong 1.5 Carat Solitaire ring crafted in pure 925 Sterling Silver with anti-tarnish rhodium plating.",
     description:
-      "Layered carving, rich antique finish, and a calm seated form make this a statement accent for gifting or everyday styling.",
-    images: [referenceAssets.productHighlights.buddha]
+      "Nothing commands timeless elegance quite like a classic solitaire. The Silver Classic Solitaire Ring features a laser-cut AAA+ grade Cubic Zirconia stone set in a secure 6-prong 925 sterling silver basket. Engineered with high-shine rhodium plating that resists tarnishing, this ring is the perfect promise, engagement, or everyday statement piece. Comes with an Authenticity Certificate and signature velvet gift box.",
+    bullet_points: [
+      "925 Sterling Silver with Hallmarking stamp",
+      "Brilliant 1.5 Carat AAA+ Cubic Zirconia centre stone",
+      "Anti-Tarnish Rhodium Finish for lifelong shine",
+      "Includes Certificate of Authenticity & Luxury Box",
+      "Hypoallergenic & nickel-free for sensitive skin"
+    ],
+    images: [
+      referenceAssets.products.solitaireRing1,
+      referenceAssets.products.solitaireRing2,
+      referenceAssets.categories.rings
+    ]
   },
   {
     id: 2,
-    name: "Vintage Floral Brass Photo Frame",
-    slug: "vintage-brass-photo-frame",
-    price: 17999,
-    sale_price: 8599,
-    effective_price: 8599,
-    category_name: "Table Decor",
-    short_desc: "A warm brass photo frame with floral detailing for sideboards, mandirs, and memory shelves.",
+    name: "Rose Gold Eternal Heart Loop Necklace",
+    slug: "rose-gold-heart-loop-necklace",
+    price: 4299,
+    sale_price: 2499,
+    effective_price: 2499,
+    category_name: "Necklaces & Pendants",
+    category_slug: "necklaces",
+    material: "925 Sterling Silver • 18K Rose Gold Plated",
+    avg_rating: 4.8,
+    review_count: 980,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Interlocking dual heart pendant accented with micro-pave crystals in warm 18K Rose Gold plating.",
     description:
-      "Designed for festive gifting and curated tabletops, this frame blends handcrafted texture with heirloom-inspired styling.",
-    images: [referenceAssets.productHighlights.frame]
+      "Celebrate infinite affection with the Rose Gold Eternal Heart Loop Necklace. Two entwined hearts — one polished to a mirror shine, the other encrusted with dazzling micro-pavé stones — suspend from an adjustable fine silver chain. Coated with an e-coat protective layer to preserve the radiant blush finish forever.",
+    bullet_points: [
+      "Authentic 925 Sterling Silver core",
+      "18K Rose Gold electro-plated with protective E-Coat",
+      "Chain length: 16 inches + 2-inch extension",
+      "Secured with sturdy lobster claw clasp",
+      "6-Month Plating Guarantee included"
+    ],
+    images: [
+      referenceAssets.products.heartNecklace1,
+      referenceAssets.products.heartNecklace2,
+      referenceAssets.categories.necklaces
+    ]
   },
   {
     id: 3,
-    name: "Kalpavriksha Brass Wall Piece",
-    slug: "kalpavriksha-brass-wall-piece",
-    price: 14999,
-    sale_price: 7499,
-    effective_price: 7499,
-    category_name: "Wall Decor",
-    short_desc: "A symbolic wall piece crafted for dramatic living room and foyer styling.",
+    name: "925 Silver Classic Tennis Charm Bracelet",
+    slug: "classic-tennis-charm-bracelet",
+    price: 5999,
+    sale_price: 3299,
+    effective_price: 3299,
+    category_name: "Bracelets & Bangles",
+    category_slug: "bracelets",
+    material: "925 Sterling Silver • AAA+ Swiss CZ",
+    avg_rating: 4.9,
+    review_count: 750,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "A seamless continuous line of brilliant-cut crystals bezel-set in flexible 925 Sterling Silver.",
     description:
-      "Its sculptural silhouette and deep finish help create a gallery-like wall story rooted in Indian craft vocabulary.",
-    images: [referenceAssets.collections.homeDecor]
+      "The quintessential icon of glamour. Our Silver Classic Tennis Bracelet features individually hand-set brilliant stones linked by flexible articulated silver joints. Designed to sit effortlessly on the wrist whether styled solo for boardroom elegance or stacked for festive soirees.",
+    bullet_points: [
+      "Hallmarked 925 Sterling Silver structure",
+      "Double safety clasp for secure wear",
+      "Stone size: 3mm each, total 4.2 Carats",
+      "Length: 7 inches with removable extender link",
+      "Complimentary silver polishing cloth included"
+    ],
+    images: [
+      referenceAssets.products.tennisBracelet1,
+      referenceAssets.products.tennisBracelet2,
+      referenceAssets.categories.bracelets
+    ]
   },
   {
     id: 4,
-    name: "Brass Yali Singhasan",
-    slug: "brass-yali-singhasan",
-    price: 9999,
-    sale_price: 5999,
-    effective_price: 5999,
-    category_name: "Pooja Decor",
-    short_desc: "A temple-inspired pedestal built to elevate pooja idols and ceremonial styling.",
+    name: "Sparkling Solitaire Drop Earrings",
+    slug: "sparkling-crystal-drop-earrings",
+    price: 2999,
+    sale_price: 1799,
+    effective_price: 1799,
+    category_name: "Earrings",
+    category_slug: "earrings",
+    material: "925 Sterling Silver • Pear-cut CZ",
+    avg_rating: 4.8,
+    review_count: 640,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Graceful teardrop crystals that catch the light with every movement, crafted in 925 Silver.",
     description:
-      "Detailed yali forms, layered metalwork, and a compact display footprint make it ideal for festive arrangements.",
-    images: [referenceAssets.productHighlights.throne]
+      "Add instant radiance to your face with these Sparkling Solitaire Drop Earrings. Featuring a pear-cut crystal suspended beneath a sparkling stud, these earrings offer stunning fluid movement and high brilliance without weighing your earlobes down.",
+    bullet_points: [
+      "925 Pure Silver with BIS certification",
+      "Lightweight ergonomic drop design (3.1 grams pair)",
+      "Secure push-back butterfly closure",
+      "Anti-allergenic rhodium polish",
+      "Ideal for cocktails, weddings, and date nights"
+    ],
+    images: [
+      referenceAssets.products.pearlEarrings1,
+      referenceAssets.products.pearlEarrings2,
+      referenceAssets.categories.earrings
+    ]
   },
   {
     id: 5,
-    name: "Superfine Shiva Idol",
-    slug: "superfine-shiva-idol",
-    price: 8999,
-    sale_price: 4699,
-    effective_price: 4699,
-    category_name: "God Idols",
-    short_desc: "A premium Shiva idol with denser carving and a display-ready antique brass finish.",
+    name: "18K Solid Gold & Lab Diamond Pendant",
+    slug: "18k-gold-lab-diamond-pendant",
+    price: 14999,
+    sale_price: 8999,
+    effective_price: 8999,
+    category_name: "Gold & Lab Diamonds",
+    category_slug: "gold-lab-diamonds",
+    material: "18K Yellow Gold (Hallmarked) • 0.50 Ct IGI Lab Diamond",
+    avg_rating: 5.0,
+    review_count: 320,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Real 18K solid yellow gold holding an IGI-certified 0.50 Ct brilliant round lab-grown diamond.",
     description:
-      "Crafted for sacred corners and statement consoles, this piece brings a stronger festive-storefront presence.",
-    images: [referenceAssets.productHighlights.superfineShiva]
+      "Invest in conscious luxury with our flagship 18K Gold Lab Diamond Solitaire Pendant. Hand-set in certified 18K hallmarked solid yellow gold, this pendant showcases a DEF color, VVS clarity lab-grown diamond that delivers 100% identical optical, physical, and chemical brilliance of mined diamonds.",
+    bullet_points: [
+      "Real 18K Solid Gold (BIS Hallmarked)",
+      "IGI Certificate of Authenticity card included",
+      "0.50 Carat DEF Color, VVS Clarity Lab-Grown Diamond",
+      "Comes with 18K gold purity certification card",
+      "Lifetime exchange & buyback guarantee"
+    ],
+    images: [
+      referenceAssets.categories.gold,
+      referenceAssets.products.solitaireRing1,
+      referenceAssets.products.roseGoldPendant1
+    ]
   },
   {
     id: 6,
-    name: "Peacock Brass Accent",
-    slug: "peacock-brass-accent",
-    price: 12999,
-    sale_price: 7899,
-    effective_price: 7899,
-    category_name: "Home Decor",
-    short_desc: "An ornate peacock sculpture designed for sideboards, foyers, and premium gifting moments.",
+    name: "Rose Gold Evil Eye Charm Bracelet",
+    slug: "evil-eye-protection-charm-bracelet",
+    price: 2899,
+    sale_price: 1699,
+    effective_price: 1699,
+    category_name: "Bracelets & Bangles",
+    category_slug: "bracelets",
+    material: "925 Sterling Silver • 18K Rose Gold • Blue Enamel",
+    avg_rating: 4.8,
+    review_count: 1120,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Protective Greek Evil Eye talisman with sapphire blue enamel and pave cubic zirconia.",
     description:
-      "The jewel-toned detailing and elevated silhouette give this piece a richer handcrafted decor personality.",
-    images: [referenceAssets.productHighlights.peacock]
+      "Wear your good vibes and ward off negativity. This dainty evil eye charm bracelet features rich hand-applied cobalt blue and turquoise enamel accented by pavé crystals, set on a lightweight adjustable 18K rose gold chain.",
+    bullet_points: [
+      "925 Sterling Silver with 18K Rose Gold Plating",
+      "Handcrafted enamel evil eye talisman",
+      "Adjustable sliding ball mechanism fits all wrist sizes",
+      "Anti-tarnish protective barrier",
+      "Top-rated gifting pick for birthdays & sister gifts"
+    ],
+    images: [
+      referenceAssets.products.evilEyeBracelet1,
+      referenceAssets.products.evilEyeBracelet2,
+      referenceAssets.categories.bracelets
+    ]
   },
   {
     id: 7,
-    name: "Brass Candle Stand Pair",
-    slug: "brass-candle-stand-pair",
-    price: 9999,
-    sale_price: 6299,
-    effective_price: 6299,
-    category_name: "Table Decor",
-    short_desc: "Tall brass candle stands suited to festive dining tables and layered living-room styling.",
+    name: "Men's 925 Sterling Silver Cuban Chain",
+    slug: "mens-cuban-link-silver-chain",
+    price: 7499,
+    sale_price: 4499,
+    effective_price: 4499,
+    category_name: "Men's Jewellery",
+    category_slug: "mens-jewellery",
+    material: "Solid 925 Sterling Silver (Heavy 14g)",
+    avg_rating: 4.9,
+    review_count: 510,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Heavy 5mm diamond-cut bevelled Cuban link chain in pure hallmarked 925 Sterling Silver.",
     description:
-      "Balanced proportions and carved details make this pair feel giftable, decorative, and occasion-ready.",
-    images: [referenceAssets.productHighlights.candleStand]
+      "Bold, confident, and unapologetically stylish. Our Men's Cuban Chain is engineered from solid 925 sterling silver with diamond-cut bevels that catch the light from every angle. Finished with an oxidation-resistant high-polish shine.",
+    bullet_points: [
+      "Solid 925 Sterling Silver (approx 14.5 grams)",
+      "5mm flat curb chain profile",
+      "Length: 20 inches with heavy-duty lobster clasp",
+      "Water-resistant & sweat-resistant coating",
+      "Includes gift box & authenticity certificate"
+    ],
+    images: [
+      referenceAssets.products.menChain1,
+      referenceAssets.products.menChain2,
+      referenceAssets.categories.men
+    ]
   },
   {
     id: 8,
-    name: "Brass Wall Elephant",
-    slug: "brass-wall-elephant",
-    price: 7599,
-    sale_price: 4899,
-    effective_price: 4899,
-    category_name: "Wall Decor",
-    short_desc: "A dramatic elephant wall accent for gallery walls, entryways, and conversation corners.",
+    name: "Forever Love Silver Couple Promise Bands",
+    slug: "forever-love-couple-promise-rings",
+    price: 6499,
+    sale_price: 3799,
+    effective_price: 3799,
+    category_name: "Rings",
+    category_slug: "rings",
+    material: "Pair of 925 Sterling Silver Rings",
+    avg_rating: 4.9,
+    review_count: 890,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "A matching pair of his & her adjustable promise rings engraved with subtle comfort-fit band.",
     description:
-      "Its carved texture and sculptural profile create a denser wall story without feeling overpowering.",
-    images: [referenceAssets.hero.wallDecor]
+      "A symbol of shared dreams and unbreakable bonds. This pair of matching promise rings is crafted in pure 925 Sterling Silver. Both rings are adjustable to guarantee a perfect fit without knowing exact finger sizes.",
+    bullet_points: [
+      "Includes set of 2 rings (1 Men's band, 1 Women's Solitaire band)",
+      "Free-size adjustable fit for both rings",
+      "925 Sterling Silver hallmarked",
+      "Micro-pavé stone setting that will never fall out",
+      "Comes in a duo presentation love box"
+    ],
+    images: [
+      referenceAssets.products.coupleBands1,
+      referenceAssets.products.coupleBands2,
+      referenceAssets.categories.rings
+    ]
   },
   {
     id: 9,
-    name: "Wooden Spice Box",
-    slug: "wooden-spice-box",
-    price: 5999,
-    sale_price: 3499,
-    effective_price: 3499,
-    category_name: "Home Kitchen",
-    short_desc: "A handcrafted wooden masala box that blends utility with gifting-led styling.",
-    description:
-      "Built for warm kitchens and heritage-inspired tabletops, it adds texture, function, and retail appeal.",
-    images: [referenceAssets.collections.homeKitchen]
+    name: "Pure 925 Silver Brilliant Solitaire Ring",
+    slug: "925-sterling-silver-solitaire-ring",
+    price: 3299,
+    sale_price: 1899,
+    effective_price: 1899,
+    category_name: "925 Sterling Silver",
+    category_slug: "silver-jewellery",
+    material: "Pure 925 Sterling Silver • Rhodium E-Coat",
+    avg_rating: 4.9,
+    review_count: 920,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Mirror-polished 925 Silver band featuring an ultra-sparkle cubic zirconia solitaire.",
+    description: "Crafted from pure 925 sterling silver with a thick rhodium barrier to prevent oxidization and preserve pristine mirror shine.",
+    bullet_points: [
+      "BIS Hallmarked 925 Stamp",
+      "Rhodium plated for tarnish resistance",
+      "Free luxury velvet gift box"
+    ],
+    images: [
+      "/jewellery/solitaire-ring.jpg",
+      "/jewellery/tennis-bracelet.jpg"
+    ]
   },
   {
     id: 10,
-    name: "Brass Pooja Thali Set",
-    slug: "brass-pooja-thali-set",
-    price: 6999,
-    sale_price: 4299,
-    effective_price: 4299,
-    category_name: "Pooja Decor",
-    short_desc: "A coordinated pooja thali set for ceremonies, gifting hampers, and devotional styling.",
-    description:
-      "The curated set format makes it ideal for festive shopping pages and more complete ritual displays.",
-    images: [referenceAssets.collections.poojaDecor]
+    name: "925 Sterling Silver Royal Tennis Necklace",
+    slug: "925-silver-shimmer-tennis-necklace",
+    price: 8999,
+    sale_price: 4999,
+    effective_price: 4999,
+    category_name: "925 Sterling Silver",
+    category_slug: "silver-jewellery",
+    material: "925 Sterling Silver • Full Tennis CZ Collar",
+    avg_rating: 4.9,
+    review_count: 380,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "A breathtaking all-around continuous river of sparkling crystals in solid 925 Silver.",
+    description: "Turn every head with the Royal Tennis Necklace. A cascading line of flawless crystals that illuminates your collarbone with red-carpet glamour.",
+    bullet_points: [
+      "Solid 925 Sterling Silver framework",
+      "Articulated bezel cups for fluid movement",
+      "Double-locking luxury box clasp"
+    ],
+    images: [
+      "/jewellery/tennis-bracelet.jpg",
+      "/jewellery/heart-necklace.jpg"
+    ]
   },
   {
     id: 11,
-    name: "Handcrafted Gift Hamper Accent",
-    slug: "handcrafted-gift-hamper-accent",
-    price: 8499,
-    sale_price: 5799,
-    effective_price: 5799,
-    category_name: "Gifting Edit",
-    short_desc: "A warm handcrafted decor piece selected for festive hampers and premium gifting bundles.",
-    description:
-      "Made to feel elevated yet versatile, this piece helps the shop grid look fuller and more curated.",
-    images: [referenceAssets.founderAndBrand.weddingGift]
+    name: "Modern Solitaire 925 Silver Mangalsutra",
+    slug: "modern-solitaire-black-bead-mangalsutra",
+    price: 3999,
+    sale_price: 2299,
+    effective_price: 2299,
+    category_name: "Modern Mangalsutra",
+    category_slug: "mangalsutra",
+    material: "925 Sterling Silver • Traditional Black Beads",
+    avg_rating: 4.9,
+    review_count: 780,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "A contemporary 1-Carat solitaire pendant balanced by sacred black beads on a silver chain.",
+    description: "Redefining marital jewellery for the modern woman. This sleek solitaire mangalsutra effortlessly complements western formals as well as ethnic wear.",
+    bullet_points: [
+      "925 Pure Silver with Rhodium protection",
+      "Authentic sacred black spinel beads",
+      "Chain length: 16 inches + 2 inches extender"
+    ],
+    images: [
+      "/jewellery/heart-necklace.jpg",
+      "/jewellery/gold-pendant.jpg"
+    ]
   },
   {
     id: 12,
-    name: "Wooden Mandir Decor Panel",
-    slug: "wooden-mandir-decor-panel",
-    price: 10999,
-    sale_price: 6999,
-    effective_price: 6999,
-    category_name: "Wooden Collection",
-    short_desc: "A wooden decorative panel with ceremonial warmth for pooja walls and gifting stories.",
-    description:
-      "The layered handcrafted finish helps balance spiritual styling with a stronger premium decor presence.",
-    images: [referenceAssets.founderAndBrand.woodenDecor]
+    name: "Daily Wear Black Bead Mangalsutra Bracelet",
+    slug: "dainty-black-bead-mangalsutra-bracelet",
+    price: 2999,
+    sale_price: 1799,
+    effective_price: 1799,
+    category_name: "Modern Mangalsutra",
+    category_slug: "mangalsutra",
+    material: "925 Sterling Silver • 18K Rose Gold • Black Beads",
+    avg_rating: 4.8,
+    review_count: 610,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Minimalist modern wrist mangalsutra with alternating gold links and black beads.",
+    description: "A chic everyday wrist alternative to the traditional neckpiece. Lightweight, comfortable, and meaningful.",
+    bullet_points: [
+      "18K Rose Gold plated 925 Silver",
+      "Adjustable slide closure mechanism",
+      "Hypoallergenic for 24/7 daily wear"
+    ],
+    images: [
+      "/jewellery/evil-eye-bracelet.jpg",
+      "/jewellery/tennis-bracelet.jpg"
+    ]
+  },
+  {
+    id: 13,
+    name: "Couple's Forever Promise Luxury Gift Hamper",
+    slug: "couples-forever-promise-luxury-hamper",
+    price: 7999,
+    sale_price: 4999,
+    effective_price: 4999,
+    category_name: "Gifts & Hampers",
+    category_slug: "gifting-edits",
+    material: "Set of 2 925 Silver Rings + Velvet Presentation Box",
+    avg_rating: 5.0,
+    review_count: 640,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "The ultimate gifting combo: Matching promise rings, luxury velvet box, scented candle & certificate.",
+    description: "Designed to create unforgettable memories. This gift hamper includes matching 925 Silver Promise Bands packaged in an LED-lit velvet presentation box with authenticity certificate.",
+    bullet_points: [
+      "Includes pair of adjustable 925 Silver rings",
+      "Luxury LED velvet keepsake gift box",
+      "Personalized gift message card included"
+    ],
+    images: [
+      "/jewellery/couple-promise-rings.jpg",
+      "/jewellery/solitaire-ring.jpg"
+    ]
+  },
+  {
+    id: 14,
+    name: "Royal Solitaire Pendant & Earrings Gift Set",
+    slug: "royal-solitaire-pendant-earrings-combo",
+    price: 5999,
+    sale_price: 3499,
+    effective_price: 3499,
+    category_name: "Gifts & Hampers",
+    category_slug: "gifting-edits",
+    material: "925 Sterling Silver Combo Set",
+    avg_rating: 4.9,
+    review_count: 820,
+    is_featured: true,
+    is_sellable: true,
+    short_desc: "Matching solitaire pendant necklace and stud earrings in a signature pink velvet box.",
+    description: "Give the complete ensemble. A 1.0 Carat solitaire pendant paired with matching solitaire studs in hallmarked 925 Sterling Silver.",
+    bullet_points: [
+      "Complete 2-piece fine jewellery set",
+      "925 Sterling Silver with Rhodium protection",
+      "Signature luxury velvet unboxing experience"
+    ],
+    images: [
+      "/jewellery/heart-necklace.jpg",
+      "/jewellery/drop-earrings.jpg"
+    ]
+  },
+  {
+    id: 15,
+    name: "Classic 925 Silver Solitaire Studs",
+    slug: "classic-solitaire-silver-studs",
+    price: 2499,
+    sale_price: 1399,
+    effective_price: 1399,
+    category_name: "Earrings",
+    category_slug: "earrings",
+    material: "925 Sterling Silver • 1.0 Ct AAA+ CZ Studs",
+    avg_rating: 4.9,
+    review_count: 1830,
+    is_featured: false,
+    is_sellable: true,
+    short_desc: "Essential 1.0 Carat solitaire ear studs in hypoallergenic rhodium-plated sterling silver.",
+    description: "The ultimate everyday fine jewellery staple. Clean, brilliant 4-prong basket studs that elevate your boardroom look and dinner dates alike.",
+    bullet_points: [
+      "100% 925 Sterling Silver certified",
+      "1.00 Carat brilliant round cut stones",
+      "Hypoallergenic for 24/7 comfortable wear"
+    ],
+    images: [
+      "/jewellery/drop-earrings.jpg",
+      "/jewellery/gold-pendant.jpg"
+    ]
+  },
+  {
+    id: 16,
+    name: "Men's Solid Silver Bold Signet Ring",
+    slug: "mens-oxidised-lion-shield-ring",
+    price: 3999,
+    sale_price: 2499,
+    effective_price: 2499,
+    category_name: "Men's Jewellery",
+    category_slug: "mens-jewellery",
+    material: "Solid 925 Sterling Silver (Heavy Band)",
+    avg_rating: 4.8,
+    review_count: 390,
+    is_featured: false,
+    is_sellable: true,
+    short_desc: "Subtle brushed matte top with mirror-polished bevelled edges in solid silver.",
+    description: "A statement of quiet masculine strength. Features a solid 925 silver core with comfortable curved inner profile for all-day wear.",
+    bullet_points: [
+      "Solid Hallmarked 925 Silver",
+      "Comfort-fit inner core",
+      "Resistant to scratches and everyday wear"
+    ],
+    images: [
+      "/jewellery/mens-cuban-chain.jpg",
+      "/jewellery/solitaire-ring.jpg"
+    ]
   }
 ];
 
@@ -763,8 +1145,11 @@ export async function trackOrder(orderNumber: string, contact: string): Promise<
     ship_city: string;
     ship_state: string;
     created_at: string;
+    courier_name?: string | null;
     tracking_number: string | null;
     tracking_url: string | null;
+    dispatched_at?: string | null;
+    estimated_delivery_date?: string | null;
     payment_method: string;
     payment_status: string;
     total_amount: number;
@@ -824,6 +1209,11 @@ export async function getCustomerOrders(token: string): Promise<{
     items_count: number;
     first_item_image: string | null;
     first_item_name: string | null;
+    courier_name?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+    dispatched_at?: string | null;
+    estimated_delivery_date?: string | null;
   }>;
 }> {
   try {
@@ -869,8 +1259,11 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
     ship_state: string;
     ship_pincode: string;
     notes: string | null;
+    courier_name?: string | null;
     tracking_number: string | null;
     tracking_url: string | null;
+    dispatched_at?: string | null;
+    estimated_delivery_date?: string | null;
     created_at: string;
     items: Array<{
       id: number;
@@ -898,6 +1291,10 @@ export async function getCustomerOrderDetail(token: string, orderNumber: string)
       return_number: string;
       status: string;
       reason: string;
+      pickup_courier_name?: string | null;
+      pickup_tracking_number?: string | null;
+      pickup_tracking_url?: string | null;
+      pickup_scheduled_date?: string | null;
       requested_amount: number;
       approved_amount: number;
       requested_at: string | null;
@@ -929,6 +1326,8 @@ export async function requestCustomerOrderReturn(
   orderNumber: string,
   data: {
     reason: string;
+    reason_detail?: string;
+    refund_mode?: "wallet" | "original_payment";
     customer_notes?: string;
     items: Array<{
       product_id: number;
@@ -943,6 +1342,7 @@ export async function requestCustomerOrderReturn(
   data?: {
     return_number: string;
     status: string;
+    refund_mode?: string;
   };
 }> {
   try {
@@ -962,6 +1362,110 @@ export async function requestCustomerOrderReturn(
     return {
       success: false,
       message: error?.message || "Could not submit the return request."
+    };
+  }
+}
+
+export async function lookupOrderForReturn(data: {
+  order_number: string;
+  identifier: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    order_number: string;
+    status: string;
+    created_at?: string;
+    subtotal: number;
+    total_amount: number;
+    ship_name: string;
+    ship_email: string;
+    ship_phone: string;
+    is_return_eligible: boolean;
+    items: Array<{
+      id: number;
+      product_id: number;
+      variant_id?: number | null;
+      name: string;
+      quantity: number;
+      price: number;
+      image: string | null;
+      size: string | null;
+      color: string | null;
+      sku: string | null;
+    }>;
+    existing_return?: {
+      id: number;
+      return_number: string;
+      status: string;
+      reason: string;
+      customer_notes?: string | null;
+      requested_items?: any[];
+      requested_amount: number;
+      approved_amount: number;
+      admin_notes?: string | null;
+      requested_at?: string | null;
+      resolved_at?: string | null;
+    } | null;
+  };
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/returns/lookup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(data),
+      cache: "no-store"
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Unable to lookup order for return."
+    };
+  }
+}
+
+export async function submitPublicOrderReturn(data: {
+  order_number: string;
+  identifier: string;
+  reason: string;
+  reason_detail?: string;
+  refund_mode?: "wallet" | "original_payment";
+  customer_notes?: string;
+  items: Array<{
+    product_id: number;
+    variant_id?: number | null;
+    quantity: number;
+  }>;
+  images?: string[];
+}): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    return_number: string;
+    status: string;
+    refund_mode?: string;
+    requested_amount: number;
+  };
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/returns/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(data),
+      cache: "no-store"
+    });
+    return await response.json();
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Could not submit return request."
     };
   }
 }
@@ -1177,6 +1681,38 @@ export async function subscribeNewsletter(email: string): Promise<{
     return {
       success: false,
       message: error?.message || "Something went wrong. Please try again later.",
+    };
+  }
+}
+
+export type ContactInquiryPayload = {
+  name: string;
+  email: string;
+  phone: string;
+  subject?: string;
+  message: string;
+};
+
+export async function submitContactInquiry(data: ContactInquiryPayload): Promise<{
+  success: boolean;
+  message: string;
+  inquiry_id?: number;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Unable to send message right now. Please call or WhatsApp us.",
     };
   }
 }

@@ -40,7 +40,7 @@ export function BlogSocialShare({ url, title, media }: BlogSocialShareProps) {
           aria-label="Share on Facebook"
           style={shareBtnStyle}
         >
-          <span style={{ fontSize: "1rem" }}>📘</span> Facebook
+          Facebook
         </a>
 
         {/* Twitter/X */}
@@ -52,7 +52,7 @@ export function BlogSocialShare({ url, title, media }: BlogSocialShareProps) {
           aria-label="Share on Twitter"
           style={shareBtnStyle}
         >
-          <span style={{ fontSize: "1rem" }}>🐦</span> Twitter
+          Twitter
         </a>
 
         {/* Pinterest */}
@@ -65,7 +65,7 @@ export function BlogSocialShare({ url, title, media }: BlogSocialShareProps) {
             aria-label="Share on Pinterest"
             style={shareBtnStyle}
           >
-            <span style={{ fontSize: "1rem" }}>📌</span> Pinterest
+            Pinterest
           </a>
         )}
 
@@ -78,7 +78,7 @@ export function BlogSocialShare({ url, title, media }: BlogSocialShareProps) {
           aria-label="Share on WhatsApp"
           style={shareBtnStyle}
         >
-          <span style={{ fontSize: "1rem" }}>🟢</span> WhatsApp
+          WhatsApp
         </a>
 
         {/* Copy Link Button */}
@@ -89,7 +89,7 @@ export function BlogSocialShare({ url, title, media }: BlogSocialShareProps) {
           aria-label="Copy article link"
           style={{ ...shareBtnStyle, border: "none", cursor: "pointer", background: copied ? "var(--accent)" : "rgba(25, 25, 25, 0.04)", color: copied ? "#fff" : "var(--accent-deep)" }}
         >
-          <span style={{ fontSize: "1.05rem" }}>🔗</span> {copied ? "Copied!" : "Copy Link"}
+          {copied ? "Copied!" : "Copy Link"}
         </button>
       </div>
 

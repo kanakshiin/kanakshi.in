@@ -9,13 +9,14 @@ import {
   deleteCustomerAddress,
   fetchCurrentCustomer,
   fetchCustomerAddresses,
+  fetchCustomerWallet,
   getStoredCustomerToken,
   logoutCustomer,
   updateCustomerAddress
 } from "../../lib/customer-auth";
 import { getCustomerOrders, getCustomerOrderDetail, formatPrice, requestCustomerOrderReturn, resolveAssetUrl } from "../../lib/api";
 import { fetchPincodeLocation, formatIndianPhone, isValidIndianPhone, normalizeIndianPhone, normalizeIndianPincode } from "../../lib/form-inputs";
-import { CustomerAddress, CustomerUser } from "../../lib/types";
+import { CustomerAddress, CustomerUser, CustomerWalletPayload } from "../../lib/types";
 
 // Type definitions matching CustomerOrderController responses
 interface OrderSummary {
@@ -34,6 +35,11 @@ interface OrderSummary {
   items_count: number;
   first_item_image: string | null;
   first_item_name: string | null;
+  courier_name?: string | null;
+  tracking_number?: string | null;
+  tracking_url?: string | null;
+  dispatched_at?: string | null;
+  estimated_delivery_date?: string | null;
 }
 
 interface OrderDetail {
@@ -51,13 +57,17 @@ interface OrderDetail {
   ship_name: string;
   ship_email: string;
   ship_phone: string;
+  ship_alt_phone?: string | null;
   ship_address: string;
   ship_city: string;
   ship_state: string;
   ship_pincode: string;
   notes: string | null;
+  courier_name?: string | null;
   tracking_number: string | null;
   tracking_url: string | null;
+  dispatched_at?: string | null;
+  estimated_delivery_date?: string | null;
   created_at: string;
   items: Array<{
     id: number;
@@ -85,6 +95,13 @@ interface OrderDetail {
     return_number: string;
     status: string;
     reason: string;
+    reason_detail?: string | null;
+    refund_mode?: string | null;
+    refund_processed_at?: string | null;
+    pickup_courier_name?: string | null;
+    pickup_tracking_number?: string | null;
+    pickup_tracking_url?: string | null;
+    pickup_scheduled_date?: string | null;
     requested_amount: number;
     approved_amount: number;
     requested_at: string | null;
@@ -128,9 +145,10 @@ const EMPTY_ADDRESS_FORM: AddressFormState = {
 
 export default function AccountPage() {
   const [user, setUser] = useState<CustomerUser | null>(null);
-  const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "wallet" | "addresses" | "profile">("orders");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [walletData, setWalletData] = useState<CustomerWalletPayload | null>(null);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [addressForm, setAddressForm] = useState<AddressFormState>(EMPTY_ADDRESS_FORM);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
@@ -144,13 +162,25 @@ export default function AccountPage() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [loadingOrderDetail, setLoadingOrderDetail] = useState<string | null>(null);
-  const [returnReason, setReturnReason] = useState("");
+  const [returnReason, setReturnReason] = useState("Size / Fitting Issue (e.g. Ring too loose/tight, unsuitable length)");
+  const [returnReasonDetail, setReturnReasonDetail] = useState("");
+  const [returnRefundMode, setReturnRefundMode] = useState<"wallet" | "original_payment">("wallet");
   const [returnNotes, setReturnNotes] = useState("");
   const [returnImages, setReturnImages] = useState("");
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [returnFeedback, setReturnFeedback] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [copiedAwb, setCopiedAwb] = useState<string | null>(null);
+
+  function handleCopyAwb(code: string) {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+      setCopiedAwb(code);
+      showToast(`AWB ${code} copied to clipboard!`, "success");
+      setTimeout(() => setCopiedAwb(null), 2500);
+    }
+  }
 
   function showToast(message: string, tone: ToastMessage["tone"] = "info") {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -169,48 +199,120 @@ export default function AccountPage() {
       return;
     }
 
-    setLoadingOrders(true);
-    fetchCurrentCustomer(token)
-      .then((customer) => {
-        setUser(customer);
-        setError(null);
-
-        return Promise.all([getCustomerOrders(token), fetchCustomerAddresses(token)]);
-      })
-      .then(([ordersRes, fetchedAddresses]) => {
-        if (ordersRes && ordersRes.success && ordersRes.data) {
-          setOrders(ordersRes.data);
+    Promise.allSettled([
+      fetchCurrentCustomer(token),
+      fetchCustomerAddresses(token),
+      getCustomerOrders(token),
+      fetchCustomerWallet(token)
+    ])
+      .then(([userResult, addressesResult, ordersResult, walletResult]) => {
+        if (userResult.status === "fulfilled") {
+          setUser(userResult.value);
+        } else {
+          clearCustomerToken();
+          setError("Your session has expired. Please sign in again.");
         }
-        setAddresses(fetchedAddresses || []);
-      })
-      .catch((err: Error) => {
-        clearCustomerToken();
-        setError(err.message);
+
+        if (addressesResult.status === "fulfilled") {
+          setAddresses(addressesResult.value);
+        }
+
+        if (ordersResult.status === "fulfilled") {
+          if (ordersResult.value.success && ordersResult.value.data) {
+            setOrders(ordersResult.value.data as OrderSummary[]);
+          }
+        }
+
+        if (walletResult.status === "fulfilled") {
+          setWalletData(walletResult.value);
+        }
       })
       .finally(() => {
         setLoading(false);
-        setLoadingOrders(false);
       });
   }, []);
 
-  async function handleLogout() {
+  // Fetch orders specifically when switching to orders tab if not already loaded
+  useEffect(() => {
     const token = getStoredCustomerToken();
+    if (token && activeTab === "orders" && orders.length === 0 && !loadingOrders) {
+      setLoadingOrders(true);
+      getCustomerOrders(token)
+        .then((res) => {
+          if (res.success && res.data) {
+            setOrders(res.data as OrderSummary[]);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load customer orders:", err);
+        })
+        .finally(() => {
+          setLoadingOrders(false);
+        });
+    }
+  }, [activeTab]);
 
-    if (token) {
-      try {
-        await logoutCustomer(token);
-      } catch {
-        // Ignore logout transport errors and clear the local session anyway.
-      }
+  useEffect(() => {
+    const normalizedPincode = normalizeIndianPincode(addressForm.pincode);
+
+    if (normalizedPincode.length !== 6) {
+      addressPincodeLookupRef.current = "";
+      setAddressPincodeStatus(null);
+      return;
     }
 
+    if (addressPincodeLookupRef.current === normalizedPincode) {
+      return;
+    }
+
+    let isCancelled = false;
+    addressPincodeLookupRef.current = normalizedPincode;
+    setAddressPincodeStatus("Checking postal code…");
+
+    fetchPincodeLocation(normalizedPincode).then((result) => {
+      if (isCancelled) return;
+
+      if (!result) {
+        setAddressPincodeStatus("Unable to detect city/state for this postal code.");
+        return;
+      }
+
+      setAddressForm((current) => {
+        const nextCity = !current.city.trim() || current.city === result.city ? result.city : current.city;
+        const nextState = !current.state.trim() || current.state === result.state ? result.state : current.state;
+
+        return {
+          ...current,
+          city: nextCity,
+          state: nextState,
+        };
+      });
+
+      setAddressPincodeStatus(`Detected ${result.city}, ${result.state}`);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [addressForm.pincode]);
+
+  async function handleLogout() {
+    const token = getStoredCustomerToken();
+    if (token) {
+      await logoutCustomer(token);
+    }
     clearCustomerToken();
-    window.location.href = "/account/login";
+    setUser(null);
+    setAddresses([]);
+    setOrders([]);
+    showToast("Signed out successfully.", "info");
   }
 
   function resetAddressForm() {
     setAddressForm(EMPTY_ADDRESS_FORM);
     setEditingAddressId(null);
+    setAddressFeedback(null);
+    setAddressPincodeStatus(null);
   }
 
   function hydrateAddressForm(address: CustomerAddress) {
@@ -228,22 +330,21 @@ export default function AccountPage() {
       landmark: address.landmark || "",
       is_default: address.is_default,
     });
+    setAddressFeedback(null);
+    setAddressPincodeStatus(null);
   }
 
   async function handleSaveAddress() {
     const token = getStoredCustomerToken();
-    if (!token) {
-      setAddressFeedback("Please log in again before saving an address.");
-      return;
-    }
+    if (!token) return;
 
-    if (!addressForm.recipient_name || !addressForm.address_line1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
-      setAddressFeedback("Please complete the required address fields.");
+    if (!addressForm.recipient_name.trim() || !addressForm.address_line1.trim() || !addressForm.city.trim() || !addressForm.state.trim() || !addressForm.pincode.trim()) {
+      setAddressFeedback("Please fill in recipient name, address, city, state, and pincode.");
       return;
     }
 
     if (addressForm.phone && !isValidIndianPhone(addressForm.phone)) {
-      setAddressFeedback("Please enter a valid 10-digit Indian mobile number.");
+      setAddressFeedback("Please provide a valid 10-digit mobile number.");
       return;
     }
 
@@ -251,23 +352,17 @@ export default function AccountPage() {
     setAddressFeedback(null);
 
     try {
-      const payload = {
-        ...addressForm,
-        phone: normalizeIndianPhone(addressForm.phone) || null,
-        address_line2: addressForm.address_line2 || null,
-        landmark: addressForm.landmark || null,
-        label: addressForm.label || null,
-        pincode: normalizeIndianPincode(addressForm.pincode),
-      };
-
-      const nextAddresses = editingAddressId
-        ? await updateCustomerAddress(token, editingAddressId, payload)
-        : await createCustomerAddress(token, payload);
-
-      setAddresses(nextAddresses);
-      const successMessage = editingAddressId ? "Address updated successfully." : "Address added successfully.";
-      setAddressFeedback(successMessage);
-      showToast(successMessage, "success");
+      if (editingAddressId) {
+        const updatedList = await updateCustomerAddress(token, editingAddressId, addressForm);
+        setAddresses(updatedList);
+        setAddressFeedback("Address updated successfully.");
+        showToast("Address updated successfully.", "success");
+      } else {
+        const createdList = await createCustomerAddress(token, addressForm);
+        setAddresses(createdList);
+        setAddressFeedback("New address added successfully.");
+        showToast("New address added successfully.", "success");
+      }
       resetAddressForm();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to save address.";
@@ -278,60 +373,14 @@ export default function AccountPage() {
     }
   }
 
-  useEffect(() => {
-    const normalizedPincode = normalizeIndianPincode(addressForm.pincode);
-
-    if (normalizedPincode.length !== 6 || normalizedPincode === addressPincodeLookupRef.current) {
-      if (normalizedPincode.length < 6) {
-        setAddressPincodeStatus(null);
-      }
-      return;
-    }
-
-    let active = true;
-    addressPincodeLookupRef.current = normalizedPincode;
-    setAddressPincodeStatus("Looking up city and state from pincode…");
-
-    fetchPincodeLocation(normalizedPincode)
-      .then((location) => {
-        if (!active) {
-          return;
-        }
-
-        setAddressForm((current) => ({
-          ...current,
-          pincode: normalizedPincode,
-          city: location.city || current.city,
-          state: location.state || current.state,
-        }));
-        setAddressPincodeStatus("City and state auto-filled from pincode.");
-      })
-      .catch((err) => {
-        if (!active) {
-          return;
-        }
-
-        setAddressPincodeStatus(err instanceof Error ? err.message : "Unable to auto-fill city/state right now.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [addressForm.pincode]);
-
   async function handleDeleteAddress(addressId: number) {
     const token = getStoredCustomerToken();
-    if (!token) {
-      setAddressFeedback("Please log in again before deleting an address.");
-      return;
-    }
+    if (!token) return;
 
     setAddressLoading(true);
-    setAddressFeedback(null);
-
     try {
-      const nextAddresses = await deleteCustomerAddress(token, addressId);
-      setAddresses(nextAddresses);
+      const remainingList = await deleteCustomerAddress(token, addressId);
+      setAddresses(remainingList);
       if (editingAddressId === addressId) {
         resetAddressForm();
       }
@@ -381,523 +430,1051 @@ export default function AccountPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "delivered":
-        return { bg: "rgba(45, 123, 76, 0.08)", text: "#2d7b4c" };
+        return { bg: "#dcfce7", text: "#166534" };
       case "cancelled":
-        return { bg: "rgba(181, 58, 44, 0.08)", text: "#b53a2c" };
+        return { bg: "#fee2e2", text: "#991b1b" };
       case "shipped":
-        return { bg: "rgba(33, 115, 181, 0.08)", text: "#2173b5" };
-      case "placed":
-      case "pending":
-        return { bg: "rgba(241, 167, 32, 0.08)", text: "#b57317" };
+        return { bg: "#dbeafe", text: "#1e40af" };
+      case "out for delivery":
+      case "out_for_delivery":
+        return { bg: "#e0e7ff", text: "#3730a3" };
       default:
-        return { bg: "rgba(var(--rgb-text), 0.06)", text: "var(--text)" };
+        return { bg: "#fef3c7", text: "#92400e" };
     }
   };
 
-  const canRequestReturn = selectedOrder
-    ? ["delivered", "shipped"].includes(selectedOrder.status.toLowerCase())
-    : false;
+  const canRequestReturn = Boolean(
+    selectedOrder &&
+      ["shipped", "delivered"].includes(selectedOrder.status.toLowerCase())
+  );
 
   async function handleSubmitReturn() {
-    if (!selectedOrder) return;
-
     const token = getStoredCustomerToken();
-    if (!token) {
-      setReturnFeedback("Please log in again before submitting a return request.");
+    if (!token || !selectedOrder) return;
+
+    const items = Object.entries(returnQuantities)
+      .map(([key, quantity]) => {
+        const [productId, variantId] = key.split(":");
+        return {
+          product_id: Number(productId),
+          variant_id: variantId === "0" ? undefined : Number(variantId),
+          quantity: Number(quantity),
+        };
+      })
+      .filter((item) => item.quantity > 0);
+
+    if (items.length === 0) {
+      setReturnFeedback("Please choose at least one item quantity to return.");
       return;
     }
 
     if (!returnReason.trim()) {
-      setReturnFeedback("Please enter a return reason.");
-      return;
-    }
-
-    const items = selectedOrder.items
-      .map((item) => ({
-        product_id: item.product_id,
-        variant_id: item.variant_id,
-        quantity: Number(returnQuantities[`${item.product_id}:${item.variant_id ?? 0}`] || 0),
-      }))
-      .filter((item) => item.quantity > 0);
-
-    if (items.length === 0) {
-      setReturnFeedback("Select at least one item quantity to return.");
+      setReturnFeedback("Please provide a reason for the return.");
       return;
     }
 
     setIsSubmittingReturn(true);
     setReturnFeedback(null);
 
-    const result = await requestCustomerOrderReturn(token, selectedOrder.order_number, {
-      reason: returnReason.trim(),
-      customer_notes: returnNotes.trim() || undefined,
-      items,
-      images: returnImages
-        .split(/\r?\n/)
-        .map((entry) => entry.trim())
-        .filter(Boolean),
-    });
+    const parsedImages = returnImages
+      .split("\n")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
 
-    if (!result.success) {
-      const message = result.message || "Could not submit the return request.";
-      setReturnFeedback(message);
-      showToast(message, "error");
+    try {
+      const res = await requestCustomerOrderReturn(token, selectedOrder.order_number, {
+        reason: returnReason.trim(),
+        reason_detail: returnReasonDetail.trim() || undefined,
+        refund_mode: returnRefundMode,
+        customer_notes: returnNotes.trim() || undefined,
+        items,
+        images: parsedImages.length > 0 ? parsedImages : undefined,
+      });
+
+      if (res && res.success && res.data) {
+        showToast(`Return request ${res.data.return_number} submitted!`, "success");
+        setReturnFeedback(`Return request ${res.data.return_number} submitted successfully! Our concierge team will review and approve doorstep pickup.`);
+        const refreshed = await getCustomerOrderDetail(token, selectedOrder.order_number);
+        if (refreshed && refreshed.success && refreshed.data) {
+          setSelectedOrder(refreshed.data);
+        }
+      } else {
+        setReturnFeedback(res.message || "Failed to submit return request.");
+        showToast(res.message || "Failed to submit return request.", "error");
+      }
+    } catch (e: any) {
+      console.error("Submit return error:", e);
+      const msg = e?.message || "Something went wrong while submitting your return.";
+      setReturnFeedback(msg);
+      showToast(msg, "error");
+    } finally {
       setIsSubmittingReturn(false);
-      return;
     }
-
-    await handleViewOrderDetail(selectedOrder.order_number);
-    const successMessage = `Return request ${result.data?.return_number || ""} submitted successfully.`.trim();
-    setReturnFeedback(successMessage);
-    showToast(successMessage, "success");
-    setIsSubmittingReturn(false);
   }
 
   return (
-    <main className="content-section auth-page" style={{ padding: "4rem 0", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)", minHeight: "80vh" }}>
-      {toasts.length > 0 ? (
-        <div
-          style={{
-            position: "fixed",
-            top: "1.25rem",
-            right: "1.25rem",
-            zIndex: 10050,
-            display: "grid",
-            gap: "0.8rem",
-            width: "min(360px, calc(100vw - 2rem))",
-          }}
-        >
-          {toasts.map((toast) => {
-            const palette =
-              toast.tone === "success"
-                ? {
-                    background: "linear-gradient(135deg, rgba(45, 123, 76, 0.96), rgba(33, 99, 63, 0.96))",
-                    accent: "#d7f5df",
-                    shadow: "0 18px 40px -22px rgba(45, 123, 76, 0.85)",
-                  }
-                : toast.tone === "error"
-                  ? {
-                      background: "linear-gradient(135deg, rgba(123, 36, 29, 0.97), rgba(181, 58, 44, 0.96))",
-                      accent: "#ffe1dc",
-                      shadow: "0 18px 40px -22px rgba(181, 58, 44, 0.9)",
-                    }
-                  : {
-                      background: "linear-gradient(135deg, rgba(41, 36, 31, 0.96), rgba(74, 62, 53, 0.96))",
-                      accent: "#f5e7c8",
-                      shadow: "0 18px 40px -22px rgba(41, 36, 31, 0.82)",
-                    };
+    <main style={{ minHeight: "85vh", background: "#fcfbf9", padding: "3.5rem 1.5rem" }}>
+      
+      {/* Dynamic Toast Notifications */}
+      {toasts.length > 0 && (
+        <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 99999, display: "flex", flexDirection: "column", gap: "10px" }}>
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              style={{
+                borderRadius: "14px",
+                padding: "0.85rem 1.2rem",
+                color: "#ffffff",
+                background: toast.tone === "success" ? "#166534" : toast.tone === "error" ? "#991b1b" : "#0f172a",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontSize: "0.92rem",
+                fontWeight: 600,
+                animation: "slideUp 0.25s ease"
+              }}
+            >
+              <span>{toast.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
-            return (
-              <div
-                key={toast.id}
+      <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
+
+        {/* GUEST VIEW (If not logged in) */}
+        {!loading && !user && (
+          <div style={{
+            maxWidth: "520px",
+            margin: "2rem auto",
+            background: "#ffffff",
+            borderRadius: "24px",
+            border: "1px solid var(--line, #e2e8f0)",
+            padding: "3rem 2.5rem",
+            textAlign: "center",
+            boxShadow: "0 10px 35px rgba(0,0,0,0.04)"
+          }}>
+            <p className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", letterSpacing: "2px", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>
+              Kanakshi Member Access
+            </p>
+            <h1 style={{ fontSize: "2.2rem", fontWeight: 700, margin: "0.4rem 0 1rem", color: "#0f172a" }}>
+              Sign In to Your Account
+            </h1>
+            <p style={{ color: "#64748b", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "2rem" }}>
+              Access your fine jewellery purchase history, live courier tracking, doorstep returns, and saved delivery addresses.
+            </p>
+            <div style={{ display: "grid", gap: "1rem" }}>
+              <Link
+                href="/account/login"
+                className="primary-button"
                 style={{
-                  borderRadius: "18px",
-                  padding: "0.95rem 1rem",
-                  color: "#fffdf8",
-                  background: palette.background,
-                  boxShadow: palette.shadow,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  display: "grid",
-                  gap: "0.45rem",
-                  animation: "slideUp 0.24s ease",
+                  padding: "0.9rem 1.5rem",
+                  borderRadius: "14px",
+                  background: "var(--accent-deep, #0f172a)",
+                  color: "#ffffff",
+                  textDecoration: "none",
+                  fontWeight: 700,
+                  fontSize: "1rem"
                 }}
               >
-                <div style={{ display: "flex", alignItems: "start", gap: "0.75rem" }}>
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      width: "1.9rem",
-                      height: "1.9rem",
-                      borderRadius: "999px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(255,255,255,0.14)",
-                      color: palette.accent,
-                      fontSize: "0.95rem",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {toast.tone === "success" ? "✓" : toast.tone === "error" ? "!" : "i"}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "0.78rem", letterSpacing: "0.06em", textTransform: "uppercase", color: palette.accent, fontWeight: 700, marginBottom: "0.18rem" }}>
-                      {toast.tone === "success" ? "Done" : toast.tone === "error" ? "Heads up" : "Notice"}
-                    </div>
-                    <div style={{ fontSize: "0.95rem", lineHeight: 1.5, fontWeight: 500 }}>{toast.message}</div>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Dismiss notification"
-                    onClick={() => setToasts((current) => current.filter((item) => item.id !== toast.id))}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "rgba(255,255,255,0.78)",
-                      cursor: "pointer",
-                      fontSize: "1rem",
-                      lineHeight: 1,
-                      padding: 0,
-                    }}
-                  >
-                    ×
-                  </button>
+                Sign In to Account
+              </Link>
+              <Link
+                href="/account/register"
+                className="secondary-button"
+                style={{
+                  padding: "0.9rem 1.5rem",
+                  borderRadius: "14px",
+                  border: "1px solid #cbd5e1",
+                  background: "#f8fafc",
+                  color: "#0f172a",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  fontSize: "0.95rem"
+                }}
+              >
+                Create New Account
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ textAlign: "center", padding: "4rem" }}>
+            <h2 style={{ fontSize: "1.2rem", color: "#64748b" }}>Loading your Kanakshi profile…</h2>
+          </div>
+        )}
+
+        {/* LOGGED IN ACCOUNT COCKPIT */}
+        {!loading && user && (
+          <div style={{ display: "grid", gridTemplateColumns: "270px 1fr", gap: "2.5rem", alignItems: "start" }} className="account-main-grid">
+
+            {/* SIDEBAR NAVIGATION */}
+            <aside style={{
+              background: "#ffffff",
+              borderRadius: "24px",
+              padding: "1.8rem",
+              border: "1px solid var(--line, #e2e8f0)",
+              boxShadow: "0 6px 24px rgba(0,0,0,0.03)"
+            }}>
+              {/* User Avatar Card */}
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.8rem", paddingBottom: "1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+                <div style={{
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #fef3c7, #fde68a)",
+                  color: "#92400e",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                  border: "2px solid #fef3c7"
+                }}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : "K"}
+                </div>
+                <div style={{ overflow: "hidden" }}>
+                  <h2 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0, color: "#0f172a", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                    {user.name}
+                  </h2>
+                  <span style={{ fontSize: "0.82rem", color: "#64748b" }}>{user.email}</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      ) : null}
 
-      <div className="container" style={{ maxWidth: "1100px" }}>
-        
-        {/* Main account wrapper */}
-        <div style={{ display: "grid", gridTemplateColumns: user ? "260px 1fr" : "1fr", gap: "3rem", alignItems: "start" }}>
-          
-          {/* SIDEBAR TABS (Only for logged in users) */}
-          {user && (
-            <aside style={{ background: "rgba(255, 253, 249, 0.94)", borderRadius: "24px", padding: "1.5rem", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}>
-              <div style={{ marginBottom: "2rem" }}>
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 700, margin: "0 0 0.5rem" }}>My Account</h2>
-                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)" }}>{user.name}</p>
-              </div>
-              
-              <nav style={{ display: "grid", gap: "0.5rem" }}>
-                <button 
+              {/* Navigation Menu */}
+              <nav style={{ display: "grid", gap: "0.4rem" }}>
+                <button
+                  type="button"
                   onClick={() => setActiveTab("orders")}
-                  style={{ textAlign: "left", padding: "0.8rem 1rem", borderRadius: "12px", border: "none", cursor: "pointer", background: activeTab === "orders" ? "rgba(var(--rgb-accent), 0.1)" : "transparent", color: activeTab === "orders" ? "var(--accent-deep)" : "var(--text)", fontWeight: activeTab === "orders" ? 700 : 500, transition: "all 0.2s" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeTab === "orders" ? "#f1f5f9" : "transparent",
+                    color: activeTab === "orders" ? "#0f172a" : "#64748b",
+                    fontWeight: activeTab === "orders" ? 700 : 500,
+                    fontSize: "0.95rem",
+                    transition: "all 0.2s ease"
+                  }}
                 >
-                  📦 Order History
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                  <span>Order History</span>
                 </button>
-                <button 
-                  onClick={() => setActiveTab("profile")}
-                  style={{ textAlign: "left", padding: "0.8rem 1rem", borderRadius: "12px", border: "none", cursor: "pointer", background: activeTab === "profile" ? "rgba(var(--rgb-accent), 0.1)" : "transparent", color: activeTab === "profile" ? "var(--accent-deep)" : "var(--text)", fontWeight: activeTab === "profile" ? 700 : 500, transition: "all 0.2s" }}
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("wallet")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeTab === "wallet" ? "linear-gradient(135deg, #fef3c7, #fde68a)" : "transparent",
+                    color: activeTab === "wallet" ? "#78350f" : "#64748b",
+                    fontWeight: activeTab === "wallet" ? 700 : 500,
+                    fontSize: "0.95rem",
+                    transition: "all 0.2s ease"
+                  }}
                 >
-                  👤 Profile Details
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                  <span>Kanakshi Wallet</span>
+                  <span style={{
+                    marginLeft: "auto",
+                    fontSize: "0.78rem",
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    background: activeTab === "wallet" ? "#d97706" : "rgba(241, 167, 32, 0.18)",
+                    color: activeTab === "wallet" ? "#ffffff" : "#b45309",
+                    fontWeight: 700
+                  }}>
+                    ₹{Number(walletData?.wallet_balance ?? user.wallet_balance ?? 0).toLocaleString("en-IN")}
+                  </span>
                 </button>
-                <button 
+
+                <button
+                  type="button"
                   onClick={() => setActiveTab("addresses")}
-                  style={{ textAlign: "left", padding: "0.8rem 1rem", borderRadius: "12px", border: "none", cursor: "pointer", background: activeTab === "addresses" ? "rgba(var(--rgb-accent), 0.1)" : "transparent", color: activeTab === "addresses" ? "var(--accent-deep)" : "var(--text)", fontWeight: activeTab === "addresses" ? 700 : 500, transition: "all 0.2s" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeTab === "addresses" ? "#f1f5f9" : "transparent",
+                    color: activeTab === "addresses" ? "#0f172a" : "#64748b",
+                    fontWeight: activeTab === "addresses" ? 700 : 500,
+                    fontSize: "0.95rem",
+                    transition: "all 0.2s ease"
+                  }}
                 >
-                  📍 Address Book
+                  <span>Saved Addresses</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("profile")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeTab === "profile" ? "#f1f5f9" : "transparent",
+                    color: activeTab === "profile" ? "#0f172a" : "#64748b",
+                    fontWeight: activeTab === "profile" ? 700 : 500,
+                    fontSize: "0.95rem",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <span>Profile Details</span>
+                </button>
+
+                <Link
+                  href="/track-order"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "12px",
+                    color: "#64748b",
+                    fontWeight: 500,
+                    fontSize: "0.95rem",
+                    textDecoration: "none",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <span>Live Track Tool</span>
+                </Link>
               </nav>
-              
-              <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid var(--line)" }}>
-                <button type="button" onClick={handleLogout} style={{ width: "100%", textAlign: "left", padding: "0.8rem 1rem", borderRadius: "12px", border: "none", cursor: "pointer", background: "rgba(181, 58, 44, 0.08)", color: "#b53a2c", fontWeight: 600, transition: "all 0.2s" }}>
-                  Logout
+
+              {/* Logout Button */}
+              <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid #e2e8f0" }}>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.8rem 1rem",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: "rgba(224, 90, 71, 0.08)",
+                    color: "#b53a2c",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}
+                >
+                  <span>Sign Out</span>
                 </button>
               </div>
             </aside>
-          )}
 
-          {/* MAIN CONTENT AREA */}
-          <div style={{ display: "grid", gap: "2rem" }}>
-            
-            {/* GUEST VIEW */}
-            {!loading && !user ? (
-              <section className="auth-card account-profile-card" style={{ width: "100%", maxWidth: "500px", margin: "0 auto" }}>
-                <small className="eyebrow">Customer Account</small>
-                <h1 className="auth-title" style={{ fontSize: "2.2rem" }}>Profile</h1>
-                <div className="auth-stack">
-                  <p className="auth-muted">{error || "You are not logged in yet."}</p>
-                  <div className="auth-link-row">
-                    <Link href="/account/login" className="primary-button">Login</Link>
-                    <Link href="/account/register" className="secondary-button">Create Account</Link>
-                  </div>
-                </div>
-              </section>
-            ) : null}
+            {/* MAIN CONTENT AREA */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
 
-            {loading ? <p className="auth-muted">Loading your account…</p> : null}
+              {/* TAB 1: ORDERS */}
+              {activeTab === "orders" && (
+                <section style={{ animation: "fadeIn 0.3s ease" }}>
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <p className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", letterSpacing: "1.5px", fontSize: "0.8rem", fontWeight: 700 }}>
+                      Kanakshi Atelier
+                    </p>
+                    <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "2px 0 0", color: "#0f172a" }}>
+                      My Orders &amp; Purchases
+                    </h1>
+                  </div>
 
-            {/* TAB: PROFILE */}
-            {!loading && user && activeTab === "profile" && (
-              <section style={{ animation: "fadeIn 0.3s ease" }}>
-                <h1 className="auth-title" style={{ fontSize: "2.2rem", marginBottom: "1.5rem" }}>Profile Details</h1>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-                  <div className="account-summary-card" style={{ background: "rgba(255, 253, 249, 0.94)", padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--line)" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>NAME</span>
-                    <strong style={{ fontSize: "1.1rem" }}>{user.name}</strong>
-                  </div>
-                  <div className="account-summary-card" style={{ background: "rgba(255, 253, 249, 0.94)", padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--line)" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>EMAIL</span>
-                    <strong style={{ fontSize: "1.1rem", overflowWrap: "anywhere" }}>{user.email}</strong>
-                  </div>
-                  <div className="account-summary-card" style={{ background: "rgba(255, 253, 249, 0.94)", padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--line)" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>PHONE</span>
-                    <strong style={{ fontSize: "1.1rem" }}>{user.phone || "Not added yet"}</strong>
-                  </div>
-                  <div className="account-summary-card" style={{ background: "rgba(255, 253, 249, 0.94)", padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--line)" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>EMAIL STATUS</span>
-                    <strong style={{ fontSize: "1.1rem", color: user.email_verified_at ? "#2d7b4c" : "var(--accent-deep)" }}>
-                      {user.email_verified_at ? "Verified" : "Pending Verification"}
-                    </strong>
-                  </div>
-                </div>
-              </section>
-            )}
+                  {loadingOrders ? (
+                    <div style={{ padding: "3rem", textAlign: "center", background: "#ffffff", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
+                      <p style={{ color: "#64748b", margin: 0 }}>Loading your purchase history…</p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div style={{
+                      padding: "4rem 2rem",
+                      textAlign: "center",
+                      border: "1px dashed #cbd5e1",
+                      borderRadius: "24px",
+                      background: "#ffffff"
+                    }}>
+                      <h3 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: "0.5rem", color: "#0f172a" }}>No orders placed yet</h3>
+                      <p style={{ color: "#64748b", maxWidth: "420px", margin: "0 auto 2rem", fontSize: "0.92rem", lineHeight: 1.6 }}>
+                        You have not placed any fine jewellery orders yet. Discover our latest collections of 925 Sterling Silver and Lab Diamonds.
+                      </p>
+                      <Link
+                        href="/shop"
+                        className="primary-button"
+                        style={{
+                          display: "inline-block",
+                          textDecoration: "none",
+                          padding: "0.85rem 1.8rem",
+                          borderRadius: "12px",
+                          background: "var(--accent-deep, #0f172a)",
+                          color: "#ffffff",
+                          fontWeight: 700
+                        }}
+                      >
+                        Explore Collections →
+                      </Link>
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: "1.5rem" }}>
+                      {orders.map((order) => {
+                        const badge = getStatusColor(order.status);
+                        const trackingNumber = order.tracking_number;
+                        const trackingUrl = order.tracking_url;
 
-            {/* TAB: ADDRESSES */}
-            {!loading && user && activeTab === "addresses" && (
-              <section style={{ animation: "fadeIn 0.3s ease" }}>
-                <div style={{ display: "flex", justifySelf: "stretch", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                  <h1 className="auth-title" style={{ fontSize: "2.2rem", margin: 0 }}>Address Book</h1>
-                  {editingAddressId && (
-                    <button type="button" className="secondary-button" style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }} onClick={resetAddressForm}>
-                      Cancel Edit
-                    </button>
-                  )}
-                </div>
+                        return (
+                          <div
+                            key={order.order_number}
+                            style={{
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "20px",
+                              padding: "1.6rem",
+                              background: "#ffffff",
+                              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "1.2rem"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.2rem" }}>
+                              {/* Left: Thumbnail & Details */}
+                              <div style={{ display: "flex", gap: "1.2rem", alignItems: "center" }}>
+                                <div style={{ width: "65px", height: "65px", borderRadius: "12px", overflow: "hidden", position: "relative", border: "1px solid #e2e8f0", flexShrink: 0 }}>
+                                  {order.first_item_image ? (
+                                    <img
+                                      src={resolveAssetUrl(order.first_item_image)}
+                                      alt={order.first_item_name || "Item"}
+                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    />
+                                  ) : (
+                                    <div style={{ width: "100%", height: "100%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", color: "#94a3b8" }}>ITEM</div>
+                                  )}
+                                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "2rem" }}>
-                  {/* Address List */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-                    {addresses.length === 0 ? (
-                      <div className="account-address-empty" style={{ gridColumn: "1 / -1", padding: "2rem", textAlign: "center", background: "rgba(255, 253, 249, 0.94)", borderRadius: "20px", border: "1px dashed var(--line-strong)" }}>
-                        No saved addresses yet. Add one below to speed up checkout.
-                      </div>
-                    ) : (
-                      addresses.map((address) => (
-                        <div key={address.id} className="account-address-card" style={{ background: "rgba(255, 253, 249, 0.94)", padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--line)" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "flex-start", marginBottom: "0.8rem", paddingBottom: "0.8rem", borderBottom: "1px solid var(--line)" }}>
-                            <div>
-                              <strong style={{ display: "block", textTransform: "capitalize", fontSize: "1.05rem" }}>
-                                {address.type}{address.is_default ? " · Default" : ""}
-                              </strong>
-                              <span style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
-                                {address.label || address.recipient_name}
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                              <button type="button" className="auth-link-button text-link" style={{ fontSize: "0.8rem" }} onClick={() => hydrateAddressForm(address)}>Edit</button>
-                              <button type="button" className="auth-link-button text-link" style={{ fontSize: "0.8rem", color: "#b53a2c" }} onClick={() => handleDeleteAddress(address.id)}>Remove</button>
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                                    <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>{order.order_number}</strong>
+                                    <span style={{ fontSize: "0.78rem", background: badge.bg, color: badge.text, padding: "3px 10px", borderRadius: "8px", fontWeight: 700, textTransform: "uppercase" }}>
+                                      {order.status}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: "0.85rem", color: "#64748b", display: "block" }}>
+                                    Placed on {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {order.items_count} {order.items_count === 1 ? "item" : "items"}
+                                  </span>
+                                  <span style={{ fontSize: "0.95rem", color: "#0f172a", display: "block", marginTop: "3px", fontWeight: 700 }}>
+                                    Total: {formatPrice(order.total_amount, "₹")}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right: Courier Badge & Action Buttons */}
+                              <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                                {trackingNumber && (
+                                  <div style={{ textAlign: "right", paddingRight: "1rem", borderRight: "1px solid #e2e8f0" }}>
+                                    <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block", fontWeight: 700, textTransform: "uppercase" }}>
+                                      {order.courier_name || 'Courier Partner'}
+                                    </span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
+                                      <code style={{ fontSize: "0.95rem", fontWeight: 700, color: "#2563eb" }}>{trackingNumber}</code>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyAwb(trackingNumber)}
+                                        title="Copy AWB Code"
+                                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.82rem", padding: "2px 6px", color: copiedAwb === trackingNumber ? "#16a34a" : "#64748b" }}
+                                      >
+                                        {copiedAwb === trackingNumber ? "Copied" : "Copy"}
+                                      </button>
+                                    </div>
+                                    {trackingUrl && (
+                                      <a href={trackingUrl} target="_blank" rel="noreferrer" style={{ display: "block", fontSize: "0.8rem", color: "#2563eb", fontWeight: 700, marginTop: "2px", textDecoration: "underline" }}>
+                                        Live Tracking ↗
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewOrderDetail(order.order_number)}
+                                  disabled={loadingOrderDetail !== null}
+                                  className="secondary-button"
+                                  style={{
+                                    padding: "0.7rem 1.3rem",
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    fontSize: "0.88rem",
+                                    fontWeight: 700,
+                                    border: "1px solid #cbd5e1",
+                                    background: "#f8fafc",
+                                    color: "#0f172a"
+                                  }}
+                                >
+                                  {loadingOrderDetail === order.order_number ? "Loading…" : "View Order Details"}
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <p style={{ margin: "0", fontSize: "0.9rem", lineHeight: 1.55 }}>
-                            <strong>{address.recipient_name}</strong><br />
-                            {address.address_line1}
-                            {address.address_line2 ? <><br />{address.address_line2}</> : null}
-                            <br />
-                            {address.city}, {address.state} - {address.pincode}
-                            {address.landmark ? <><br />Landmark: {address.landmark}</> : null}
-                            {address.phone ? <><br />Phone: {address.phone}</> : null}
-                          </p>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* TAB: KANAKSHI CASH WALLET */}
+              {activeTab === "wallet" && (
+                <section style={{ animation: "fadeIn 0.3s ease", display: "grid", gap: "2rem" }}>
+                  <div>
+                    <p className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", letterSpacing: "1.5px", fontSize: "0.8rem", fontWeight: 700 }}>
+                      Kanakshi Privé Rewards
+                    </p>
+                    <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "2px 0 0", color: "#0f172a" }}>
+                      My Wallet &amp; Loyalty Cashbacks
+                    </h1>
+                  </div>
+
+                  {/* Wallet Balance Hero Card */}
+                  <div style={{
+                    borderRadius: "24px",
+                    background: "linear-gradient(135deg, #18181b 0%, #27272a 100%)",
+                    padding: "2.2rem 2rem",
+                    color: "#ffffff",
+                    border: "1px solid rgba(241, 167, 32, 0.3)",
+                    boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.2)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1.5rem"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+                      <div>
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "4px 12px",
+                          borderRadius: "16px",
+                          background: "rgba(241, 167, 32, 0.15)",
+                          border: "1px solid rgba(241, 167, 32, 0.3)",
+                          color: "#f1a720",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          letterSpacing: "1px",
+                          textTransform: "uppercase",
+                          marginBottom: "0.8rem"
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                          Privé Customer Cash
+                        </span>
+                        <div style={{ fontSize: "0.9rem", color: "#94a3b8", fontWeight: 500 }}>Available Spendable Balance</div>
+                        <div style={{ fontSize: "2.8rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.1, marginTop: "0.3rem" }}>
+                          ₹{Number(walletData?.wallet_balance ?? user.wallet_balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </div>
-                      ))
+                      </div>
+
+                      <Link
+                        href="/shop/all"
+                        className="primary-button"
+                        style={{
+                          padding: "0.85rem 1.6rem",
+                          borderRadius: "14px",
+                          background: "linear-gradient(135deg, #f1a720, #d97706)",
+                          color: "#ffffff",
+                          textDecoration: "none",
+                          fontWeight: 700,
+                          fontSize: "0.95rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          boxShadow: "0 10px 25px rgba(241, 167, 32, 0.3)"
+                        }}
+                      >
+                        <span>Shop &amp; Redeem Wallet Cash</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                      </Link>
+                    </div>
+
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                      gap: "1rem",
+                      paddingTop: "1.5rem",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.1)"
+                    }}>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Total Rewards Earned</span>
+                        <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#38bdf8", marginTop: "2px" }}>
+                          ₹{Number(walletData?.total_earned ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Total Spent at Checkout</span>
+                        <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fbbf24", marginTop: "2px" }}>
+                          ₹{Number(walletData?.total_spent ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Currency Ratio</span>
+                        <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#4ade80", marginTop: "2px" }}>
+                          1 Point = ₹1.00 INR
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Privilege Rules Info Card */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                    gap: "1.2rem"
+                  }}>
+                    <div style={{
+                      background: "#ffffff",
+                      borderRadius: "20px",
+                      padding: "1.5rem",
+                      border: "1px solid #e2e8f0",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.6rem"
+                    }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(241, 167, 32, 0.12)", color: "#b45309", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4Z"/></svg>
+                      </div>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>Welcome Signup Bonus</strong>
+                      <p style={{ color: "#64748b", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
+                        Every registered member gets instant welcome credit credited right to their account.
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: "#ffffff",
+                      borderRadius: "20px",
+                      padding: "1.5rem",
+                      border: "1px solid #e2e8f0",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.6rem"
+                    }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                      </div>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>Post-Purchase Cashback</strong>
+                      <p style={{ color: "#64748b", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
+                        Earn cashback rewards on kept orders. Credits unlock automatically 7 days after delivery once the return window closes.
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: "#ffffff",
+                      borderRadius: "20px",
+                      padding: "1.5rem",
+                      border: "1px solid #e2e8f0",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.6rem"
+                    }}>
+                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.12)", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 12 5 5L20 7"/></svg>
+                      </div>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>1-Click Checkout Deduction</strong>
+                      <p style={{ color: "#64748b", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
+                        Toggle &ldquo;Use Wallet Balance&rdquo; during checkout to instantly reduce your payable total like real cash.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Transaction Ledger Table */}
+                  <div style={{
+                    background: "#ffffff",
+                    borderRadius: "24px",
+                    padding: "2rem",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.02)"
+                  }}>
+                    <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#0f172a", marginBottom: "1.2rem" }}>
+                      Wallet Activity Ledger
+                    </h2>
+
+                    {(!walletData?.transactions || walletData.transactions.length === 0) ? (
+                      <div style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#94a3b8" }}>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: "0 auto 10px", opacity: 0.5 }}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                        <p style={{ margin: 0, fontSize: "0.95rem" }}>No wallet transactions recorded yet.</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left", color: "#64748b", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              <th style={{ padding: "0.75rem 1rem" }}>Date</th>
+                              <th style={{ padding: "0.75rem 1rem" }}>Description</th>
+                              <th style={{ padding: "0.75rem 1rem" }}>Type</th>
+                              <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Amount</th>
+                              <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Balance</th>
+                              <th style={{ padding: "0.75rem 1rem", textAlign: "center" }}>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {walletData.transactions.map((tx) => {
+                              const isCredit = tx.type === "credit";
+                              return (
+                                <tr key={tx.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                  <td style={{ padding: "1rem", whiteSpace: "nowrap", color: "#64748b", fontSize: "0.85rem" }}>
+                                    {tx.created_at ? new Date(tx.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                                  </td>
+                                  <td style={{ padding: "1rem" }}>
+                                    <strong style={{ color: "#0f172a", display: "block" }}>
+                                      {tx.description || tx.source.replace("_", " ")}
+                                    </strong>
+                                    {tx.order_number && (
+                                      <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Order #{tx.order_number}</span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: "1rem" }}>
+                                    <span style={{
+                                      display: "inline-block",
+                                      padding: "3px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      background: isCredit ? "#dcfce7" : "#fee2e2",
+                                      color: isCredit ? "#15803d" : "#b91c1c"
+                                    }}>
+                                      {tx.type}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "1rem", textAlign: "right", fontWeight: 700, color: isCredit ? "#15803d" : "#b91c1c", whiteSpace: "nowrap" }}>
+                                    {isCredit ? "+" : "-"}₹{Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td style={{ padding: "1rem", textAlign: "right", color: "#0f172a", fontWeight: 600, whiteSpace: "nowrap" }}>
+                                    ₹{Number(tx.balance_after).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td style={{ padding: "1rem", textAlign: "center" }}>
+                                    <span style={{
+                                      display: "inline-block",
+                                      padding: "3px 8px",
+                                      borderRadius: "12px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 600,
+                                      background: tx.status === "completed" ? "#f0fdf4" : tx.status === "pending_clearance" ? "#fefce8" : "#f1f5f9",
+                                      color: tx.status === "completed" ? "#166534" : tx.status === "pending_clearance" ? "#854d0e" : "#475569",
+                                      border: tx.status === "completed" ? "1px solid #bbf7d0" : tx.status === "pending_clearance" ? "1px solid #fef08a" : "1px solid #e2e8f0"
+                                    }}>
+                                      {tx.status === "pending_clearance" ? "Pending (7-Day Return)" : tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* TAB 2: ADDRESSES */}
+              {activeTab === "addresses" && (
+                <section style={{ animation: "fadeIn 0.3s ease" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                    <div>
+                      <p className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", letterSpacing: "1.5px", fontSize: "0.8rem", fontWeight: 700 }}>
+                        Shipping Destinations
+                      </p>
+                      <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "2px 0 0", color: "#0f172a" }}>
+                        Saved Address Book
+                      </h1>
+                    </div>
+                    {editingAddressId && (
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
+                        style={{ padding: "0.6rem 1.2rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Cancel Editing
+                      </button>
                     )}
                   </div>
 
-                  {/* Address Form */}
-                  <div style={{ background: "rgba(255, 253, 249, 0.94)", padding: "2rem", borderRadius: "24px", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}>
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: "1.5rem" }}>{editingAddressId ? "Edit Address" : "Add New Address"}</h3>
-                    <div className="account-address-form" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.2rem" }}>
-                      <div className="auth-field">
-                        <span>Address Type</span>
-                        <select value={addressForm.type} onChange={(event) => setAddressForm((current) => ({ ...current, type: event.target.value as AddressFormState["type"] }))}>
-                          <option value="home">Home</option>
-                          <option value="office">Office</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                      <div className="auth-field">
-                        <span>Label</span>
-                        <input value={addressForm.label} onChange={(event) => setAddressForm((current) => ({ ...current, label: event.target.value }))} placeholder="Home, Work, Gift address" />
-                      </div>
-                      <div className="auth-field">
-                        <span>Recipient Name *</span>
-                        <input value={addressForm.recipient_name} onChange={(event) => setAddressForm((current) => ({ ...current, recipient_name: event.target.value }))} required />
-                      </div>
-                      <div className="auth-field">
-                        <span>Phone</span>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          autoComplete="tel-national"
-                          pattern="[6-9][0-9]{9}"
-                          maxLength={11}
-                          className={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone) ? "input-invalid" : ""}
-                          aria-invalid={addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone)}
-                          value={formatIndianPhone(addressForm.phone)}
-                          onChange={(event) => setAddressForm((current) => ({ ...current, phone: normalizeIndianPhone(event.target.value) }))}
-                          placeholder="10-digit mobile number"
-                        />
-                        {addressForm.phone.length > 0 && !isValidIndianPhone(addressForm.phone) ? (
-                          <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p>
-                        ) : null}
-                      </div>
-                      <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                        <span>Address Line 1 *</span>
-                        <input value={addressForm.address_line1} onChange={(event) => setAddressForm((current) => ({ ...current, address_line1: event.target.value }))} placeholder="Flat, floor, building, area" />
-                      </div>
-                      <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                        <span>Address Line 2</span>
-                        <input value={addressForm.address_line2} onChange={(event) => setAddressForm((current) => ({ ...current, address_line2: event.target.value }))} placeholder="Apartment, company, street details" />
-                      </div>
-                      <div className="auth-field">
-                        <span>City *</span>
-                        <input value={addressForm.city} onChange={(event) => setAddressForm((current) => ({ ...current, city: event.target.value }))} />
-                      </div>
-                      <div className="auth-field">
-                        <span>State *</span>
-                        <input value={addressForm.state} onChange={(event) => setAddressForm((current) => ({ ...current, state: event.target.value }))} />
-                      </div>
-                      <div className="auth-field">
-                        <span>Pincode *</span>
-                        <input
-                          inputMode="numeric"
-                          pattern="[1-9][0-9]{5}"
-                          maxLength={6}
-                          value={addressForm.pincode}
-                          onChange={(event) => setAddressForm((current) => ({ ...current, pincode: normalizeIndianPincode(event.target.value) }))}
-                          placeholder="6-digit pincode"
-                        />
-                        {addressPincodeStatus ? <p className={addressPincodeStatus.toLowerCase().includes("unable") ? "auth-field-error" : "auth-field-success"}>{addressPincodeStatus}</p> : null}
-                      </div>
-                      <div className="auth-field">
-                        <span>Landmark</span>
-                        <input value={addressForm.landmark} onChange={(event) => setAddressForm((current) => ({ ...current, landmark: event.target.value }))} placeholder="Nearby landmark" />
-                      </div>
-                      <label className="account-default-toggle" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={addressForm.is_default}
-                          onChange={(event) => setAddressForm((current) => ({ ...current, is_default: event.target.checked }))}
-                        />
-                        <span style={{ fontSize: "0.95rem" }}>Make this my default delivery address</span>
-                      </label>
+                  <div style={{ display: "grid", gap: "2rem" }}>
+                    {/* Saved Addresses Grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.2rem" }}>
+                      {addresses.length === 0 ? (
+                        <div style={{ gridColumn: "1 / -1", padding: "2.5rem", textAlign: "center", background: "#ffffff", borderRadius: "20px", border: "1px dashed #cbd5e1" }}>
+                          <p style={{ color: "#64748b", margin: 0 }}>No saved addresses yet. Fill in the form below to save your preferred delivery address.</p>
+                        </div>
+                      ) : (
+                        addresses.map((address) => (
+                          <div key={address.id} style={{ background: "#ffffff", padding: "1.5rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 18px rgba(0,0,0,0.02)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.8rem", paddingBottom: "0.6rem", borderBottom: "1px solid #f1f5f9" }}>
+                              <div>
+                                <strong style={{ display: "block", textTransform: "capitalize", fontSize: "1rem", color: "#0f172a" }}>
+                                  {address.type}{address.is_default ? " · Default" : ""}
+                                </strong>
+                                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                                  {address.label || address.recipient_name}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button type="button" onClick={() => hydrateAddressForm(address)} style={{ background: "none", border: "none", cursor: "pointer", color: "#2563eb", fontWeight: 600, fontSize: "0.82rem" }}>Edit</button>
+                                <button type="button" onClick={() => handleDeleteAddress(address.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#b53a2c", fontWeight: 600, fontSize: "0.82rem" }}>Remove</button>
+                              </div>
+                            </div>
+                            <p style={{ margin: 0, fontSize: "0.88rem", lineHeight: 1.5, color: "#334155" }}>
+                              <strong>{address.recipient_name}</strong><br />
+                              {address.address_line1}
+                              {address.address_line2 ? <><br />{address.address_line2}</> : null}
+                              <br />
+                              {address.city}, {address.state} - <strong>{address.pincode}</strong>
+                              {address.landmark ? <><br /><span style={{ color: "#64748b" }}>Landmark: {address.landmark}</span></> : null}
+                              {address.phone ? <><br /><span style={{ color: "#64748b" }}>Phone: {address.phone}</span></> : null}
+                            </p>
+                          </div>
+                        ))
+                      )}
                     </div>
 
-                    {addressFeedback ? (
-                      <div style={{ marginTop: "1.5rem" }} className={addressFeedback.toLowerCase().includes("success") || addressFeedback.toLowerCase().includes("added") || addressFeedback.toLowerCase().includes("updated") || addressFeedback.toLowerCase().includes("removed") ? "auth-success" : "auth-error"}>
-                        {addressFeedback}
+                    {/* Address Form Card */}
+                    <div style={{ background: "#ffffff", padding: "2rem", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 6px 24px rgba(0,0,0,0.03)" }}>
+                      <h3 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 1.5rem", color: "#0f172a" }}>
+                        {editingAddressId ? "Edit Saved Address" : "Add New Delivery Address"}
+                      </h3>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.2rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Address Type</label>
+                          <select
+                            value={addressForm.type}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, type: e.target.value as AddressFormState["type"] }))}
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          >
+                            <option value="home">Home (All Day Delivery)</option>
+                            <option value="office">Office / Commercial (10 AM - 6 PM)</option>
+                            <option value="other">Other Destination</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Label (Optional)</label>
+                          <input
+                            value={addressForm.label}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, label: e.target.value }))}
+                            placeholder="e.g. My Apartment, Studio, Parent's House"
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Recipient Full Name *</label>
+                          <input
+                            value={addressForm.recipient_name}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, recipient_name: e.target.value }))}
+                            placeholder="Full Name"
+                            required
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>10-Digit Mobile Phone</label>
+                          <input
+                            type="tel"
+                            maxLength={11}
+                            value={formatIndianPhone(addressForm.phone)}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, phone: normalizeIndianPhone(e.target.value) }))}
+                            placeholder="9876543210"
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div style={{ gridColumn: "1 / -1" }}>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Flat / House / Building Address *</label>
+                          <input
+                            value={addressForm.address_line1}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, address_line1: e.target.value }))}
+                            placeholder="Flat No, Wing, Building Name, Society"
+                            required
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div style={{ gridColumn: "1 / -1" }}>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Street / Area / Locality</label>
+                          <input
+                            value={addressForm.address_line2}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, address_line2: e.target.value }))}
+                            placeholder="Main Road, Sector, Colony"
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>6-Digit Pincode *</label>
+                          <input
+                            maxLength={6}
+                            value={addressForm.pincode}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, pincode: normalizeIndianPincode(e.target.value) }))}
+                            placeholder="110001"
+                            required
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                          {addressPincodeStatus && (
+                            <small style={{ display: "block", marginTop: "4px", color: addressPincodeStatus.includes("Detected") ? "#16a34a" : "#64748b", fontWeight: 600 }}>
+                              {addressPincodeStatus}
+                            </small>
+                          )}
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>City *</label>
+                          <input
+                            value={addressForm.city}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, city: e.target.value }))}
+                            placeholder="City"
+                            required
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>State *</label>
+                          <input
+                            value={addressForm.state}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, state: e.target.value }))}
+                            placeholder="State"
+                            required
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, textTransform: "uppercase", color: "#334155", marginBottom: "4px" }}>Landmark (Optional)</label>
+                          <input
+                            value={addressForm.landmark}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, landmark: e.target.value }))}
+                            placeholder="Near Metro, Opposite Park, etc."
+                            style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", fontSize: "0.92rem" }}
+                          />
+                        </div>
+
+                        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
+                          <input
+                            type="checkbox"
+                            id="is_default"
+                            checked={addressForm.is_default}
+                            onChange={(e) => setAddressForm((cur) => ({ ...cur, is_default: e.target.checked }))}
+                            style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                          />
+                          <label htmlFor="is_default" style={{ fontSize: "0.92rem", color: "#0f172a", cursor: "pointer", fontWeight: 600 }}>
+                            Set as my default shipping address for faster checkout
+                          </label>
+                        </div>
                       </div>
-                    ) : null}
 
-                    <div style={{ marginTop: "2rem" }}>
-                      <button type="button" className="primary-button" style={{ width: "auto", cursor: "pointer", padding: "0.8rem 2.5rem" }} onClick={handleSaveAddress} disabled={addressLoading}>
-                        {addressLoading ? "Saving…" : editingAddressId ? "Update Address" : "Save New Address"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
+                      {addressFeedback && (
+                        <div style={{ marginTop: "1.2rem", padding: "0.8rem 1rem", borderRadius: "10px", background: addressFeedback.includes("successfully") ? "#dcfce7" : "#fee2e2", color: addressFeedback.includes("successfully") ? "#166534" : "#991b1b", fontSize: "0.9rem" }}>
+                          {addressFeedback}
+                        </div>
+                      )}
 
-            {/* TAB: ORDERS */}
-            {!loading && user && activeTab === "orders" && (
-              <section style={{ animation: "fadeIn 0.3s ease" }}>
-                <h1 className="auth-title" style={{ fontSize: "2.2rem", marginBottom: "1.5rem" }}>Purchase History</h1>
-
-                {loadingOrders ? (
-                  <p className="auth-muted">Loading your past purchases…</p>
-                ) : orders.length === 0 ? (
-                  <div style={{ padding: "4rem 2rem", textAlign: "center", border: "1px dashed var(--line-strong)", borderRadius: "24px", background: "rgba(255, 253, 249, 0.5)" }}>
-                    <span style={{ fontSize: "3rem", display: "block", marginBottom: "1rem" }}>🛍️</span>
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: "0.5rem" }}>No orders found</h3>
-                    <p className="auth-muted" style={{ marginBottom: "2rem", maxWidth: "400px", margin: "0 auto 2rem" }}>We didn't find any purchases linked to your account or email address. Explore our catalog to find premium brass accents.</p>
-                    <Link href="/shop" className="primary-button" style={{ display: "inline-block", textDecoration: "none" }}>Shop Now</Link>
-                  </div>
-                ) : (
-                  <div style={{ display: "grid", gap: "1.5rem" }}>
-                    {orders.map((order) => {
-                      const badge = getStatusColor(order.status);
-                      
-                      const trackingNumber = (order as any).tracking_number;
-                      const trackingUrl = (order as any).tracking_url;
-
-                      return (
-                        <div
-                          key={order.order_number}
-                          className="account-order-row"
+                      <div style={{ marginTop: "1.5rem" }}>
+                        <button
+                          type="button"
+                          onClick={handleSaveAddress}
+                          disabled={addressLoading}
+                          className="primary-button"
                           style={{
-                            border: "1px solid var(--line)",
-                            borderRadius: "24px",
-                            padding: "1.5rem",
-                            background: "rgba(255, 253, 249, 0.94)",
-                            boxShadow: "var(--shadow)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "1.5rem",
-                            transition: "all 0.2s ease"
+                            padding: "0.85rem 2rem",
+                            borderRadius: "12px",
+                            background: "var(--accent-deep, #0f172a)",
+                            color: "#ffffff",
+                            fontWeight: 700,
+                            cursor: addressLoading ? "not-allowed" : "pointer"
                           }}
                         >
-                          {/* Top Row: Meta and Actions */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1.5rem", flexWrap: "wrap" }}>
-                            {/* Left Info: Product first item thumbnail & metadata */}
-                            <div className="account-order-meta" style={{ display: "flex", gap: "1.2rem", alignItems: "center" }}>
-                              <div style={{ width: "70px", height: "70px", borderRadius: "14px", overflow: "hidden", position: "relative", border: "1px solid var(--line)" }}>
-                                {order.first_item_image ? (
-                                  <img
-                                    src={resolveAssetUrl(order.first_item_image)}
-                                    alt={order.first_item_name || "Item"}
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                  />
-                                ) : (
-                                  <div style={{ width: "100%", height: "100%", background: "rgba(var(--rgb-text), 0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>📦</div>
-                                )}
-                              </div>
-
-                              <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "4px" }}>
-                                  <strong style={{ fontSize: "1.2rem", color: "var(--accent-deep)" }}>{order.order_number}</strong>
-                                  <span style={{ fontSize: "0.8rem", background: badge.bg, color: badge.text, padding: "3px 10px", borderRadius: "10px", fontWeight: 700, textTransform: "capitalize" }}>
-                                    {order.status}
-                                  </span>
-                                </div>
-                                <span style={{ fontSize: "0.9rem", color: "var(--muted)", display: "block" }}>
-                                  Placed on {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                                </span>
-                                <span style={{ fontSize: "0.9rem", color: "var(--text)", display: "block", marginTop: "4px", fontWeight: 500 }}>
-                                  {order.items_count} {order.items_count === 1 ? "item" : "items"} · Total: {formatPrice(order.total_amount, "₹")}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Right Action */}
-                            <div className="account-order-action" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                              {trackingNumber && (
-                                <div style={{ textAlign: "right", paddingRight: "1rem", borderRight: "1px solid var(--line)" }}>
-                                  <span style={{ fontSize: "0.75rem", color: "var(--muted)", display: "block", fontWeight: 600 }}>TRACKING ID</span>
-                                  <strong style={{ fontSize: "1rem" }}>{trackingNumber}</strong>
-                                  {trackingUrl && (
-                                    <a href={trackingUrl} target="_blank" rel="noreferrer" style={{ display: "block", fontSize: "0.8rem", color: "var(--accent)", fontWeight: 600, marginTop: "2px", textDecoration: "none" }}>Track Package ↗</a>
-                                  )}
-                                </div>
-                              )}
-                              
-                              <button
-                                type="button"
-                                onClick={() => handleViewOrderDetail(order.order_number)}
-                                disabled={loadingOrderDetail !== null}
-                                className="secondary-button"
-                                style={{
-                                  padding: "0.7rem 1.2rem",
-                                  borderRadius: "14px",
-                                  cursor: "pointer",
-                                  fontSize: "0.9rem",
-                                  fontWeight: 600,
-                                  minWidth: "120px",
-                                  textAlign: "center"
-                                }}
-                              >
-                                {loadingOrderDetail === order.order_number ? "Loading…" : "View Receipt"}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          {addressLoading ? "Saving…" : editingAddressId ? "Update Address" : "Save Delivery Address"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </section>
-            )}
+                </section>
+              )}
+
+              {/* TAB 3: PROFILE */}
+              {activeTab === "profile" && (
+                <section style={{ animation: "fadeIn 0.3s ease" }}>
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <p className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", letterSpacing: "1.5px", fontSize: "0.8rem", fontWeight: 700 }}>
+                      Kanakshi Membership
+                    </p>
+                    <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "2px 0 0", color: "#0f172a" }}>
+                      Profile &amp; Account Settings
+                    </h1>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.2rem" }}>
+                    <div style={{ background: "#ffffff", padding: "1.6rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 18px rgba(0,0,0,0.02)" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>FULL NAME</span>
+                      <strong style={{ fontSize: "1.15rem", color: "#0f172a" }}>{user.name}</strong>
+                    </div>
+
+                    <div style={{ background: "#ffffff", padding: "1.6rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 18px rgba(0,0,0,0.02)" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>EMAIL ADDRESS</span>
+                      <strong style={{ fontSize: "1.15rem", color: "#0f172a", overflowWrap: "anywhere" }}>{user.email}</strong>
+                    </div>
+
+                    <div style={{ background: "#ffffff", padding: "1.6rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 18px rgba(0,0,0,0.02)" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>MOBILE NUMBER</span>
+                      <strong style={{ fontSize: "1.15rem", color: "#0f172a" }}>{user.phone || "Not linked"}</strong>
+                    </div>
+
+                    <div style={{ background: "#ffffff", padding: "1.6rem", borderRadius: "18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 18px rgba(0,0,0,0.02)" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>ACCOUNT SECURITY</span>
+                      <strong style={{ fontSize: "1.1rem", color: "#16a34a" }}>
+                        Active &amp; Verified
+                      </strong>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+            </div>
 
           </div>
-        </div>
+        )}
+
       </div>
 
-      {/* DETAILED RECEIPT MODAL */}
+      {/* DETAILED ORDER RECEIPT & TRACKING MODAL */}
       {selectedOrder && (
         <div style={{
           position: "fixed",
@@ -905,27 +1482,26 @@ export default function AccountPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(5px)",
+          background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(6px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 9999,
+          zIndex: 99999,
           padding: "1.5rem",
           animation: "fadeIn 0.2s ease"
         }}>
           <div style={{
-            width: "min(100%, 750px)",
-            maxHeight: "85vh",
-            background: "#FAF8F5",
-            borderRadius: "32px",
-            border: "1px solid var(--line)",
-            boxShadow: "0 20px 40px -10px rgba(0,0,0,0.2)",
+            width: "min(100%, 780px)",
+            maxHeight: "88vh",
+            background: "#ffffff",
+            borderRadius: "28px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             padding: "2rem",
             display: "flex",
             flexDirection: "column",
             position: "relative",
-            animation: "slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1)"
+            animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
           }}>
             
             {/* Close Button */}
@@ -936,33 +1512,35 @@ export default function AccountPage() {
                 top: "1.5rem",
                 right: "1.5rem",
                 border: "none",
-                background: "rgba(var(--rgb-text), 0.05)",
+                background: "#f1f5f9",
                 width: "36px",
                 height: "36px",
                 borderRadius: "50%",
-                fontSize: "1.2rem",
+                fontSize: "1.1rem",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: "bold",
-                color: "var(--text)"
+                color: "#64748b"
               }}
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
 
-            {/* Modal Scroll Container */}
-            <div style={{ overflowY: "auto", flex: 1, paddingRight: "5px" }}>
+            {/* Modal Scrollable Content */}
+            <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
               
               {/* Header */}
-              <div style={{ marginBottom: "1.5rem", paddingBottom: "1.2rem", borderBottom: "1px solid var(--line)" }}>
-                <p className="eyebrow" style={{ color: "var(--accent-deep)" }}>Order Details</p>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
-                  <h3 style={{ fontSize: "1.6rem", fontWeight: 700 }}>{selectedOrder.order_number}</h3>
+              <div style={{ marginBottom: "1.5rem", paddingBottom: "1.2rem", borderBottom: "1px solid #e2e8f0" }}>
+                <span className="eyebrow" style={{ color: "var(--accent-deep, #b45309)", fontSize: "0.8rem", letterSpacing: "1.5px" }}>Official Order Receipt</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px", marginTop: "4px" }}>
+                  <h3 style={{ fontSize: "1.7rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>{selectedOrder.order_number}</h3>
                   <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "0.85rem", color: "var(--muted)", display: "block" }}>PLACED ON</span>
-                    <strong>{new Date(selectedOrder.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+                    <span style={{ fontSize: "0.78rem", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: 700 }}>PLACED DATE</span>
+                    <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>
+                      {new Date(selectedOrder.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -970,23 +1548,24 @@ export default function AccountPage() {
               {/* Status Banner */}
               <div style={{
                 background: getStatusColor(selectedOrder.status).bg,
-                border: `1px solid ${getStatusColor(selectedOrder.status).text}40`,
-                borderRadius: "20px",
-                padding: "1rem",
+                borderRadius: "16px",
+                padding: "1rem 1.4rem",
                 marginBottom: "1.5rem",
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center"
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "1rem"
               }}>
                 <div>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", fontWeight: 600 }}>SHIPMENT STATUS</span>
-                  <strong style={{ color: getStatusColor(selectedOrder.status).text, textTransform: "capitalize", fontSize: "1.1rem" }}>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", fontWeight: 700, textTransform: "uppercase" }}>ORDER STATUS</span>
+                  <strong style={{ color: getStatusColor(selectedOrder.status).text, textTransform: "uppercase", fontSize: "1.05rem" }}>
                     {selectedOrder.status}
                   </strong>
                 </div>
                 <div>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", fontWeight: 600 }}>PAYMENT METHOD</span>
-                  <strong style={{ textTransform: "uppercase", fontSize: "1rem" }}>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", fontWeight: 700, textTransform: "uppercase" }}>PAYMENT METHOD</span>
+                  <strong style={{ textTransform: "uppercase", fontSize: "0.95rem", color: "#0f172a" }}>
                     {selectedOrder.payment_method} ({selectedOrder.payment_status})
                   </strong>
                 </div>
@@ -994,11 +1573,11 @@ export default function AccountPage() {
 
               {/* Items Summary */}
               <div style={{ marginBottom: "1.5rem" }}>
-                <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.8rem" }}>Ordered Items</h4>
+                <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.8rem" }}>Ordered Jewellery Items</h4>
                 <div style={{ display: "grid", gap: "0.8rem" }}>
                   {selectedOrder.items.map((item) => (
-                    <div key={item.id} style={{ display: "flex", gap: "1rem", alignItems: "center", borderBottom: "1px solid var(--line-strong)30", paddingBottom: "0.6rem" }}>
-                      <div style={{ width: "45px", height: "45px", borderRadius: "8px", overflow: "hidden", position: "relative", border: "1px solid var(--line)" }}>
+                    <div key={item.id} style={{ display: "flex", gap: "1rem", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "0.8rem" }}>
+                      <div style={{ width: "50px", height: "50px", borderRadius: "10px", overflow: "hidden", position: "relative", border: "1px solid #e2e8f0", flexShrink: 0 }}>
                         {item.image ? (
                           <img
                             src={resolveAssetUrl(item.image)}
@@ -1006,18 +1585,18 @@ export default function AccountPage() {
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (
-                          <div style={{ width: "100%", height: "100%", background: "rgba(var(--rgb-text), 0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>📦</div>
+                          <div style={{ width: "100%", height: "100%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", color: "#94a3b8" }}>ITEM</div>
                         )}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <h5 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600 }}>{item.name}</h5>
-                        {item.variant_details && <small style={{ color: "var(--muted)" }}>{item.variant_details}</small>}
+                        <h5 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 600, color: "#0f172a" }}>{item.name}</h5>
+                        {item.variant_details && <small style={{ color: "#64748b" }}>{item.variant_details}</small>}
                       </div>
                       <div style={{ textAlign: "right", minWidth: "120px" }}>
-                        <span style={{ fontSize: "0.85rem", color: "var(--muted)", display: "block" }}>
+                        <span style={{ fontSize: "0.82rem", color: "#64748b", display: "block" }}>
                           {item.quantity} x {formatPrice(item.price, "₹")}
                         </span>
-                        <strong>{formatPrice(item.line_total, "₹")}</strong>
+                        <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>{formatPrice(item.line_total, "₹")}</strong>
                       </div>
                     </div>
                   ))}
@@ -1025,12 +1604,12 @@ export default function AccountPage() {
               </div>
 
               {/* Address & Tracking Layout */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--line)", paddingTop: "1.2rem" }} className="account-detail-grid">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem", borderTop: "1px solid #e2e8f0", paddingTop: "1.2rem" }} className="account-detail-grid">
                 
                 {/* Shipping Details */}
                 <div>
-                  <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.6rem" }}>Delivery Address</h4>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text)", lineHeight: 1.5 }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.6rem" }}>Delivery Address</h4>
+                  <p style={{ margin: 0, fontSize: "0.88rem", color: "#334155", lineHeight: 1.5 }}>
                     <strong>{selectedOrder.ship_name}</strong><br />
                     {selectedOrder.ship_address}<br />
                     {selectedOrder.ship_city}, {selectedOrder.ship_state} - {selectedOrder.ship_pincode}<br />
@@ -1040,22 +1619,35 @@ export default function AccountPage() {
 
                 {/* Tracking Details */}
                 <div>
-                  <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.6rem" }}>Shipment Tracking</h4>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.6rem" }}>Shipment Tracking</h4>
                   {selectedOrder.tracking_number ? (
                     <div>
-                      <p style={{ margin: "0 0 0.5rem", fontSize: "0.9rem" }}>
-                        <strong>Courier:</strong> Blue Dart / Delhivery<br />
-                        <strong>AWB:</strong> {selectedOrder.tracking_number}
+                      <p style={{ margin: "0 0 0.5rem", fontSize: "0.88rem", lineHeight: 1.6, color: "#334155" }}>
+                        <strong>Carrier:</strong> {selectedOrder.courier_name || 'Courier Partner'}<br />
+                        <strong>AWB / Tracking:</strong> <code style={{ fontSize: "0.95rem", color: "#2563eb", fontWeight: 700 }}>{selectedOrder.tracking_number}</code>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAwb(selectedOrder.tracking_number!)}
+                          style={{ marginLeft: "8px", background: "none", border: "none", cursor: "pointer", fontSize: "0.82rem", color: copiedAwb === selectedOrder.tracking_number ? "#16a34a" : "#64748b" }}
+                        >
+                          {copiedAwb === selectedOrder.tracking_number ? "Copied" : "Copy"}
+                        </button>
+                        {selectedOrder.estimated_delivery_date && (
+                          <>
+                            <br />
+                            <strong>Est. Delivery:</strong> {new Date(selectedOrder.estimated_delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </>
+                        )}
                       </p>
                       {selectedOrder.tracking_url && (
-                        <a href={selectedOrder.tracking_url} target="_blank" rel="noreferrer" className="text-link" style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                          Track on Courier Website →
+                        <a href={selectedOrder.tracking_url} target="_blank" rel="noreferrer" style={{ fontSize: "0.85rem", fontWeight: 700, color: "#2563eb", textDecoration: "underline" }}>
+                          Track on {selectedOrder.courier_name || 'Courier'} Website ↗
                         </a>
                       )}
                     </div>
                   ) : (
-                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--muted)" }}>
-                      Shipment details will be updated as soon as the order leaves our warehouse.
+                    <p style={{ margin: 0, fontSize: "0.88rem", color: "#64748b" }}>
+                      Shipment details will be updated as soon as the order is dispatched from our atelier.
                     </p>
                   )}
                 </div>
@@ -1064,23 +1656,20 @@ export default function AccountPage() {
 
               {/* Milestone Updates Timeline */}
               {selectedOrder.tracking && selectedOrder.tracking.length > 0 && (
-                <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.2rem", marginBottom: "1rem" }}>
-                  <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.8rem" }}>Activity Log</h4>
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "1.2rem", marginBottom: "1.5rem" }}>
+                  <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.8rem" }}>Activity Checkpoints</h4>
                   <div style={{ display: "grid", gap: "1rem", paddingLeft: "10px" }}>
                     {selectedOrder.tracking.map((track, i) => (
                       <div key={track.id} style={{ display: "flex", gap: "1rem", position: "relative" }}>
-                        
-                        {/* Circle Indicator */}
                         <div style={{
                           width: "12px",
                           height: "12px",
                           borderRadius: "50%",
-                          background: i === 0 ? "var(--accent)" : "var(--line-strong)",
+                          background: i === 0 ? "#16a34a" : "#cbd5e1",
                           marginTop: "4px",
                           zIndex: 2
                         }} />
 
-                        {/* Connector line */}
                         {i < selectedOrder.tracking.length - 1 && (
                           <div style={{
                             position: "absolute",
@@ -1088,18 +1677,18 @@ export default function AccountPage() {
                             left: "5px",
                             width: "2px",
                             height: "calc(100% + 4px)",
-                            background: "var(--line)",
+                            background: "#e2e8f0",
                             zIndex: 1
                           }} />
                         )}
 
                         <div>
-                          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <strong style={{ fontSize: "0.95rem" }}>{track.status}</strong>
-                            {track.location && <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>({track.location})</span>}
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <strong style={{ fontSize: "0.92rem", color: "#0f172a" }}>{track.status}</strong>
+                            {track.location && <span style={{ fontSize: "0.75rem", color: "#64748b" }}>({track.location})</span>}
                           </div>
-                          <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "var(--muted)", lineHeight: 1.3 }}>{track.message}</p>
-                          <small style={{ fontSize: "0.75rem", color: "rgba(var(--rgb-text), 0.4)", display: "block", marginTop: "2px" }}>
+                          <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "#64748b", lineHeight: 1.3 }}>{track.message}</p>
+                          <small style={{ fontSize: "0.75rem", color: "#94a3b8", display: "block", marginTop: "2px" }}>
                             {new Date(track.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {new Date(track.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                           </small>
                         </div>
@@ -1109,23 +1698,61 @@ export default function AccountPage() {
                 </div>
               )}
 
-              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.2rem", marginBottom: "1rem" }}>
-                <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--accent-deep)", marginBottom: "0.8rem" }}>Returns & Refunds</h4>
+              {/* Returns & Refunds Cockpit */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "1.2rem", marginBottom: "1.5rem" }}>
+                <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.8rem" }}>Returns &amp; Exchanges</h4>
 
-                {selectedOrder.returns.length > 0 ? (
+                {selectedOrder.returns.length > 0 && (
                   <div style={{ display: "grid", gap: "0.8rem", marginBottom: "1rem" }}>
                     {selectedOrder.returns.map((request) => (
-                      <div key={request.id} style={{ border: "1px solid var(--line)", borderRadius: "18px", padding: "0.9rem 1rem", background: "rgba(255,255,255,0.6)" }}>
+                      <div key={request.id} style={{ border: "1px solid #e2e8f0", borderRadius: "16px", padding: "1rem", background: "#f8fafc" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                           <div>
-                            <strong>{request.return_number}</strong>
-                            <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: "2px" }}>{request.reason}</div>
+                            <strong style={{ color: "#0f172a" }}>{request.return_number}</strong>
+                            <div style={{ fontSize: "0.85rem", color: "#64748b", marginTop: "2px" }}>{request.reason}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <span style={{ fontSize: "0.75rem", color: "var(--muted)", display: "block" }}>STATUS</span>
-                            <strong style={{ textTransform: "capitalize" }}>{request.status}</strong>
+                            <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block", fontWeight: 700 }}>STATUS</span>
+                            <strong style={{ textTransform: "uppercase", color: request.status === "refunded" ? "#16a34a" : "#0f172a" }}>{request.status}</strong>
                           </div>
                         </div>
+
+                        {request.pickup_tracking_number && (
+                          <div style={{ marginTop: "0.8rem", padding: "0.7rem 0.9rem", background: "#f0fdf4", borderRadius: "10px", border: "1px solid #bbf7d0", fontSize: "0.85rem" }}>
+                            <span style={{ display: "block", fontWeight: 700, color: "#166534" }}>Reverse Pickup Assigned:</span>
+                            <span>Carrier: <strong>{request.pickup_courier_name || 'Delhivery Reverse'}</strong></span> · <span>AWB: <code style={{ fontWeight: 700 }}>{request.pickup_tracking_number}</code></span>
+                            {request.pickup_scheduled_date && (
+                              <span style={{ display: "block", marginTop: "2px", color: "#166534" }}>Scheduled Date: <strong>{request.pickup_scheduled_date}</strong></span>
+                            )}
+                            {request.pickup_tracking_url && (
+                              <a href={request.pickup_tracking_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "4px", color: "#15803d", fontWeight: 700, textDecoration: "underline" }}>
+                                Track Reverse Pickup ↗
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        {request.status === "refunded" && (
+                          <div style={{ marginTop: "0.8rem", padding: "0.9rem", background: "rgba(241, 167, 32, 0.08)", border: "1px solid rgba(241, 167, 32, 0.3)", borderRadius: "12px" }}>
+                            <strong style={{ color: "#b45309", fontSize: "0.9rem", display: "block" }}>
+                              {request.refund_mode === "wallet" ? "Refund Credited to Your Kanakshi Wallet!" : "Refund Processed to Source Account"}
+                            </strong>
+                            <p style={{ margin: "3px 0 8px", fontSize: "0.82rem", color: "#64748b" }}>
+                              {request.refund_mode === "wallet"
+                                ? `₹${request.approved_amount} is available in your wallet. You can use it immediately at checkout!`
+                                : `₹${request.approved_amount} has been initiated back to your original payment method.`}
+                            </p>
+                            {request.refund_mode === "wallet" && (
+                              <Link
+                                href="/shop"
+                                style={{ display: "inline-block", padding: "5px 12px", background: "var(--accent, #f1a720)", color: "#191919", borderRadius: "8px", fontWeight: 700, fontSize: "0.8rem", textDecoration: "none" }}
+                              >
+                                Shop With Wallet Cash →
+                              </Link>
+                            )}
+                          </div>
+                        )}
+
                         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", marginTop: "0.6rem", fontSize: "0.85rem" }}>
                           <span>Requested: {formatPrice(request.requested_amount, "₹")}</span>
                           <span>Approved: {request.approved_amount > 0 ? formatPrice(request.approved_amount, "₹") : "Pending"}</span>
@@ -1133,23 +1760,21 @@ export default function AccountPage() {
                       </div>
                     ))}
                   </div>
-                ) : null}
+                )}
 
-                {canRequestReturn ? (
-                  <div style={{ border: "1px solid var(--line)", borderRadius: "22px", padding: "1rem", background: "rgba(255,255,255,0.7)" }}>
-                    <p style={{ margin: "0 0 0.85rem", fontSize: "0.9rem", color: "var(--muted)" }}>
-                      Submit a return request for shipped or delivered items. Choose only the quantities you want to send back.
+                {canRequestReturn && selectedOrder.returns.length === 0 && (
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: "18px", padding: "1.2rem", background: "#f8fafc" }}>
+                    <p style={{ margin: "0 0 0.85rem", fontSize: "0.88rem", color: "#64748b" }}>
+                      Eligible for 7-day hassle-free return or exchange. Select items you wish to send back:
                     </p>
                     <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1rem" }}>
                       {selectedOrder.items.map((item) => {
                         const key = `${item.product_id}:${item.variant_id ?? 0}`;
                         return (
-                          <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 92px", gap: "0.75rem", alignItems: "center" }}>
+                          <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: "0.75rem", alignItems: "center" }}>
                             <div>
-                              <strong style={{ display: "block", fontSize: "0.92rem" }}>{item.name}</strong>
-                              <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
-                                Ordered qty: {item.quantity}
-                              </span>
+                              <strong style={{ display: "block", fontSize: "0.9rem", color: "#0f172a" }}>{item.name}</strong>
+                              <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Ordered qty: {item.quantity}</span>
                             </div>
                             <input
                               type="number"
@@ -1162,89 +1787,160 @@ export default function AccountPage() {
                                   [key]: Math.max(0, Math.min(item.quantity, Number(e.target.value || 0))),
                                 }))
                               }
-                              style={{
-                                padding: "0.75rem 0.8rem",
-                                borderRadius: "14px",
-                                border: "1px solid var(--line)",
-                                background: "white",
-                              }}
+                              style={{ padding: "0.5rem 0.6rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#ffffff", textAlign: "center" }}
                             />
                           </div>
                         );
                       })}
                     </div>
                     <div style={{ display: "grid", gap: "0.8rem" }}>
-                      <input
-                        type="text"
-                        value={returnReason}
-                        onChange={(e) => setReturnReason(e.target.value)}
-                        placeholder="Reason for return (wrong item, damaged, not as expected...)"
-                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)" }}
-                      />
-                      <textarea
-                        rows={3}
-                        value={returnNotes}
-                        onChange={(e) => setReturnNotes(e.target.value)}
-                        placeholder="Extra notes for the return team (optional)"
-                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)", resize: "vertical" }}
-                      />
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                          Primary Reason for Return *
+                        </label>
+                        <select
+                          value={returnReason}
+                          onChange={(e) => setReturnReason(e.target.value)}
+                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.88rem" }}
+                        >
+                          <option value="Size / Fitting Issue (e.g. Ring too loose/tight, unsuitable length)">Size / Fitting Issue (e.g. Ring too loose/tight, unsuitable length)</option>
+                          <option value="Design / Color Different from Photos (e.g. Stone or plating in person)">Design / Color Different from Photos (e.g. Stone or plating in person)</option>
+                          <option value="Received Defective or Damaged (e.g. Scratched surface, loose clasp/gem)">Received Defective or Damaged (e.g. Scratched surface, loose clasp/gem)</option>
+                          <option value="Received Wrong Item / SKU (e.g. Different piece delivered)">Received Wrong Item / SKU (e.g. Different piece delivered)</option>
+                          <option value="Quality / Weight Not as Expected">Quality / Weight Not as Expected</option>
+                          <option value="Arrived Later than Needed (e.g. Missed occasion/gift date)">Arrived Later than Needed (e.g. Missed occasion/gift date)</option>
+                          <option value="Want to Exchange for Another Design (Instant Wallet Credit)">Want to Exchange for Another Design (Instant Wallet Credit)</option>
+                          <option value="Other Reason">Other Reason</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                          Specific Details (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={returnReasonDetail}
+                          onChange={(e) => setReturnReasonDetail(e.target.value)}
+                          placeholder="e.g. Ring was size 12, need size 14"
+                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.88rem" }}
+                        />
+                      </div>
+
+                      {/* Refund Mode Choice */}
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+                          Refund Settlement Method *
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                          <label
+                            onClick={() => setReturnRefundMode("wallet")}
+                            style={{
+                              padding: "0.6rem 0.8rem",
+                              borderRadius: "10px",
+                              border: returnRefundMode === "wallet" ? "2px solid #b45309" : "1px solid #cbd5e1",
+                              background: returnRefundMode === "wallet" ? "rgba(241, 167, 32, 0.08)" : "#fff",
+                              cursor: "pointer",
+                              fontSize: "0.82rem",
+                              display: "block"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="radio"
+                                name="account_refund_mode"
+                                checked={returnRefundMode === "wallet"}
+                                onChange={() => setReturnRefundMode("wallet")}
+                                style={{ accentColor: "#b45309" }}
+                              />
+                              <strong style={{ color: "#0f172a" }}>Wallet Cash (Instant)</strong>
+                            </div>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b", display: "block", marginTop: "2px" }}>
+                              Shop immediately after inspection
+                            </span>
+                          </label>
+
+                          <label
+                            onClick={() => setReturnRefundMode("original_payment")}
+                            style={{
+                              padding: "0.6rem 0.8rem",
+                              borderRadius: "10px",
+                              border: returnRefundMode === "original_payment" ? "2px solid #b45309" : "1px solid #cbd5e1",
+                              background: returnRefundMode === "original_payment" ? "rgba(241, 167, 32, 0.08)" : "#fff",
+                              cursor: "pointer",
+                              fontSize: "0.82rem",
+                              display: "block"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <input
+                                type="radio"
+                                name="account_refund_mode"
+                                checked={returnRefundMode === "original_payment"}
+                                onChange={() => setReturnRefundMode("original_payment")}
+                                style={{ accentColor: "#b45309" }}
+                              />
+                              <strong style={{ color: "#0f172a" }}>Original Source</strong>
+                            </div>
+                            <span style={{ fontSize: "0.74rem", color: "#64748b", display: "block", marginTop: "2px" }}>
+                              Bank refund in 3–5 days
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
                       <textarea
                         rows={2}
-                        value={returnImages}
-                        onChange={(e) => setReturnImages(e.target.value)}
-                        placeholder="Optional proof image URLs, one per line"
-                        style={{ padding: "0.95rem 1rem", borderRadius: "16px", border: "1px solid var(--line)", resize: "vertical" }}
+                        value={returnNotes}
+                        onChange={(e) => setReturnNotes(e.target.value)}
+                        placeholder="Additional notes for our quality inspection team (optional)"
+                        style={{ padding: "0.75rem 1rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.9rem", resize: "vertical" }}
                       />
-                      {returnFeedback ? (
-                        <div style={{ fontSize: "0.86rem", color: returnFeedback.toLowerCase().includes("successfully") ? "#2d7b4c" : "#b53a2c" }}>
+                      {returnFeedback && (
+                        <div style={{ fontSize: "0.85rem", color: returnFeedback.includes("submitted") ? "#166534" : "#991b1b" }}>
                           {returnFeedback}
                         </div>
-                      ) : null}
+                      )}
                       <button
                         type="button"
                         onClick={handleSubmitReturn}
                         disabled={isSubmittingReturn}
-                        className="secondary-button"
-                        style={{ justifySelf: "start", cursor: "pointer" }}
+                        style={{ padding: "0.75rem 1.4rem", borderRadius: "10px", background: "var(--accent-deep, #0f172a)", color: "#ffffff", fontWeight: 700, border: "none", cursor: "pointer", justifySelf: "start" }}
                       >
-                        {isSubmittingReturn ? "Sending Request…" : "Request Return"}
+                        {isSubmittingReturn ? "Submitting…" : "Request Return / Pickup"}
                       </button>
                     </div>
                   </div>
-                ) : selectedOrder.returns.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--muted)" }}>
-                    Return requests open once the order is shipped or delivered.
-                  </p>
-                ) : null}
+                )}
               </div>
 
               {/* Price Details */}
               <div style={{
-                borderTop: "1px solid var(--line)",
+                borderTop: "1px solid #e2e8f0",
                 paddingTop: "1.2rem",
                 marginTop: "1.5rem",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-end",
-                gap: "0.5rem"
+                gap: "0.4rem"
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.85rem" }}>
-                  <span style={{ color: "var(--muted)" }}>Subtotal</span>
+                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.88rem" }}>
+                  <span style={{ color: "#64748b" }}>Subtotal</span>
                   <strong>{formatPrice(selectedOrder.subtotal, "₹")}</strong>
                 </div>
                 {selectedOrder.discount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.85rem", color: "#2d7b4c" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.88rem", color: "#166534" }}>
                     <span>Discount Code Applied</span>
                     <strong>-{formatPrice(selectedOrder.discount, "₹")}</strong>
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.85rem" }}>
-                  <span style={{ color: "var(--muted)" }}>Shipping Cost</span>
+                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "0.88rem" }}>
+                  <span style={{ color: "#64748b" }}>Shipping</span>
                   <strong>{selectedOrder.shipping_cost === 0 ? "FREE" : formatPrice(selectedOrder.shipping_cost, "₹")}</strong>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "1.1rem", borderTop: "1px solid var(--line)", paddingTop: "0.5rem", marginTop: "0.2rem" }}>
-                  <strong>Grand Total</strong>
-                  <strong style={{ color: "var(--accent-deep)" }}>{formatPrice(selectedOrder.total_amount, "₹")}</strong>
+                <div style={{ display: "flex", justifyContent: "space-between", width: "240px", fontSize: "1.15rem", borderTop: "1px solid #e2e8f0", paddingTop: "0.6rem", marginTop: "0.3rem" }}>
+                  <strong style={{ color: "#0f172a" }}>Total Paid</strong>
+                  <strong style={{ color: "#16a34a" }}>{formatPrice(selectedOrder.total_amount, "₹")}</strong>
                 </div>
               </div>
 
@@ -1255,14 +1951,13 @@ export default function AccountPage() {
               <a
                 href={`/track-order?number=${encodeURIComponent(selectedOrder.order_number)}`}
                 className="primary-button"
-                style={{ flex: 1, textAlign: "center", textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center" }}
+                style={{ flex: 1, textAlign: "center", textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center", padding: "0.85rem 1.5rem", borderRadius: "12px", background: "var(--accent-deep, #0f172a)", color: "#ffffff", fontWeight: 700 }}
               >
                 Track Live Order Updates
               </a>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="secondary-button"
-                style={{ flex: 0.5, cursor: "pointer" }}
+                style={{ flex: 0.5, cursor: "pointer", padding: "0.85rem 1.5rem", borderRadius: "12px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#0f172a", fontWeight: 600 }}
               >
                 Close Receipt
               </button>
@@ -1281,8 +1976,8 @@ export default function AccountPage() {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
-        @media (max-width: 768px) {
-          .account-address-form {
+        @media (max-width: 860px) {
+          .account-main-grid {
              grid-template-columns: 1fr !important;
           }
           .account-detail-grid {

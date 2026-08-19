@@ -47,12 +47,29 @@ export type SiteSettings = {
   topbar_text_color?: string | null;
   topbar_offers?: string[];
   payment_gateways?: PaymentGatewayPublic[];
+  prepaid_discount?: PrepaidDiscountSetting;
+  cod_settings?: CodSetting;
   registry_allow_buyback?: boolean;
   registry_warranty_duration_months?: number;
   registry_allowed_sources?: string[];
   registry_allowed_upload_size_mb?: number;
   registry_allowed_file_types?: string[];
   registry_auto_verify_website_orders?: boolean;
+};
+
+export type PrepaidDiscountSetting = {
+  is_enabled: boolean;
+  title: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_order_amount: number;
+  max_discount: number;
+};
+
+export type CodSetting = {
+  is_enabled: boolean;
+  fee: number;
+  max_order_amount: number;
 };
 
 export type PaymentGatewayPublic = {
@@ -212,8 +229,44 @@ export type CustomerUser = {
   city?: string | null;
   state?: string | null;
   pincode?: string | null;
+  wallet_balance?: number;
   email_verified_at?: string | null;
   role?: string;
+};
+
+export type WalletConfig = {
+  is_enabled: boolean;
+  signup_bonus_enabled: boolean;
+  signup_bonus_amount: number;
+  order_cashback_enabled: boolean;
+  order_cashback_type: "percent" | "fix";
+  order_cashback_value: number;
+  order_cashback_min_order: number;
+  order_cashback_max_amount: number;
+  order_cashback_release_days: number;
+  max_redemption_percent: number;
+};
+
+export type WalletTransaction = {
+  id: number;
+  order_id?: number | null;
+  order_number?: string | null;
+  type: "credit" | "debit";
+  source: string;
+  amount: number;
+  balance_after: number;
+  description?: string | null;
+  status: "completed" | "pending_clearance" | "cancelled";
+  available_at?: string | null;
+  created_at?: string | null;
+};
+
+export type CustomerWalletPayload = {
+  wallet_balance: number;
+  total_earned: number;
+  total_spent: number;
+  config: WalletConfig;
+  transactions: WalletTransaction[];
 };
 
 export type CustomerAddress = {
@@ -241,10 +294,11 @@ export type CustomerAuthConfig = {
   sms_otp_enabled: boolean;
   whatsapp_otp_enabled: boolean;
   default_otp_channel: "email" | "sms" | "whatsapp";
-  otp_length: number;
-  otp_expiry_minutes: number;
-  resend_wait_seconds: number;
-  customer_email_active: boolean;
+  otp_length?: number;
+  otp_expiry_minutes?: number;
+  resend_wait_seconds?: number;
+  customer_email_active?: boolean;
+  wallet?: WalletConfig;
 };
 
 export type BlogAuthor = {

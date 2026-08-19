@@ -153,7 +153,7 @@ function SuccessReceiptContent() {
                 transition: "all 0.2s"
               }}
             >
-              {copied ? "Copied ✓" : "Copy ID"}
+              {copied ? "Copied!" : "Copy ID"}
             </button>
           </div>
 

@@ -1,12 +1,15 @@
 export const liveContactDefaults = {
-  tradeName: "Kanakshi.in",
-  email: "support@kanakshi.in",
-  phone: "",
-  addressLine1: "",
-  city: "",
-  state: "",
-  pincode: "",
+  tradeName: "Kanakshi Fine Jewellery",
+  email: "care@kanakshi.in",
+  phone: "+91 98765 43210",
+  whatsapp: "+91 98765 43210",
+  addressLine1: "Kanakshi Registered Office, DLF Horizon Plaza",
+  addressLine2: "Golf Course Road, Sector 43",
+  city: "Gurugram",
+  state: "Haryana",
+  pincode: "122002",
   country: "India",
+  workingHours: "Mon - Sat: 10:00 AM - 7:30 PM (IST)",
 };
 
 export const livePrivacyPolicyHtml = `

@@ -39,7 +39,7 @@ function AuctionCard({ auction }: { auction: Auction }) {
         {imgSrc ? (
           <img src={imgSrc} alt={auction.title} />
         ) : (
-          <div className="la-card-placeholder"><span>🏺</span></div>
+          <div className="la-card-placeholder"><span>ARTIFACT</span></div>
         )}
         <div className={`la-status-badge la-status-${auction.status}`}>
           {auction.status === "live" && <span className="la-live-dot" />}
@@ -103,7 +103,7 @@ export default function LiveAuctionsPage() {
       <div className="la-page">
         <div className="la-hero">
           <div className="la-hero-inner">
-            <p className="la-hero-eyebrow">🔨 AUTHENTICATED ONE-OF-ONE BRASS AUCTIONS</p>
+            <p className="la-hero-eyebrow">AUTHENTICATED ONE-OF-ONE BRASS AUCTIONS</p>
             <h1 className="la-hero-heading">Live Auctions</h1>
             <p className="la-hero-sub">Rare handcrafted brass artifacts auctioned to the highest bidder. Each piece verified and authenticated by Kanakshi.in ateliers.</p>
             {liveCount > 0 && (
@@ -117,7 +117,7 @@ export default function LiveAuctionsPage() {
 
         {!hasToken && (
           <div className="la-auth-banner">
-            <span>🔒 <strong>Login required</strong> to place bids and participate in auctions.</span>
+            <span><strong>Login required</strong> to place bids and participate in auctions.</span>
             <Link href="/account/login?redirect=/live-auctions" className="la-auth-btn">Login / Register</Link>
           </div>
         )}
@@ -130,7 +130,7 @@ export default function LiveAuctionsPage() {
                 onClick={() => setFilter(f)}
                 className={`la-filter-btn${filter === f ? " la-filter-btn--active" : ""}`}
               >
-                {f === "all" ? "All Auctions" : f === "live" ? "🔴 Live Now" : f === "upcoming" ? "🕐 Upcoming" : "✓ Ended"}
+                {f === "all" ? "All Auctions" : f === "live" ? "Live Now" : f === "upcoming" ? "Upcoming" : "Ended"}
               </button>
             ))}
           </div>
@@ -142,7 +142,6 @@ export default function LiveAuctionsPage() {
             </div>
           ) : auctions.length === 0 ? (
             <div className="la-empty">
-              <div className="la-empty-icon">🔨</div>
               <h3>No auctions {filter !== "all" ? `in "${filter}"` : "yet"}</h3>
               <p>Check back soon. New one-of-one pieces drop regularly.</p>
             </div>

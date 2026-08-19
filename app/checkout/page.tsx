@@ -107,7 +107,7 @@ const INDIAN_STATES_AND_CITIES: Record<string, string[]> = {
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, addItem, clearCart } = useCart();
   const checkoutCompletingRef = useRef(false);
 
   // User & settings states
@@ -117,6 +117,8 @@ function CheckoutPageContent() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [shippingProducts, setShippingProducts] = useState<Record<number, Product>>({});
+  const [upsellProducts, setUpsellProducts] = useState<Product[]>([]);
+  const [addingUpsellId, setAddingUpsellId] = useState<number | null>(null);
 
   // Online gateway simulation overlay state
   const [activeSimulation, setActiveSimulation] = useState<{
@@ -126,107 +128,69 @@ function CheckoutPageContent() {
     accessToken?: string | null;
   } | null>(null);
 
-  // Form states
+  // Form states (Essential Quick Checkout Fields)
   const [shipName, setShipName] = useState("");
   const [shipEmail, setShipEmail] = useState("");
   const [shipPhone, setShipPhone] = useState("");
-  const [shipAltPhone, setShipAltPhone] = useState("");
   const [shipAddressLine1, setShipAddressLine1] = useState("");
-  const [shipAddressLine2, setShipAddressLine2] = useState("");
   const [shipLandmark, setShipLandmark] = useState("");
   const [shipCity, setShipCity] = useState("");
   const [shipState, setShipState] = useState("");
   const [shipPincode, setShipPincode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "phonepe">("razorpay");
   const [notes, setNotes] = useState("");
-  const [saveAddressForFuture, setSaveAddressForFuture] = useState(false);
-  const [saveAddressAsDefault, setSaveAddressAsDefault] = useState(false);
-  const [saveAddressType, setSaveAddressType] = useState<"home" | "office" | "other">("home");
-  const [saveAddressLabel, setSaveAddressLabel] = useState("");
-
-  // Dropdown list helper states
-  const [customCityActive, setCustomCityActive] = useState(false);
-  const [customCityValue, setCustomCityValue] = useState("");
+  const [saveAddressForFuture, setSaveAddressForFuture] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
   const pincodeLookupRef = useRef<string>("");
-
-  const handleStateChange = (stateVal: string) => {
-    setShipState(stateVal);
-    setShipCity("");
-    setCustomCityActive(false);
-    setCustomCityValue("");
-  };
-
-  const handleCityChange = (cityVal: string) => {
-    if (cityVal === "Other") {
-      setCustomCityActive(true);
-      setShipCity("");
-      setCustomCityValue("");
-    } else {
-      setCustomCityActive(false);
-      setShipCity(cityVal);
-      setCustomCityValue("");
-    }
-  };
-
-  const handleCustomCityChange = (val: string) => {
-    setCustomCityValue(val);
-    setShipCity(val);
-  };
-
-  const applyPincodeLocation = (state: string, city: string) => {
-    setShipState(state);
-    if (state && INDIAN_STATES_AND_CITIES[state]?.includes(city)) {
-      setCustomCityActive(false);
-      setCustomCityValue("");
-      setShipCity(city);
-      return;
-    }
-
-    setCustomCityActive(true);
-    setCustomCityValue(city);
-    setShipCity(city);
-  };
-
-  const composeShippingAddress = () =>
-    [shipAddressLine1.trim(), shipAddressLine2.trim(), shipLandmark.trim()]
-      .filter(Boolean)
-      .join(", ");
-
-  const applySavedAddress = (address: CustomerAddress) => {
-    setSelectedAddressId(address.id);
-    setShipName(address.recipient_name || user?.name || "");
-    setShipEmail(user?.email || shipEmail);
-    setShipPhone(address.phone || user?.phone || "");
-    setShipAltPhone(address.alternate_phone || "");
-    setShipAddressLine1(address.address_line1 || "");
-    setShipAddressLine2(address.address_line2 || "");
-    setShipLandmark(address.landmark || "");
-    setShipPincode(normalizeIndianPincode(address.pincode || ""));
-    applyPincodeLocation(address.state || "", address.city || "");
-    setSaveAddressType(address.type || "home");
-    setSaveAddressLabel(address.label || "");
-    setSaveAddressAsDefault(address.is_default);
-  };
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [useWallet, setUseWallet] = useState(true);
 
   // Submit states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const availableGateways = settings
     ? (settings.payment_gateways || [])
     : [{ provider: "cod", display_name: "Cash on Delivery", is_test_mode: false } satisfies PaymentGatewayPublic];
   const hasAnyPaymentGateway = availableGateways.length > 0;
   const hasGateway = (provider: "cod" | "razorpay" | "phonepe") =>
     availableGateways.some((gateway) => gateway.provider === provider);
-  const gatewayMeta = (provider: "cod" | "razorpay" | "phonepe") =>
-    availableGateways.find((gateway) => gateway.provider === provider);
+
+  const handleStateChange = (stateVal: string) => {
+    setShipState(stateVal);
+    setShipCity("");
+  };
+
+  const handleCityChange = (cityVal: string) => {
+    setShipCity(cityVal);
+  };
+
+  const applyPincodeLocation = (state: string, city: string) => {
+    setShipState(state);
+    setShipCity(city);
+  };
+
+  const composeShippingAddress = () =>
+    [shipAddressLine1.trim(), shipLandmark.trim()]
+      .filter(Boolean)
+      .join(", Landmark: ");
+
+  const applySavedAddress = (address: CustomerAddress) => {
+    setSelectedAddressId(address.id);
+    setShipName(address.recipient_name || user?.name || "");
+    setShipEmail(user?.email || shipEmail);
+    setShipPhone(address.phone || user?.phone || "");
+    setShipAddressLine1(address.address_line1 || "");
+    setShipLandmark(address.landmark || "");
+    setShipPincode(normalizeIndianPincode(address.pincode || ""));
+    applyPincodeLocation(address.state || "", address.city || "");
+  };
 
   const redirectToSuccess = (orderNumber: string) => {
     const target = `/checkout/success?order_number=${encodeURIComponent(orderNumber)}`;
@@ -254,16 +218,20 @@ function CheckoutPageContent() {
     router.push(target);
   };
 
-  // Load configuration & user data
+  // Load configuration & user data & upsells
   useEffect(() => {
     async function loadData() {
       try {
-        const [settingsData, couponsData] = await Promise.all([
+        const [settingsData, couponsData, productsData] = await Promise.all([
           getSettings(),
-          getActiveCoupons()
+          getActiveCoupons(),
+          getProducts("per_page=12")
         ]);
         setSettings(settingsData);
         setCoupons(couponsData || []);
+        if (productsData?.items) {
+          setUpsellProducts(productsData.items);
+        }
 
         const token = getStoredCustomerToken();
         if (token) {
@@ -274,7 +242,7 @@ function CheckoutPageContent() {
             ]);
             setUser(customer);
             setSavedAddresses(addresses);
-            // Pre-fill shipping info from authenticated user
+            // Pre-fill shipping info from customer profile
             setShipName(customer.name || "");
             setShipEmail(customer.email || "");
             setShipPhone(customer.phone || "");
@@ -283,7 +251,7 @@ function CheckoutPageContent() {
               applySavedAddress(defaultAddress);
             }
           } catch (e) {
-            console.error("Auth fetch failed in checkout:", e);
+            console.error("Auth fetch failed:", e);
           }
         }
       } catch (err) {
@@ -296,7 +264,6 @@ function CheckoutPageContent() {
     loadData();
   }, []);
 
-  // Redirect to cart if empty
   useEffect(() => {
     if (!loadingConfig && items.length === 0 && !checkoutCompletingRef.current) {
       router.push("/cart");
@@ -314,7 +281,6 @@ function CheckoutPageContent() {
 
   useEffect(() => {
     const requestedPayment = searchParams.get("payment");
-
     if (requestedPayment === "cod" || requestedPayment === "razorpay" || requestedPayment === "phonepe") {
       if (hasGateway(requestedPayment)) {
         setPaymentMethod(requestedPayment);
@@ -328,9 +294,7 @@ function CheckoutPageContent() {
         setShippingProducts({});
         return;
       }
-
       const ids = Array.from(new Set(items.map((item) => item.id))).filter(Boolean);
-
       try {
         const response = await getProducts(`ids=${ids.join(",")}&per_page=${ids.length}`);
         const productMap = response.items.reduce<Record<number, Product>>((acc, product) => {
@@ -340,13 +304,13 @@ function CheckoutPageContent() {
         setShippingProducts(productMap);
       } catch (error) {
         console.error("Failed to load product shipping rules:", error);
-        setShippingProducts({});
       }
     }
 
     loadShippingProducts();
   }, [items]);
 
+  // Pincode auto-detection
   useEffect(() => {
     const normalizedPincode = normalizeIndianPincode(shipPincode);
 
@@ -359,23 +323,17 @@ function CheckoutPageContent() {
 
     let active = true;
     pincodeLookupRef.current = normalizedPincode;
-    setPincodeStatus("Looking up city and state from pincode…");
+    setPincodeStatus("Detecting city & state…");
 
     fetchPincodeLocation(normalizedPincode)
       .then((location) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         applyPincodeLocation(location.state, location.city);
-        setPincodeStatus("City and state auto-filled from pincode.");
+        setPincodeStatus("City & state auto-detected.");
       })
       .catch((err) => {
-        if (!active) {
-          return;
-        }
-
-        setPincodeStatus(err instanceof Error ? err.message : "Unable to auto-fill city/state right now.");
+        if (!active) return;
+        setPincodeStatus(err instanceof Error ? err.message : "Enter city/state manually.");
       });
 
     return () => {
@@ -385,11 +343,11 @@ function CheckoutPageContent() {
 
   if (loadingConfig || items.length === 0) {
     return (
-      <main className="content-section auth-page" style={{ justifyContent: "center" }}>
+      <main className="content-section auth-page" style={{ justifyContent: "center", alignItems: "center", display: "flex", minHeight: "75vh" }}>
         <div style={{ textAlign: "center", padding: "3rem" }}>
           <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
-          <h2 className="auth-title">Preparing your secure checkout…</h2>
-          <p className="auth-muted">Loading product availability, shipping parameters and user profile.</p>
+          <h2 className="auth-title">Preparing your quick checkout…</h2>
+          <p className="auth-muted">Loading product availability, delivery parameters, and member benefits.</p>
         </div>
       </main>
     );
@@ -401,7 +359,7 @@ function CheckoutPageContent() {
   const shipEmailInvalid = shipEmail.length > 0 && !isValidEmailInput(shipEmail);
   const shipPhoneInvalid = shipPhone.length > 0 && !isValidIndianPhone(shipPhone);
 
-  // Compute subtotal, discount, shipping, and total amount
+  // Compute subtotal & discount
   let discountAmount = 0;
   if (appliedCoupon) {
     const minSpend = Number(appliedCoupon.min_order_amount || 0);
@@ -411,62 +369,67 @@ function CheckoutPageContent() {
       } else {
         discountAmount = Number(appliedCoupon.value);
       }
-      if (discountAmount > subtotal) {
-        discountAmount = subtotal;
-      }
     }
   }
 
   const netSubtotal = subtotal - discountAmount;
   let customShippingCost = 0;
   let hasDefaultShippingItem = false;
-  let hasCustomShippingItem = false;
-  let hasFreeShippingItem = false;
 
   items.forEach((item) => {
     const shippingProduct = shippingProducts[item.id];
     const shippingType = shippingProduct?.shipping_type || "default";
-
     if (shippingType === "custom") {
-      hasCustomShippingItem = true;
       customShippingCost += Number(shippingProduct?.shipping_fee || 0) * item.quantity;
       return;
     }
-
-    if (shippingType === "free") {
-      hasFreeShippingItem = true;
-      return;
+    if (shippingType !== "free") {
+      hasDefaultShippingItem = true;
     }
-
-    hasDefaultShippingItem = true;
   });
 
   const defaultRuleShippingCost = hasDefaultShippingItem && netSubtotal < freeShippingThreshold ? defaultShippingCost : 0;
   const shippingCost = defaultRuleShippingCost + customShippingCost;
-  const grandTotal = netSubtotal + shippingCost;
-  const onlyCustomShipping = hasCustomShippingItem && !hasDefaultShippingItem;
-  const mixedShippingRules = hasCustomShippingItem && hasDefaultShippingItem;
-  const showDefaultShippingUpsell = hasDefaultShippingItem && !hasCustomShippingItem && defaultRuleShippingCost > 0;
-  const checkoutIntro = onlyCustomShipping
-    ? "Complete your order below. This cart includes product-specific delivery charges."
-    : mixedShippingRules
-      ? "Complete your order below. Standard free-shipping rules apply only to regular-delivery items in this cart."
-      : `Complete your order below. Free shipping is automatically applied to orders above ${formatPrice(freeShippingThreshold, currencySymbol)}.`;
 
-  // Handle coupon application
-  function handleApplyCoupon(e?: React.FormEvent) {
-    if (e) e.preventDefault();
+  // Prepaid Savings Calculations
+  const isPrepaidMethod = paymentMethod !== "cod";
+  const prepaidConfig = settings?.prepaid_discount;
+  let prepaidDiscountAmount = 0;
+
+  if (isPrepaidMethod && prepaidConfig?.is_enabled) {
+    const minSpend = Number(prepaidConfig.min_order_amount || 0);
+    if (netSubtotal >= minSpend) {
+      if (prepaidConfig.type === "percent") {
+        prepaidDiscountAmount = Math.min(netSubtotal * (Number(prepaidConfig.value) / 100), Number(prepaidConfig.max_discount || 1000));
+      } else {
+        prepaidDiscountAmount = Number(prepaidConfig.value);
+      }
+    }
+  }
+
+  const codConfig = settings?.cod_settings;
+  const codFeeAmount = paymentMethod === "cod" ? Number(codConfig?.fee || 0) : 0;
+  const payableBeforeWallet = Math.max(0, (netSubtotal - prepaidDiscountAmount) + shippingCost + codFeeAmount);
+  const userWalletBalance = Number(user?.wallet_balance || 0);
+  let walletDiscountAmount = 0;
+  if (useWallet && userWalletBalance > 0 && payableBeforeWallet > 0) {
+    walletDiscountAmount = Math.min(userWalletBalance, payableBeforeWallet);
+  }
+  const grandTotal = Math.max(0, payableBeforeWallet - walletDiscountAmount);
+
+  function handleApplyCoupon(codeToApply?: string) {
+    const targetCode = (codeToApply || couponCode).trim();
     setCouponError(null);
     setCouponSuccess(null);
 
-    if (!couponCode.trim()) {
+    if (!targetCode) {
       setCouponError("Please enter a coupon code.");
       return;
     }
 
-    const matched = coupons.find(c => c.code.toLowerCase() === couponCode.trim().toLowerCase());
+    const matched = coupons.find(c => c.code.toLowerCase() === targetCode.toLowerCase());
     if (!matched) {
-      setCouponError(`The coupon code "${couponCode}" is invalid or expired.`);
+      setCouponError(`Coupon code "${targetCode}" is invalid or expired.`);
       return;
     }
 
@@ -477,10 +440,10 @@ function CheckoutPageContent() {
     }
 
     setAppliedCoupon(matched);
-    setCouponSuccess(`Coupon "${matched.code}" applied successfully!`);
+    setCouponCode(matched.code);
+    setCouponSuccess(`Coupon "${matched.code}" applied! You saved ${matched.type === "percent" ? `${matched.value}%` : formatPrice(Number(matched.value), currencySymbol)}.`);
   }
 
-  // Handle coupon removal
   function handleRemoveCoupon() {
     setAppliedCoupon(null);
     setCouponCode("");
@@ -488,7 +451,25 @@ function CheckoutPageContent() {
     setCouponError(null);
   }
 
-  // Simulation modal handlers
+  function handleAddUpsell(product: Product) {
+    setAddingUpsellId(product.id);
+    addItem({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: Number(product.price),
+      sale_price: product.sale_price ? Number(product.sale_price) : undefined,
+      effective_price: product.effective_price ? Number(product.effective_price) : Number(product.sale_price || product.price),
+      images: Array.isArray(product.images) && product.images.length > 0 ? product.images : [(product as any).primary_image || "/jewellery/drop-earrings.jpg"],
+      category_name: product.category_name,
+      category_slug: product.category_slug,
+      is_sellable: product.is_sellable
+    }, 1);
+    setTimeout(() => {
+      setAddingUpsellId(null);
+    }, 300);
+  }
+
   async function handleConfirmSimulation() {
     if (!activeSimulation) return;
     setIsSubmitting(true);
@@ -499,8 +480,8 @@ function CheckoutPageContent() {
         order_number: activeSimulation.orderNumber,
         payment_method: activeSimulation.method,
         access_token: activeSimulation.accessToken || undefined,
-        razorpay_payment_id: activeSimulation.method === "razorpay" ? "pay_simulated_" + Math.random().toString(36).substring(7) : undefined,
-        transaction_id: activeSimulation.method === "phonepe" ? "txn_simulated_" + Math.random().toString(36).substring(7) : undefined,
+        razorpay_payment_id: "pay_simulated_" + Math.random().toString(36).substring(7),
+        transaction_id: "txn_simulated_" + Math.random().toString(36).substring(7),
       }, token);
 
       if (verifyRes.success) {
@@ -513,15 +494,8 @@ function CheckoutPageContent() {
           paymentMethod: activeSimulation.method,
           reason: verifyRes.message || "Payment verification failed.",
         });
-        setIsSubmitting(false);
-        setActiveSimulation(null);
       }
     } catch (err) {
-      redirectToFailure({
-        orderNumber: activeSimulation.orderNumber,
-        paymentMethod: activeSimulation.method,
-        reason: "An error occurred during payment verification.",
-      });
       setIsSubmitting(false);
       setActiveSimulation(null);
     }
@@ -538,15 +512,15 @@ function CheckoutPageContent() {
         orderNumber: activeSimulation.orderNumber,
         paymentMethod: activeSimulation.method,
         reason: cancelRes.success
-          ? "Payment was cancelled before completion. You can retry from checkout."
-          : cancelRes.message || "We could not cancel this payment session automatically.",
+          ? "Payment was cancelled. You can retry anytime."
+          : cancelRes.message || "Payment session ended.",
       });
     } catch (err) {
       console.error("Order cancellation failed:", err);
       redirectToFailure({
         orderNumber: activeSimulation.orderNumber,
         paymentMethod: activeSimulation.method,
-        reason: "We could not cancel this payment session automatically. Please retry your order.",
+        reason: "Payment session ended. Please retry your order.",
       });
     } finally {
       setIsSubmitting(false);
@@ -554,17 +528,10 @@ function CheckoutPageContent() {
     }
   }
 
-  // Handle order submission
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-
-    if (!user) {
-      setError("Please create or log in to your verified customer account before checkout.");
-      setIsSubmitting(false);
-      return;
-    }
 
     if (shipEmailInvalid) {
       setError("Please enter a valid email address.");
@@ -573,27 +540,19 @@ function CheckoutPageContent() {
     }
 
     if (!shipName || !shipEmail || !shipPhone || !shipAddressLine1 || !shipCity || !shipState || !shipPincode) {
-      setError("Please fill out all required shipping fields.");
+      setError("Please fill out all delivery fields (Name, Phone, Email, Address, Landmark, Pincode, City & State).");
       setIsSubmitting(false);
       return;
     }
 
-    // Phone validation: 10-digit Indian mobile
     if (!isValidIndianPhone(shipPhone)) {
       setError("Please enter a valid 10-digit Indian mobile number (starting with 6-9).");
       setIsSubmitting(false);
       return;
     }
 
-    // Pincode validation: 6-digit Indian PIN
     if (!/^[1-9][0-9]{5}$/.test(normalizeIndianPincode(shipPincode))) {
       setError("Please enter a valid 6-digit PIN code.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (shipAltPhone && !isValidIndianPhone(shipAltPhone)) {
-      setError("Please enter a valid alternate 10-digit Indian mobile number.");
       setIsSubmitting(false);
       return;
     }
@@ -602,27 +561,24 @@ function CheckoutPageContent() {
     const shippingAddress = composeShippingAddress();
 
     const orderData = {
-      ship_name: shipName,
+      ship_name: shipName.trim(),
       ship_email: normalizeEmailInput(shipEmail),
       ship_phone: normalizeIndianPhone(shipPhone),
-      ship_alt_phone: normalizeIndianPhone(shipAltPhone) || undefined,
       ship_address: shippingAddress,
       save_address: saveAddressForFuture,
-      address_type: saveAddressType,
-      address_label: saveAddressLabel.trim() || undefined,
       address_line1: shipAddressLine1.trim(),
-      address_line2: shipAddressLine2.trim() || undefined,
       address_landmark: shipLandmark.trim() || undefined,
-      address_is_default: saveAddressAsDefault,
-      ship_city: shipCity,
-      ship_state: shipState,
+      ship_city: shipCity.trim(),
+      ship_state: shipState.trim(),
       ship_pincode: normalizeIndianPincode(shipPincode),
       payment_method: paymentMethod,
       coupon_code: appliedCoupon ? appliedCoupon.code : undefined,
-      notes: notes || undefined,
+      use_wallet: useWallet && walletDiscountAmount > 0,
+      wallet_amount: walletDiscountAmount,
+      notes: notes.trim() || undefined,
       items: items.map(item => ({
         product_id: item.id,
-        variant_id: null, // Default variant parameter as structured in CheckoutController
+        variant_id: null,
         quantity: item.quantity
       }))
     };
@@ -642,13 +598,7 @@ function CheckoutPageContent() {
         const config = res.data.gateway_config;
         const pendingAccessToken = config?.pending_access_token || undefined;
 
-        // If we have a real public key configured and are not in test mode, try loading the real Razorpay SDK
-        if (
-          paymentMethod === "razorpay" &&
-          config?.public_key &&
-          config?.provider_order_id &&
-          !config.is_test_mode
-        ) {
+        if (paymentMethod === "razorpay" && config?.public_key && config?.provider_order_id && !config.is_test_mode) {
           const loaded = await loadRazorpayScript();
           if (loaded) {
             try {
@@ -656,7 +606,7 @@ function CheckoutPageContent() {
                 key: config.public_key,
                 amount: Math.round(res.data.total_amount * 100),
                 currency: "INR",
-                name: "Kanakshi.in",
+                name: "Kanakshi Fine Jewellery",
                 description: `Order #${res.data.order_number}`,
                 order_id: config.provider_order_id,
                 handler: async function (response: any) {
@@ -669,847 +619,730 @@ function CheckoutPageContent() {
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_signature: response.razorpay_signature,
                   }, token);
-
                   if (verifyRes.success) {
                     checkoutCompletingRef.current = true;
                     clearCart();
                     redirectToSuccess(res.data!.order_number);
                   } else {
-                    redirectToFailure({
-                      orderNumber: res.data!.order_number,
-                      paymentMethod: "razorpay",
-                      reason: verifyRes.message || "Payment verification failed.",
-                    });
+                    redirectToFailure({ orderNumber: res.data!.order_number, paymentMethod: "razorpay", reason: verifyRes.message });
                     setIsSubmitting(false);
                   }
                 },
                 modal: {
                   ondismiss: async function () {
                     setIsSubmitting(true);
-                    const cancelRes = await cancelOrder(
-                      res.data!.order_number,
-                      token,
-                      pendingAccessToken
-                    );
-                    redirectToFailure({
-                      orderNumber: res.data!.order_number,
-                      paymentMethod: "razorpay",
-                      reason: cancelRes.success
-                        ? "Payment was cancelled before completion. You can retry from checkout."
-                        : cancelRes.message || "We could not complete your payment. Please retry.",
-                    });
+                    await cancelOrder(res.data!.order_number, token, pendingAccessToken);
+                    redirectToFailure({ orderNumber: res.data!.order_number, paymentMethod: "razorpay", reason: "Payment cancelled." });
                     setIsSubmitting(false);
                   }
                 },
-                prefill: {
-                  name: shipName,
-                  email: shipEmail,
-                  contact: shipPhone,
-                },
-                theme: {
-                  color: "#0f0f0f",
-                }
+                prefill: { name: shipName, email: shipEmail, contact: shipPhone },
+                theme: { color: "#e9718b" }
               };
-              const rzp = new (window as any).Razorpay(options);
-              rzp.open();
+              new (window as any).Razorpay(options).open();
               return;
             } catch (err) {
-              console.error("Razorpay SDK initialization failed:", err);
               await cancelOrder(res.data.order_number, token, pendingAccessToken);
-              redirectToFailure({
-                orderNumber: res.data.order_number,
-                paymentMethod: "razorpay",
-                reason: "Razorpay could not start properly. Please retry your payment.",
-              });
+              redirectToFailure({ orderNumber: res.data.order_number, paymentMethod: "razorpay", reason: "Gateway error." });
               setIsSubmitting(false);
               return;
             }
           }
-
-          await cancelOrder(res.data.order_number, token, pendingAccessToken);
-          redirectToFailure({
-            orderNumber: res.data.order_number,
-            paymentMethod: "razorpay",
-            reason: "Razorpay checkout could not load right now. Please retry in a moment.",
-          });
-          setIsSubmitting(false);
-          return;
         }
 
-        if (
-          paymentMethod === "phonepe" &&
-          config?.checkout_url &&
-          !config.is_test_mode
-        ) {
+        if (paymentMethod === "phonepe" && config?.checkout_url && !config.is_test_mode) {
           window.location.href = config.checkout_url;
           return;
         }
-        
+
         if (config?.is_test_mode) {
           setIsSubmitting(false);
-          setActiveSimulation({
-            orderNumber: res.data.order_number,
-            amount: res.data.total_amount,
-            method: paymentMethod,
-            accessToken: pendingAccessToken
-          });
+          setActiveSimulation({ orderNumber: res.data.order_number, amount: res.data.total_amount, method: paymentMethod, accessToken: pendingAccessToken });
           return;
         }
 
         await cancelOrder(res.data.order_number, token, pendingAccessToken);
-        setError("This payment method is not available right now. Please choose another option.");
+        setError("Payment method temporarily unavailable.");
         setIsSubmitting(false);
       }
     } else {
-      setError(res.message || "An unexpected error occurred while placing your order.");
+      setError(res.message || "Order placement failed.");
       setIsSubmitting(false);
     }
   }
 
+  const cartItemIds = new Set(items.map((i) => i.id));
+  const candidateUpsells = upsellProducts.filter((p) => !cartItemIds.has(p.id)).slice(0, 3);
+  const featuredCoupons = coupons.slice(0, 4);
+
   return (
-    <main className="content-section" style={{ minHeight: "80vh", background: "linear-gradient(to bottom, #FAF8F5, #FFFFFF)", padding: "4rem 0" }}>
-      <div className="container" style={{ maxWidth: "1200px" }}>
+    <main className="content-section" style={{ minHeight: "85vh", background: "linear-gradient(180deg, #FAF8F5 0%, #FFFFFF 100%)", padding: "2.5rem 1rem" }}>
+      <div style={{ maxWidth: "1160px", margin: "0 auto" }}>
         
-        {/* Page Header */}
-        <div style={{ marginBottom: "3rem", textAlign: "center" }}>
-          <p className="eyebrow">Secure Gateway</p>
-          <h1 className="page-title" style={{ fontSize: "2.8rem", marginBottom: "0.5rem" }}>Checkout</h1>
-          <p className="shop-intro" style={{ maxWidth: "600px", margin: "0 auto" }}>
-            {checkoutIntro}
-          </p>
+        {/* Header Badges */}
+        <div style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <p className="eyebrow" style={{ color: "#e9718b", letterSpacing: "1.5px", marginBottom: "0.2rem", fontWeight: 700 }}>Express Checkout</p>
+            <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: 0, color: "#1a1a1a" }}>Complete Your Order</h1>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "0.85rem", color: "#666666" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              256-Bit SSL Encrypted
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              Certified 925 Hallmarked
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><rect width="6" height="6" x="8" y="14" rx="1"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+              Free Express Shipping
+            </span>
+          </div>
         </div>
 
         {error && (
-          <div className="auth-error" style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "1.2rem" }}>⚠️</span>
+          <div style={{ marginBottom: "1.5rem", padding: "1rem 1.4rem", borderRadius: "14px", background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.25)", color: "#b91c1c", fontSize: "0.94rem", display: "flex", alignItems: "center", gap: "10px" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span>{error}</span>
           </div>
         )}
 
-        {!hasAnyPaymentGateway && (
-          <div className="auth-error" style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "1.2rem" }}>⚠️</span>
-            <span>No payment method is active right now. Please enable one from the admin payment gateway panel.</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-two-column checkout-layout" style={{ display: "grid", gap: "2.5rem" }}>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "2rem", alignItems: "start" }}>
           
-          {/* LEFT COLUMN: SHIPPING & PAYMENT */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-            {!user ? (
-              <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.76)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)" }}>
-                <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>1.</span> Sign In Before Checkout
-                </h2>
-                <h3 style={{ fontSize: "1.55rem", marginBottom: "0.65rem" }}>Create or log in to your customer account first</h3>
-                <p className="auth-muted" style={{ marginBottom: "1.25rem" }}>
-                  First create your account on the proper registration page, verify your email OTP, and then come back here for shipping and payment. This keeps your orders, saved addresses, and future login all linked correctly.
-                </p>
-                <div style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap" }}>
-                  <Link href={`/account/register?redirect=${encodeURIComponent("/checkout")}`} className="primary-button">
-                    Create Account
-                  </Link>
-                  <Link href={`/account/login?redirect=${encodeURIComponent("/checkout")}`} className="secondary-button">
-                    Login
-                  </Link>
-                </div>
-              </div>
-            ) : null}
+          {/* Left Column: Delivery & Payment Details */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.8rem" }}>
             
-            {/* Shipping Card */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)", opacity: user ? 1 : 0.62 }}>
-              <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1.5rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>{user ? "1." : "2."}</span> Shipping Details
-              </h2>
+            {/* Step 1: Delivery Details */}
+            <div style={{ background: "#ffffff", borderRadius: "24px", padding: "2rem", border: "1px solid #f0f0f0", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.04)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.3rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0, color: "#1a1a1a", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#e9718b", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: 700 }}>1</span>
+                  Delivery Details
+                </h2>
+                {!user && (
+                  <span style={{ fontSize: "0.82rem", color: "#666" }}>
+                    Have an account? <Link href="/account/login?redirect=/checkout" style={{ color: "#e9718b", fontWeight: 600 }}>Log in</Link>
+                  </span>
+                )}
+              </div>
 
-              {user && savedAddresses.length > 0 ? (
-                <div className="checkout-address-picker">
+              {/* Saved Addresses for Logged-in User */}
+              {savedAddresses.length > 0 && (
+                <div style={{ marginBottom: "1.4rem" }}>
+                  <p style={{ fontSize: "0.86rem", color: "#666", marginBottom: "0.6rem", fontWeight: 600 }}>Select a Saved Address:</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.8rem" }}>
+                    {savedAddresses.map((addr) => {
+                      const isSel = selectedAddressId === addr.id;
+                      return (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => applySavedAddress(addr)}
+                          style={{
+                            textAlign: "left",
+                            padding: "0.8rem 1rem",
+                            borderRadius: "14px",
+                            border: isSel ? "2px solid #e9718b" : "1px solid #e5e5e5",
+                            background: isSel ? "#fff5f7" : "#fafafa",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          <strong style={{ display: "block", fontSize: "0.88rem", color: "#1a1a1a" }}>{addr.label || "Saved Address"}</strong>
+                          <span style={{ fontSize: "0.78rem", color: "#666", display: "block", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {addr.address_line1}, {addr.city}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Input Fields */}
+              <div style={{ display: "grid", gap: "1.1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                   <div>
-                    <strong style={{ display: "block", marginBottom: "0.35rem" }}>Use a saved address</strong>
-                    <p className="auth-muted" style={{ margin: 0 }}>Select home, office, or other saved address and we will auto-fill the form. You can still edit for this order.</p>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={shipName}
+                      onChange={(e) => setShipName(e.target.value)}
+                      placeholder="e.g. Priya Sharma"
+                      className="auth-input"
+                      style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
+                    />
                   </div>
-                  <div className="checkout-address-grid">
-                    {savedAddresses.map((address) => (
-                      <button
-                        key={address.id}
-                        type="button"
-                        className="checkout-address-option"
-                        data-active={selectedAddressId === address.id ? "true" : "false"}
-                        onClick={() => applySavedAddress(address)}
-                      >
-                        <span className="checkout-address-type">
-                          {(address.label || address.type)}{address.is_default ? " · Default" : ""}
-                        </span>
-                        <strong>{address.recipient_name}</strong>
-                        <span>{address.address_line1}</span>
-                        {address.address_line2 ? <span>{address.address_line2}</span> : null}
-                        <span>{address.city}, {address.state} - {address.pincode}</span>
-                      </button>
-                    ))}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>Mobile Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={formatIndianPhone(shipPhone)}
+                      onChange={(e) => setShipPhone(normalizeIndianPhone(e.target.value))}
+                      placeholder="10-digit mobile"
+                      className="auth-input"
+                      style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: shipPhoneInvalid ? "1.5px solid #ef4444" : "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
+                    />
                   </div>
-                </div>
-              ) : null}
-              
-              <fieldset disabled={!user} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
-              <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1.2rem" }}>
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-name">Full Name *</label>
-                  <input
-                    id="ship-name"
-                    type="text"
-                    required
-                    value={shipName}
-                    onChange={(e) => setShipName(e.target.value)}
-                    placeholder="Enter your first and last name"
-                  />
                 </div>
 
-                <div className="auth-field">
-                  <label htmlFor="ship-email">Email Address *</label>
+                {/* Email input with Tax Invoice reminder */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                    <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#444" }}>Email Address (Important for Invoice &amp; Tracking) *</label>
+                    <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
+                      Bill Sent on Email
+                    </span>
+                  </div>
                   <input
-                    id="ship-email"
                     type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    spellCheck={false}
                     required
-                    className={shipEmailInvalid ? "input-invalid" : ""}
-                    aria-invalid={shipEmailInvalid}
                     value={shipEmail}
                     onChange={(e) => setShipEmail(normalizeEmailInput(e.target.value))}
-                    placeholder="name@example.com"
+                    placeholder="e.g. priya.sharma@gmail.com"
+                    className="auth-input"
+                    style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: shipEmailInvalid ? "1.5px solid #ef4444" : "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
                   />
-                  {shipEmailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
+                  <p style={{ fontSize: "0.78rem", color: "#666666", margin: "4px 0 0 2px" }}>
+                    Your official GST tax invoice and live courier dispatch notifications will be emailed here.
+                  </p>
                 </div>
 
-                <div className="auth-field">
-                  <label htmlFor="ship-phone">Phone Number *</label>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>House / Flat No., Building, Street Address *</label>
                   <input
-                    id="ship-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    required
-                    maxLength={11}
-                    pattern="[6-9][0-9]{9}"
-                    className={shipPhoneInvalid ? "input-invalid" : ""}
-                    aria-invalid={shipPhoneInvalid}
-                    value={formatIndianPhone(shipPhone)}
-                    onChange={(e) => setShipPhone(normalizeIndianPhone(e.target.value))}
-                    placeholder="10-digit mobile number"
-                  />
-                  {shipPhoneInvalid ? <p className="auth-field-error">Use a valid 10-digit Indian mobile number.</p> : null}
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="ship-alt-phone">Alternate Phone</label>
-                  <input
-                    id="ship-alt-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    maxLength={11}
-                    value={formatIndianPhone(shipAltPhone)}
-                    onChange={(e) => setShipAltPhone(normalizeIndianPhone(e.target.value))}
-                    placeholder="Optional backup contact"
-                  />
-                </div>
-
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-address-line1">Address Line 1 *</label>
-                  <input
-                    id="ship-address-line1"
                     type="text"
                     required
                     value={shipAddressLine1}
                     onChange={(e) => setShipAddressLine1(e.target.value)}
-                    placeholder="Flat, House no., Building, Company, Apartment, Area"
+                    placeholder="e.g. Flat 402, Royal Palms, MG Road"
+                    className="auth-input"
+                    style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
                   />
                 </div>
 
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-address-line2">Address Line 2</label>
-                  <input
-                    id="ship-address-line2"
-                    type="text"
-                    value={shipAddressLine2}
-                    onChange={(e) => setShipAddressLine2(e.target.value)}
-                    placeholder="Street, locality, nearby area"
-                  />
-                </div>
-
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-landmark">Landmark</label>
-                  <input
-                    id="ship-landmark"
-                    type="text"
-                    value={shipLandmark}
-                    onChange={(e) => setShipLandmark(e.target.value)}
-                    placeholder="Optional landmark for easy delivery"
-                  />
-                </div>
-
-                <div className="auth-field">
-                  <span>State *</span>
-                  <select
-                    required
-                    value={shipState}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                  >
-                    <option value="" disabled hidden>Select State</option>
-                    {Object.keys(INDIAN_STATES_AND_CITIES).map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="auth-field">
-                  <span>City *</span>
-                  <select
-                    required
-                    disabled={!shipState}
-                    value={customCityActive ? "Other" : shipCity}
-                    onChange={(e) => handleCityChange(e.target.value)}
-                  >
-                    <option value="" disabled hidden>
-                      {shipState ? "Select City" : "Select State first"}
-                    </option>
-                    {shipState &&
-                      INDIAN_STATES_AND_CITIES[shipState]?.map((ct) => (
-                        <option key={ct} value={ct}>
-                          {ct}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {customCityActive && (
-                  <div className="auth-field" style={{ gridColumn: "1 / -1", animation: "fadeIn 0.2s ease" }}>
-                    <span>Specify Custom City *</span>
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "1rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>Landmark (Optional, for quick delivery)</label>
+                    <input
+                      type="text"
+                      value={shipLandmark}
+                      onChange={(e) => setShipLandmark(e.target.value)}
+                      placeholder="e.g. Near Metro / Shiv Mandir"
+                      className="auth-input"
+                      style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#444" }}>PIN Code *</label>
+                      {pincodeStatus && <span style={{ fontSize: "0.74rem", color: "#e9718b" }}>{pincodeStatus}</span>}
+                    </div>
                     <input
                       type="text"
                       required
-                      value={customCityValue}
-                      onChange={(e) => handleCustomCityChange(e.target.value)}
-                      placeholder="Type your city/town name"
+                      maxLength={6}
+                      value={shipPincode}
+                      onChange={(e) => setShipPincode(normalizeIndianPincode(e.target.value))}
+                      placeholder="6-digit PIN"
+                      className="auth-input"
+                      style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
                     />
                   </div>
-                )}
-
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="ship-pincode">Pincode *</label>
-                  <input
-                    id="ship-pincode"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    required
-                    maxLength={6}
-                    pattern="[1-9][0-9]{5}"
-                    value={shipPincode}
-                    onChange={(e) => setShipPincode(normalizeIndianPincode(e.target.value))}
-                    placeholder="6-digit PIN code"
-                  />
-                  {pincodeStatus ? <p className={pincodeStatus.toLowerCase().includes("unable") ? "auth-field-error" : "auth-field-success"}>{pincodeStatus}</p> : null}
                 </div>
 
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", marginBottom: "0.55rem", flexWrap: "wrap" }}>
-                    <span>Save this address for future orders</span>
-                    <label className="checkbox-row compact" style={{ margin: 0 }}>
-                      <input
-                        type="checkbox"
-                        checked={saveAddressForFuture}
-                        onChange={(e) => setSaveAddressForFuture(e.target.checked)}
-                      />
-                      <span>Save</span>
-                    </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>State *</label>
+                    <select
+                      required
+                      value={shipState}
+                      onChange={(e) => handleStateChange(e.target.value)}
+                      className="auth-input"
+                      style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem", background: "#fff" }}
+                    >
+                      <option value="" disabled hidden>Select State</option>
+                      {Object.keys(INDIAN_STATES_AND_CITIES).map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
                   </div>
-
-                  {saveAddressForFuture ? (
-                    <div className="auth-grid-form auth-grid-form--double" style={{ display: "grid", gap: "1rem", padding: "1rem", border: "1px solid var(--line)", borderRadius: "18px", background: "rgba(255,255,255,0.55)" }}>
-                      <div className="auth-field">
-                        <label htmlFor="save-address-type">Address Type</label>
-                        <select id="save-address-type" value={saveAddressType} onChange={(e) => setSaveAddressType(e.target.value as "home" | "office" | "other")}>
-                          <option value="home">Home</option>
-                          <option value="office">Office</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                      <div className="auth-field">
-                        <label htmlFor="save-address-label">Address Label</label>
-                        <input
-                          id="save-address-label"
-                          type="text"
-                          value={saveAddressLabel}
-                          onChange={(e) => setSaveAddressLabel(e.target.value)}
-                          placeholder="e.g. Home, Office HQ, Mom's Place"
-                        />
-                      </div>
-                      <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                        <label className="checkbox-row compact" style={{ margin: 0 }}>
-                          <input
-                            type="checkbox"
-                            checked={saveAddressAsDefault}
-                            onChange={(e) => setSaveAddressAsDefault(e.target.checked)}
-                          />
-                          <span>Make this my default address</span>
-                        </label>
-                      </div>
-                    </div>
-                  ) : null}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#444", marginBottom: "0.3rem" }}>City *</label>
+                    {shipState && INDIAN_STATES_AND_CITIES[shipState] ? (
+                      <select
+                        required
+                        value={shipCity}
+                        onChange={(e) => handleCityChange(e.target.value)}
+                        className="auth-input"
+                        style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem", background: "#fff" }}
+                      >
+                        <option value="" disabled hidden>Select City</option>
+                        {INDIAN_STATES_AND_CITIES[shipState].map((ct) => (
+                          <option key={ct} value={ct}>{ct}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        required
+                        value={shipCity}
+                        onChange={(e) => handleCityChange(e.target.value)}
+                        placeholder="Enter City"
+                        className="auth-input"
+                        style={{ width: "100%", padding: "0.85rem 1rem", borderRadius: "14px", border: "1.5px solid #e0e0e0", fontSize: "0.95rem" }}
+                      />
+                    )}
+                  </div>
                 </div>
 
-                <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <span>Order Notes (Optional)</span>
-                  <textarea
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Special instructions for delivery (e.g. deliver after 5 PM)"
-                    style={{
-                      padding: "1rem",
-                      border: "1px solid var(--line-strong)",
-                      borderRadius: "16px",
-                      background: "rgba(255, 255, 255, 0.86)",
-                      color: "var(--text)",
-                      fontFamily: "inherit",
-                      fontSize: "1rem",
-                      resize: "none"
-                    }}
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "#555", cursor: "pointer", marginTop: "0.2rem" }}>
+                  <input
+                    type="checkbox"
+                    checked={saveAddressForFuture}
+                    onChange={(e) => setSaveAddressForFuture(e.target.checked)}
+                    style={{ accentColor: "#e9718b", width: "16px", height: "16px" }}
                   />
-                </div>
-                </div>
-              </fieldset>
+                  Save this address securely for next time
+                </label>
+              </div>
             </div>
 
-            {/* Payment Method Card */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)", opacity: user ? 1 : 0.62 }}>
-              <h2 className="eyebrow" style={{ fontSize: "1.1rem", marginBottom: "1.5rem", color: "var(--accent-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>{user ? "2." : "3."}</span> Payment Method
+            {/* Step 2: Payment Method (UPI & COD prominently offered) */}
+            <div style={{ background: "#ffffff", borderRadius: "24px", padding: "2rem", border: "1px solid #f0f0f0", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.04)" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 1.2rem 0", color: "#1a1a1a", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#e9718b", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: 700 }}>2</span>
+                Payment Options
               </h2>
 
-              <fieldset disabled={!user} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
-              <div style={{ display: "grid", gap: "1rem" }}>
-                {!hasAnyPaymentGateway ? (
-                  <div style={{ padding: "1rem 1.1rem", borderRadius: "18px", border: "1px solid rgba(224, 90, 71, 0.25)", background: "rgba(224, 90, 71, 0.06)", color: "#8a3b30", fontSize: "0.95rem", lineHeight: 1.6 }}>
-                    No payment gateway is currently active in admin settings. Please enable at least one payment option to accept orders.
+              {/* Seductive Prepaid Offer Banner */}
+              <div style={{ background: "linear-gradient(135deg, #fff5f7 0%, #FAF8F5 100%)", border: "1.5px dashed #e9718b", borderRadius: "18px", padding: "1.2rem 1.4rem", marginBottom: "1.4rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "0.5rem" }}>
+                  <span style={{ background: "#e9718b", color: "#fff", padding: "3px 8px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.5px" }}>PREPAID PRIVILEGE</span>
+                  <strong style={{ fontSize: "0.95rem", color: "#1a1a1a" }}>Pay Online via UPI &amp; Save More!</strong>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.6rem", fontSize: "0.82rem", color: "#555" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>Extra 5% OFF</strong> instantly deducted</span>
                   </div>
-                ) : null}
-                
-                {/* Cash on Delivery */}
-                {hasGateway("cod") && (
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "1rem",
-                    padding: "1.2rem",
-                    border: paymentMethod === "cod" ? "2px solid var(--accent)" : "1px solid var(--line)",
-                    borderRadius: "20px",
-                    background: paymentMethod === "cod" ? "rgba(241, 167, 32, 0.05)" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value="cod"
-                    checked={paymentMethod === "cod"}
-                    onChange={() => setPaymentMethod("cod")}
-                    style={{ marginTop: "3px", accentColor: "var(--accent)" }}
-                  />
-                  <div>
-                    <strong style={{ display: "block", color: "var(--text)", fontSize: "1.05rem" }}>
-                      {gatewayMeta("cod")?.display_name || "Cash On Delivery (COD)"}
-                    </strong>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay with cash upon delivery. Recommended & fully functional gateway.</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>Priority 24-Hr Express Dispatch</strong></span>
                   </div>
-                </label>
-                )}
-
-                {/* Razorpay */}
-                {hasGateway("razorpay") && (
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "1rem",
-                    padding: "1.2rem",
-                    border: paymentMethod === "razorpay" ? "2px solid var(--accent)" : "1px solid var(--line)",
-                    borderRadius: "20px",
-                    background: paymentMethod === "razorpay" ? "rgba(241, 167, 32, 0.05)" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value="razorpay"
-                    checked={paymentMethod === "razorpay"}
-                    onChange={() => setPaymentMethod("razorpay")}
-                    style={{ marginTop: "3px", accentColor: "var(--accent)" }}
-                  />
-                  <div style={{ width: "100%" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>
-                        {gatewayMeta("razorpay")?.display_name || "Razorpay (Cards / UPI / NetBanking)"}
-                      </strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
-                        {gatewayMeta("razorpay")?.is_test_mode ? "Test Mode" : "Secure"}
-                      </span>
-                    </div>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay securely via Credit Card, Debit Card, NetBanking, UPI, or wallets. Test mode will use a safe simulation automatically.</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>Zero COD Handling Fee</strong></span>
                   </div>
-                </label>
-                )}
-
-                {/* PhonePe */}
-                {hasGateway("phonepe") && (
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "1rem",
-                    padding: "1.2rem",
-                    border: paymentMethod === "phonepe" ? "2px solid var(--accent)" : "1px solid var(--line)",
-                    borderRadius: "20px",
-                    background: paymentMethod === "phonepe" ? "rgba(241, 167, 32, 0.05)" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value="phonepe"
-                    checked={paymentMethod === "phonepe"}
-                    onChange={() => setPaymentMethod("phonepe")}
-                    style={{ marginTop: "3px", accentColor: "var(--accent)" }}
-                  />
-                  <div style={{ width: "100%" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong style={{ color: "var(--text)", fontSize: "1.05rem" }}>
-                        {gatewayMeta("phonepe")?.display_name || "PhonePe UPI Gateway"}
-                      </strong>
-                      <span style={{ fontSize: "0.75rem", background: "rgba(var(--rgb-text), 0.08)", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
-                        {gatewayMeta("phonepe")?.is_test_mode ? "Test Mode" : "UPI"}
-                      </span>
-                    </div>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pay through PhonePe checkout. In test mode the order uses a safe prepaid simulation.</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>100% Instant Refund Protection</strong></span>
                   </div>
-                </label>
-                )}
+                </div>
               </div>
-              </fieldset>
+
+              {/* Payment Methods List */}
+              <div style={{ display: "grid", gap: "1rem" }}>
+                
+                {/* 1. UPI & Cards (Prepaid) */}
+                {hasGateway("razorpay") && (
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                      padding: "1.2rem",
+                      borderRadius: "18px",
+                      border: paymentMethod === "razorpay" ? "2px solid #e9718b" : "1.5px solid #e5e5e5",
+                      background: paymentMethod === "razorpay" ? "#fff5f7" : "#ffffff",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="razorpay"
+                      checked={paymentMethod === "razorpay"}
+                      onChange={() => setPaymentMethod("razorpay")}
+                      style={{ accentColor: "#e9718b", width: "18px", height: "18px", marginTop: "3px" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                        <strong style={{ fontSize: "1rem", color: "#1a1a1a" }}>UPI / Cards / NetBanking (Online Prepaid)</strong>
+                        <span style={{ background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: "8px", fontSize: "0.74rem", fontWeight: 700 }}>
+                          RECOMMENDED · EXTRA 5% SAVINGS
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.83rem", color: "#666", margin: "4px 0 0 0" }}>
+                        Google Pay, PhonePe, Paytm, BHIM UPI, Debit/Credit Cards &amp; NetBanking.
+                      </p>
+                    </div>
+                  </label>
+                )}
+
+                {/* 2. PhonePe Direct UPI */}
+                {hasGateway("phonepe") && (
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                      padding: "1.2rem",
+                      borderRadius: "18px",
+                      border: paymentMethod === "phonepe" ? "2px solid #e9718b" : "1.5px solid #e5e5e5",
+                      background: paymentMethod === "phonepe" ? "#fff5f7" : "#ffffff",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="phonepe"
+                      checked={paymentMethod === "phonepe"}
+                      onChange={() => setPaymentMethod("phonepe")}
+                      style={{ accentColor: "#e9718b", width: "18px", height: "18px", marginTop: "3px" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                        <strong style={{ fontSize: "1rem", color: "#1a1a1a" }}>PhonePe Direct UPI &amp; Wallets</strong>
+                        <span style={{ background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: "8px", fontSize: "0.74rem", fontWeight: 700 }}>
+                          EXTRA 5% SAVINGS
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.83rem", color: "#666", margin: "4px 0 0 0" }}>
+                        1-Click direct UPI checkout via PhonePe app.
+                      </p>
+                    </div>
+                  </label>
+                )}
+
+                {/* 3. Cash on Delivery (COD) */}
+                {hasGateway("cod") && (
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                      padding: "1.2rem",
+                      borderRadius: "18px",
+                      border: paymentMethod === "cod" ? "2px solid #e9718b" : "1.5px solid #e5e5e5",
+                      background: paymentMethod === "cod" ? "#fff5f7" : "#ffffff",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="cod"
+                      checked={paymentMethod === "cod"}
+                      onChange={() => setPaymentMethod("cod")}
+                      style={{ accentColor: "#e9718b", width: "18px", height: "18px", marginTop: "3px" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                        <strong style={{ fontSize: "1rem", color: "#1a1a1a" }}>Cash on Delivery (COD)</strong>
+                        <span style={{ background: "#f3f4f6", color: "#4b5563", padding: "3px 8px", borderRadius: "8px", fontSize: "0.74rem", fontWeight: 600 }}>
+                          AVAILABLE NATIONWIDE
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.83rem", color: "#666", margin: "4px 0 0 0" }}>
+                        Pay cash directly to the courier agent when your jewellery package arrives at your doorstep.
+                      </p>
+                    </div>
+                  </label>
+                )}
+
+              </div>
             </div>
+
           </div>
 
-          {/* RIGHT COLUMN: ORDER SUMMARY & OFFERS */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          {/* Right Column: Order Summary, Upsells & Coupons */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.8rem" }}>
             
-            {/* Order Review Card */}
-            <div className="cart-summary-card" style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "2rem", background: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(10px)", boxShadow: "var(--shadow)" }}>
-              <p className="eyebrow" style={{ color: "var(--accent-deep)", marginBottom: "0.5rem" }}>Review Order</p>
-              <h2 style={{ fontSize: "1.6rem", marginBottom: "1.5rem" }}>Items Summary</h2>
+            <div style={{ background: "#ffffff", borderRadius: "24px", padding: "2rem", border: "1px solid #f0f0f0", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.04)" }}>
+              
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 1.2rem 0", color: "#1a1a1a" }}>
+                Order Bag ({items.reduce((s, i) => s + i.quantity, 0)} {items.length === 1 ? "Item" : "Items"})
+              </h3>
 
               {/* Items List */}
-              <div style={{ display: "grid", gap: "1rem", maxHeight: "250px", overflowY: "auto", paddingRight: "5px", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem", maxHeight: "260px", overflowY: "auto", paddingRight: "4px", marginBottom: "1.4rem" }}>
                 {items.map((item) => (
-                  <div key={item.slug} style={{ display: "flex", gap: "1rem", alignItems: "center", borderBottom: "1px solid var(--line)", paddingBottom: "0.8rem" }}>
-                    <div style={{ width: "50px", height: "50px", position: "relative", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--line)" }}>
+                  <div key={item.slug} style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "0.8rem", borderBottom: "1px solid #f5f5f5" }}>
+                    <div style={{ width: "48px", height: "48px", borderRadius: "10px", overflow: "hidden", background: "#fafafa", flexShrink: 0, border: "1px solid #eee" }}>
                       <img
-                        src={resolveAssetUrl(item.image)}
+                        src={resolveAssetUrl(item.image || "/jewellery/drop-earrings.jpg")}
                         alt={item.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600, color: "var(--text)" }}>{item.name}</h4>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)" }}>
-                        {item.quantity} x {formatPrice(item.price, currencySymbol)}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: "0.88rem", fontWeight: 600, color: "#1a1a1a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {item.name}
                       </p>
+                      <span style={{ fontSize: "0.78rem", color: "#888" }}>Qty: {item.quantity}</span>
                     </div>
-                    <strong style={{ fontSize: "0.95rem", color: "var(--text)" }}>
+                    <strong style={{ fontSize: "0.92rem", color: "#1a1a1a" }}>
                       {formatPrice(item.price * item.quantity, currencySymbol)}
                     </strong>
                   </div>
                 ))}
               </div>
 
-              {/* Coupon Box */}
-              <div style={{ marginBottom: "1.5rem", borderBottom: "1px solid var(--line)", paddingBottom: "1.5rem" }}>
-                <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--accent-deep)", display: "block", marginBottom: "0.5rem" }}>Apply Promo Code</span>
-                
-                {appliedCoupon ? (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(45, 123, 76, 0.08)", border: "1px dashed #226643", borderRadius: "14px", padding: "0.6rem 1rem" }}>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <strong style={{ color: "#226643", fontSize: "0.9rem" }}>Code: {appliedCoupon.code} Applied</strong>
-                      <span style={{ color: "var(--text)", fontSize: "0.8rem" }}>Saved {appliedCoupon.type === "percent" ? `${appliedCoupon.value}%` : formatPrice(appliedCoupon.value, currencySymbol)}</span>
-                    </div>
-                    <button type="button" onClick={handleRemoveCoupon} style={{ border: "none", background: "transparent", color: "#a43c31", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, textDecoration: "underline" }}>
+              {/* One-Click Checkout Upsells */}
+              {candidateUpsells.length > 0 && (
+                <div style={{ background: "#FAF8F5", borderRadius: "16px", padding: "1.1rem", marginBottom: "1.4rem", border: "1px solid #f0ece1" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <strong style={{ fontSize: "0.84rem", color: "#1a1a1a" }}>Recommended Add-Ons:</strong>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                    {candidateUpsells.map((upsell) => (
+                      <div key={upsell.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", background: "#ffffff", padding: "8px 10px", borderRadius: "12px", border: "1px solid #f0f0f0" }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#1a1a1a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {upsell.name}
+                          </p>
+                          <span style={{ fontSize: "0.78rem", color: "#e9718b", fontWeight: 700 }}>
+                            {formatPrice(Number(upsell.effective_price || upsell.sale_price || upsell.price), currencySymbol)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleAddUpsell(upsell)}
+                          disabled={addingUpsellId === upsell.id}
+                          className="secondary-button"
+                          style={{ padding: "4px 10px", fontSize: "0.78rem", borderRadius: "8px", flexShrink: 0 }}
+                        >
+                          {addingUpsellId === upsell.id ? "Adding..." : "+ Add"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Promo Code Box */}
+              <div style={{ marginBottom: "1.4rem" }}>
+                <p style={{ fontSize: "0.84rem", fontWeight: 600, color: "#444", marginBottom: "0.4rem" }}>Apply Promo Code / Coupon:</p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Enter code (e.g. WELCOME10)"
+                    className="auth-input"
+                    style={{ flex: 1, padding: "0.75rem 0.9rem", borderRadius: "12px", border: "1.5px solid #e0e0e0", fontSize: "0.88rem", textTransform: "uppercase" }}
+                  />
+                  {appliedCoupon ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      style={{ padding: "0.75rem 1rem", borderRadius: "12px", background: "#fee2e2", color: "#b91c1c", border: "none", fontWeight: 600, fontSize: "0.84rem", cursor: "pointer" }}
+                    >
                       Remove
                     </button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="Enter code (e.g. FESTIVE20)"
-                      style={{
-                        flex: 1,
-                        padding: "0.6rem 1rem",
-                        border: "1px solid var(--line-strong)",
-                        borderRadius: "14px",
-                        background: "rgba(255, 255, 255, 0.86)",
-                        fontSize: "0.9rem"
-                      }}
-                    />
-                    <button type="button" onClick={() => handleApplyCoupon()} className="secondary-button" style={{ padding: "0.6rem 1.2rem", borderRadius: "14px", border: "1px solid var(--accent)", color: "var(--accent-deep)", background: "transparent", fontWeight: 600, cursor: "pointer" }}>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleApplyCoupon()}
+                      className="primary-button"
+                      style={{ padding: "0.75rem 1.2rem", borderRadius: "12px", fontSize: "0.85rem" }}
+                    >
                       Apply
                     </button>
-                  </div>
-                )}
-                
-                {couponError && <p style={{ color: "#a43c31", fontSize: "0.8rem", margin: "0.4rem 0 0" }}>{couponError}</p>}
-                {couponSuccess && <p style={{ color: "#226643", fontSize: "0.8rem", margin: "0.4rem 0 0" }}>{couponSuccess}</p>}
-              </div>
-
-              {/* Price Details */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem", marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem" }}>
-                  <span style={{ color: "var(--muted)" }}>Subtotal</span>
-                  <strong>{formatPrice(subtotal, currencySymbol)}</strong>
-                </div>
-
-                {appliedCoupon && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem", color: "#226643" }}>
-                    <span>Coupon Discount</span>
-                    <strong>-{formatPrice(discountAmount, currencySymbol)}</strong>
-                  </div>
-                )}
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem" }}>
-                  <span style={{ color: "var(--muted)" }}>Shipping Fee</span>
-                  {shippingCost === 0 ? (
-                    <strong style={{ color: "#226643" }}>FREE</strong>
-                  ) : (
-                    <strong>{formatPrice(shippingCost, currencySymbol)}</strong>
                   )}
                 </div>
 
-                {mixedShippingRules && (
-                  <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
-                    Custom delivery charges stay applied on selected products. The free-shipping threshold only removes the standard delivery part.
+                {couponSuccess && (
+                  <p style={{ fontSize: "0.8rem", color: "#16a34a", marginTop: "6px", display: "flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
+                    {couponSuccess}
+                  </p>
+                )}
+                {couponError && (
+                  <p style={{ fontSize: "0.8rem", color: "#dc2626", marginTop: "6px", fontWeight: 600 }}>
+                    {couponError}
                   </p>
                 )}
 
-                {onlyCustomShipping && (
-                  <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
-                    This cart uses product-level delivery charges, so the store-wide free-shipping threshold does not apply here.
-                  </p>
+                {/* Quick Tap Demo Coupons */}
+                {featuredCoupons.length > 0 && !appliedCoupon && (
+                  <div style={{ marginTop: "0.8rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#888", display: "block", marginBottom: "4px" }}>Available Offers (Tap to apply):</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {featuredCoupons.map((c) => (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => handleApplyCoupon(c.code)}
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "8px",
+                            border: "1px dashed #e9718b",
+                            background: "#fff5f7",
+                            color: "#e9718b",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          {c.code} ({c.type === "percent" ? `${c.value}% OFF` : `₹${Math.round(Number(c.value))} OFF`})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Price Calculation Breakdown */}
+              <div style={{ borderTop: "1px solid #eee", paddingTop: "1.1rem", display: "grid", gap: "0.7rem", fontSize: "0.9rem", color: "#555" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Bag Subtotal</span>
+                  <span style={{ color: "#1a1a1a", fontWeight: 600 }}>{formatPrice(subtotal, currencySymbol)}</span>
+                </div>
+
+                {discountAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#16a34a" }}>
+                    <span>Coupon Savings ({appliedCoupon?.code})</span>
+                    <span>- {formatPrice(discountAmount, currencySymbol)}</span>
+                  </div>
                 )}
 
-                {showDefaultShippingUpsell && (
-                  <p style={{ margin: "0", fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>
-                    Add pieces worth {formatPrice(freeShippingThreshold - netSubtotal, currencySymbol)} more for free delivery!
-                  </p>
+                {isPrepaidMethod && prepaidDiscountAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#16a34a" }}>
+                    <span>Prepaid Online Savings (5% OFF)</span>
+                    <span>- {formatPrice(prepaidDiscountAmount, currencySymbol)}</span>
+                  </div>
                 )}
+
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Shipping &amp; Insurance</span>
+                  {shippingCost === 0 ? (
+                    <span style={{ color: "#16a34a", fontWeight: 700 }}>FREE</span>
+                  ) : (
+                    <span>{formatPrice(shippingCost, currencySymbol)}</span>
+                  )}
+                </div>
+
+                {paymentMethod === "cod" && codFeeAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>COD Handling Fee</span>
+                    <span>{formatPrice(codFeeAmount, currencySymbol)}</span>
+                  </div>
+                )}
+
+                {walletDiscountAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#16a34a" }}>
+                    <span>Wallet Balance Applied</span>
+                    <span>- {formatPrice(walletDiscountAmount, currencySymbol)}</span>
+                  </div>
+                )}
+
+                <div style={{ borderTop: "1.5px solid #eee", paddingTop: "0.8rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ fontSize: "1.05rem", color: "#1a1a1a", display: "block" }}>Total Amount</strong>
+                    <span style={{ fontSize: "0.75rem", color: "#888" }}>Inclusive of all taxes</span>
+                  </div>
+                  <strong style={{ fontSize: "1.5rem", color: "#1a1a1a", fontWeight: 800 }}>
+                    {formatPrice(grandTotal, currencySymbol)}
+                  </strong>
+                </div>
               </div>
 
-              {/* Total Row */}
-              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--line)", paddingTop: "1.2rem", marginBottom: "2rem" }}>
-                <strong style={{ fontSize: "1.2rem", color: "var(--text)" }}>Total Amount</strong>
-                <strong style={{ fontSize: "1.4rem", color: "var(--accent-deep)" }}>
-                  {formatPrice(grandTotal, currencySymbol)}
-                </strong>
-              </div>
-
-              {/* SSL Trust Strip */}
-              <div className="checkout-trust-strip">
-                <span>🔒 SSL Secured</span>
-                <span>✓ Razorpay Certified</span>
-                <span>{hasGateway("cod") ? "✓ COD Available" : "✓ Prepaid Only"}</span>
-              </div>
-
-              {/* Action Button */}
+              {/* Order Placement CTA */}
               <button
                 type="submit"
-                disabled={isSubmitting || !hasAnyPaymentGateway || !user}
+                disabled={isSubmitting}
                 className="primary-button"
                 style={{
                   width: "100%",
-                  textAlign: "center",
-                  justifyContent: "center",
+                  padding: "1.1rem",
+                  marginTop: "1.5rem",
+                  borderRadius: "16px",
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
-                  cursor: isSubmitting || !hasAnyPaymentGateway || !user ? "not-allowed" : "pointer",
-                  opacity: isSubmitting || !hasAnyPaymentGateway || !user ? 0.75 : 1
+                  justifyContent: "center",
+                  gap: "8px"
                 }}
               >
                 {isSubmitting ? (
-                  <>
-                    <span style={{ display: "inline-block", width: "16px", height: "16px", border: "2px solid #FFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                    Placing Your Order…
-                  </>
-                ) : !user ? (
-                  <>Create or login to continue checkout</>
-                ) : !hasAnyPaymentGateway ? (
-                  <>No active payment method available</>
+                  <span>Processing Your Order…</span>
+                ) : paymentMethod === "cod" ? (
+                  <span>Confirm Cash on Delivery ({formatPrice(grandTotal, currencySymbol)})</span>
                 ) : (
-                  <>Confirm &amp; Place Order Securely — {currencySymbol}{grandTotal.toLocaleString("en-IN")}</>
+                  <span>Pay Securely via UPI / Cards ({formatPrice(grandTotal, currencySymbol)})</span>
                 )}
               </button>
-              
-              <div style={{ textAlign: "center", marginTop: "1rem" }}>
-                <Link href="/cart" className="text-link" style={{ fontSize: "0.9rem", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                  <span>←</span> Back to Cart / Edit Items
-                </Link>
+
+              <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.78rem", color: "#888", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>100% Safe &amp; Verified Checkout · 15-Day Easy Returns</span>
               </div>
+
             </div>
 
-            {/* Public Coupons Card */}
-            {coupons.length > 0 && (
-              <div style={{ border: "1px solid var(--line)", borderRadius: "28px", padding: "1.5rem", background: "rgba(255, 255, 255, 0.5)", backdropFilter: "blur(10px)" }}>
-                <p className="eyebrow" style={{ fontSize: "0.8rem", marginBottom: "1rem" }}>Available Offers</p>
-                <div style={{ display: "grid", gap: "0.8rem" }}>
-                  {coupons.map((c) => (
-                    <div
-                      key={c.id}
-                      onClick={() => {
-                        setCouponCode(c.code);
-                        setCouponError(null);
-                        setCouponSuccess(null);
-                      }}
-                      style={{
-                        padding: "0.8rem",
-                        border: "1px dashed var(--line-strong)",
-                        borderRadius: "16px",
-                        cursor: "pointer",
-                        background: couponCode.toLowerCase() === c.code.toLowerCase() ? "rgba(241, 167, 32, 0.04)" : "transparent",
-                        transition: "all 0.2s ease"
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, padding: "2px 8px", background: "var(--accent)", color: "var(--accent-deep)", borderRadius: "6px" }}>
-                          {c.code}
-                        </span>
-                        <strong style={{ fontSize: "0.85rem" }}>
-                          {c.type === "percent" ? `${c.value}% OFF` : `₹${c.value} OFF`}
-                        </strong>
-                      </div>
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted)", lineHeight: 1.3 }}>{c.description || "Apply to save on this order."}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
         </form>
+
       </div>
 
-      {/* Online Gateway Simulation Overlay */}
+      {/* Test Simulation Modal */}
       {activeSimulation && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          background: "rgba(15, 15, 15, 0.4)",
-          backdropFilter: "blur(20px)",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "1rem"
-        }}>
-          <div style={{
-            background: "rgba(255, 255, 255, 0.8)",
-            border: "1px solid rgba(255, 255, 255, 0.5)",
-            borderRadius: "32px",
-            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
-            padding: "2.5rem",
-            maxWidth: "500px",
-            width: "100%",
-            textAlign: "center",
-            backdropFilter: "blur(25px)",
-            position: "relative"
-          }}>
-            <p className="eyebrow" style={{ color: "var(--accent-deep)", marginBottom: "0.5rem" }}>
-              Secure Payment Gateway Sandbox
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "1rem" }}>
+          <div style={{ background: "#ffffff", padding: "2.2rem", borderRadius: "24px", maxWidth: "440px", width: "100%", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", textAlign: "center" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#fff5f7", color: "#e9718b", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <h3 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: "0.4rem", color: "#1a1a1a" }}>Simulate UPI / Card Payment</h3>
+            <p style={{ fontSize: "0.88rem", color: "#666", marginBottom: "1.5rem" }}>
+              Test Mode Active for Order <strong>#{activeSimulation.orderNumber}</strong>. Amount: <strong>{formatPrice(activeSimulation.amount, currencySymbol)}</strong>.
             </p>
-            <h3 style={{ fontSize: "1.8rem", color: "var(--text)", fontWeight: 700, marginBottom: "1rem" }}>
-              Simulate Gateway Integration
-            </h3>
-            <p style={{ color: "var(--muted)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "1.5rem" }}>
-              You are simulating a payment of <strong style={{ color: "var(--text)" }}>{formatPrice(activeSimulation.amount, currencySymbol)}</strong> for Order <strong style={{ color: "var(--text)" }}>#{activeSimulation.orderNumber}</strong> using <strong style={{ textTransform: "capitalize", color: "var(--text)" }}>{activeSimulation.method}</strong>.
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 type="button"
                 onClick={handleConfirmSimulation}
+                disabled={isSubmitting}
                 className="primary-button"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  background: "#226643",
-                  borderColor: "#226643",
-                  color: "#fff"
-                }}
+                style={{ flex: 1, padding: "0.85rem", borderRadius: "12px", fontSize: "0.92rem" }}
               >
-                Approve & Verify Successful Payment
+                Simulate Success
               </button>
-
               <button
                 type="button"
                 onClick={handleCancelSimulation}
-                className="secondary-button"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  borderColor: "#a43c31",
-                  color: "#a43c31",
-                  background: "transparent"
-                }}
+                disabled={isSubmitting}
+                style={{ padding: "0.85rem 1rem", borderRadius: "12px", border: "1px solid #e0e0e0", background: "#fafafa", color: "#666", fontWeight: 600, fontSize: "0.92rem", cursor: "pointer" }}
               >
-                Simulate Abort / Cancel Payment
+                Cancel
               </button>
             </div>
-            
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "1.5rem" }}>
-              This sandbox overlay acts as a secure fallback interface during development and verification stages. In production, this falls back to direct API checkouts.
-            </p>
           </div>
         </div>
       )}
+
     </main>
   );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="content-section auth-page" style={{ justifyContent: "center" }}>
-          <div style={{ textAlign: "center", padding: "3rem" }}>
-            <p className="eyebrow" style={{ animation: "pulse 1.5s infinite" }}>Kanakshi.in</p>
-            <h2 className="auth-title">Preparing your secure checkout…</h2>
-            <p className="auth-muted">Loading payment methods, saved addresses, and delivery details.</p>
-          </div>
-        </main>
-      }
-    >
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+        <p style={{ color: "#e9718b", fontWeight: 600 }}>Loading checkout…</p>
+      </div>
+    }>
       <CheckoutPageContent />
     </Suspense>
   );

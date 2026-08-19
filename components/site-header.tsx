@@ -1,14 +1,14 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { resolveAssetUrl } from "../lib/api";
 import { NavigationItem, SiteSettings } from "../lib/types";
 import { useCart } from "./cart-provider";
 import { useWishlist } from "./wishlist-provider";
+import { KanakshiPincodeModal } from "./kanakshi-pincode-modal";
 
 type SiteHeaderProps = {
   brandName: string;
@@ -23,474 +23,383 @@ type SiteHeaderProps = {
   settings: SiteSettings;
 };
 
-type NavDisplayItem = {
-  id: number;
-  name: string;
-  slug: string;
-  href: string;
-  target?: string;
-  cssClass?: string | null;
-  submenu: Array<{
-    id: number;
-    name: string;
-    href: string;
-    target?: string;
-    cssClass?: string | null;
-  }>;
-};
+export function SiteHeader({
+  brandName = "Kanakshi Fine Jewellery",
+  logoUrl,
+  categories = [],
+  menuItems = [],
+  settings
+}: SiteHeaderProps) {
+  const router = useRouter();
+  const { count: cartCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
 
-const MOBILE_LAYOUT_BREAKPOINT = 991;
-
-export function SiteHeader({ brandName, logoUrl, categories, menuItems, mobileMenuItems = [], settings }: SiteHeaderProps) {
-  const [offerVisible, setOfferVisible] = useState(true);
   const [offerIndex, setOfferIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openMobileSectionId, setOpenMobileSectionId] = useState<number | null>(null);
-  const pathname = usePathname();
-  const isRegistryRoute =
-    pathname === "/warranty-portal" ||
-    pathname === "/warranty-status" ||
-    pathname === "/service-claim" ||
-    pathname === "/buyback-request";
-  const { count } = useCart();
-  const { count: wishlistCount } = useWishlist();
-  const [cartPop, setCartPop] = useState(false);
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-    setOpenMobileSectionId(null);
-  };
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [pincodeModalOpen, setPincodeModalOpen] = useState(false);
+  const [selectedPincode, setSelectedPincode] = useState("110001");
+  const [selectedCity, setSelectedCity] = useState("Delhi NCR");
 
-  useEffect(() => {
-    if (count > 0) {
-      setCartPop(true);
-      const timer = setTimeout(() => setCartPop(false), 450);
-      return () => clearTimeout(timer);
-    }
-  }, [count]);
   const offers = useMemo(() => {
     const list = settings.topbar_offers?.filter((offer) => typeof offer === "string" && offer.trim().length > 0) ?? [];
-    return list.length ? list : ["Avail 10% Off, Use Code - LITTLEDIVINITY10 + Get Extra 5% on Prepaid Orders"];
+    return list.length
+      ? list
+      : [
+          "FLAT ₹500 OFF on Orders Above ₹2,999 | Code: SPARKLE500",
+          "Free Insured Express Delivery Across India",
+          "100% Certified 925 Sterling Silver & Hallmarked Gold",
+          "7-Day Hassle-Free Returns & Express Doorstep Pickup"
+        ];
   }, [settings.topbar_offers]);
-  const categoryMap = new Map(categories.map((category) => [category.slug, category]));
-  const menuSeed: NavDisplayItem[] = menuItems.length
-    ? menuItems.map((item, index) => ({
-        id: item.id || index,
-        name: item.title,
-        slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
-        href: typeof item.url === "string" ? item.url : "/shop",
-        target: item.target || "_self",
-        cssClass: item.css_class || null,
-        submenu:
-          item.children?.map((child, childIndex) => ({
-            id: child.id || Number(`${item.id}${childIndex + 1}`),
-            name: child.title,
-            href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop"),
-            target: child.target || "_self",
-            cssClass: child.css_class || null,
-          })) || []
-      }))
-    : categories.slice(0, 6).map((category) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        href: `/shop?category=${category.slug}`,
-        submenu: []
-      }));
-  const fullNavItems: NavDisplayItem[] = menuSeed.map((item) => {
-    const matchedCategory = categoryMap.get(item.slug);
-    return {
-      ...item,
-      submenu: item.submenu || [],
-      slug: matchedCategory?.slug || item.slug,
-      href: item.href || `/shop?category=${matchedCategory?.slug || item.slug}`
-    };
-  });
-  const mobileSeed = (mobileMenuItems.length ? mobileMenuItems : menuItems).map((item, index) => ({
-    id: item.id || index,
-    name: item.title,
-    slug: item.url?.includes("?category=") ? item.url.split("?category=")[1] || "" : item.url?.replace(/^\/+/, "") || "",
-    href: typeof item.url === "string" ? item.url : "/shop",
-    target: item.target || "_self",
-    cssClass: item.css_class || null,
-    submenu:
-      item.children?.map((child, childIndex) => ({
-        id: child.id || Number(`${item.id}${childIndex + 1}`),
-        name: child.title,
-        href: typeof child.url === "string" && child.url.length > 0 ? child.url : (typeof item.url === "string" ? item.url : "/shop"),
-        target: child.target || "_self",
-        cssClass: child.css_class || null,
-      })) || []
-  }));
-  const mobileNavItems: NavDisplayItem[] = mobileSeed.map((item) => {
-    const matchedCategory = categoryMap.get(item.slug);
-    return {
-      ...item,
-      submenu: item.submenu || [],
-      slug: matchedCategory?.slug || item.slug,
-      href: item.href || `/shop?category=${matchedCategory?.slug || item.slug}`
-    };
-  });
-  const registryTabs = [
-    { href: "/warranty-portal?tab=register", label: "Activate" },
-    { href: "/warranty-portal?tab=status", label: "Status" },
-    { href: "/warranty-portal?tab=claim", label: "Service Claim" },
-    ...(settings.registry_allow_buyback !== false ? [{ href: "/warranty-portal?tab=buyback", label: "Buyback" }] : [])
-  ];
 
+  // Rotate announcement offers
   useEffect(() => {
-    if (offers.length <= 1 || !offerVisible) {
-      return;
+    if (offers.length <= 1) return;
+    const interval = setInterval(() => {
+      setOfferIndex((prev) => (prev + 1) % offers.length);
+    }, 3600);
+    return () => clearInterval(interval);
+  }, [offers]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setSearchFocused(false);
+      router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
 
-    const intervalId = window.setInterval(() => {
-      setOfferIndex((current) => (current + 1) % offers.length);
-    }, 3200);
-
-    return () => window.clearInterval(intervalId);
-  }, [offers, offerVisible]);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-    setOpenMobileSectionId(null);
-  }, [pathname]);
-
-  useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    const syncDesktopLayout = () => {
-      if (window.innerWidth > MOBILE_LAYOUT_BREAKPOINT) {
-        setMobileMenuOpen(false);
-        setOpenMobileSectionId(null);
-      }
-    };
-
-    syncDesktopLayout();
-    window.addEventListener("resize", syncDesktopLayout);
-    window.addEventListener("orientationchange", syncDesktopLayout);
-
-    return () => {
-      window.removeEventListener("resize", syncDesktopLayout);
-      window.removeEventListener("orientationchange", syncDesktopLayout);
-    };
-  }, []);
-
-  if (isRegistryRoute) {
-    return (
-      <header className="site-header registry-header">
-        <div className="container registry-header-shell">
-          <Link href="/" className="registry-brand-mark" aria-label={`${brandName} home`}>
-            <Image
-              src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"}
-              alt={brandName}
-              className="brand-logo"
-              width={150}
-              height={52}
-              priority
-              sizes="150px"
-            />
-          </Link>
-
-          <nav className="registry-header-nav" aria-label="Registry navigation">
-            {registryTabs.map((tab) => (
-              <Link key={tab.href} href={tab.href}>
-                {tab.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="registry-header-actions">
-            <Link href="/shop" className="registry-header-link">
-              Return to Storefront
-            </Link>
-          </div>
-        </div>
-      </header>
-    );
-  }
+  const popularSearches = [
+    "Solitaire Rings",
+    "925 Silver Earrings",
+    "Tennis Bracelet",
+    "Heart Necklace",
+    "Lab Diamond Pendant",
+    "Men's Cuban Chain",
+    "Evil Eye Bracelet",
+    "Gifts Under ₹1999"
+  ];
 
   return (
     <>
-      {offerVisible && settings.show_topbar !== false ? (
-        <div
-          className="top-offer-bar"
-          style={{
-            background: settings.topbar_bg_color || "#0f0f0f",
-            color: settings.topbar_text_color || "#ffffff"
-          }}
-        >
-          <span key={`${offerIndex}-${offers[offerIndex]}`} className="top-offer-text">
-            {offers[offerIndex]}
-          </span>
-          <button
-            type="button"
-            className="top-offer-close"
-            aria-label="Dismiss notification"
-            onClick={() => setOfferVisible(false)}
-          >
-            ×
-          </button>
-        </div>
-      ) : null}
-
-      <header className="site-header">
-        <div className="container header-shell">
-          <div className="brand-lockup">
-            <Link href="/" className="brand-mark">
-              <Image
-                src={logoUrl ? resolveAssetUrl(logoUrl) : "/logo.jpg"}
-                alt={brandName}
-                className="brand-logo"
-                width={170}
-                height={58}
-                priority
-                sizes="170px"
-              />
-            </Link>
+      {/* Top Announcement Bar */}
+      <div className="kanakshi-topbar">
+        <div className="kanakshi-container kanakshi-topbar-inner">
+          <div className="kanakshi-topbar-ticker">
+            <span>{offers[offerIndex]}</span>
           </div>
 
-          <nav className="header-nav">
-            {fullNavItems.map((category) => {
-              const hasSubmenu = category.submenu.length > 0;
-
-              return (
-                <div key={category.id} className={`nav-item-with-menu${hasSubmenu ? "" : " nav-item-plain"}`}>
-                  <Link
-                    href={category.href}
-                    target={category.target || undefined}
-                    rel={category.target === "_blank" ? "noreferrer" : undefined}
-                    className={[hasSubmenu ? "nav-link-with-icon" : "nav-link-plain", category.cssClass]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <span>{category.name}</span>
-                    {hasSubmenu ? (
-                      <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
-                        <path d="M7 10.5 12 15l5-4.5" />
-                      </svg>
-                    ) : null}
-                  </Link>
-
-                  {hasSubmenu ? (
-                    <div className="nav-submenu">
-                      {category.submenu.map((item) => (
-                        <Link
-                          key={`${category.slug}-${item.id}`}
-                          href={item.href}
-                          target={item.target || undefined}
-                          rel={item.target === "_blank" ? "noreferrer" : undefined}
-                          className={["nav-submenu-link", item.cssClass].filter(Boolean).join(" ")}
-                        >
-                          {item.name}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </nav>
-
-          <div className="header-tools header-tools--desktop" aria-label="Store tools">
-            <Link href="/shop" aria-label="Search" className="header-tool-icon header-tool-icon--desktop-only">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="M16 16l4.5 4.5" />
-              </svg>
-            </Link>
-            <Link href="/wishlist" aria-label="Wishlist" className="header-tool-icon header-tool-icon--desktop-only header-wishlist-link">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
-              </svg>
-              {wishlistCount > 0 ? (
-                <span className="header-cart-count header-wishlist-count">
-                  {wishlistCount}
-                </span>
-              ) : null}
-            </Link>
-            <Link href="/account" aria-label="Account" className="header-tool-icon header-tool-icon--desktop-only">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="8.5" r="3.2" />
-                <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
-              </svg>
-            </Link>
-            <Link href="/cart" aria-label="Cart" className="header-tool-icon header-tool-icon--desktop-only header-cart-link">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 8.5h10l-.7 10H7.7L7 8.5Z" />
-                <path d="M9.5 8.5V7.3c0-1.4 1.1-2.6 2.5-2.6s2.5 1.2 2.5 2.6v1.2" />
-              </svg>
-              {count > 0 ? (
-                <span className={`header-cart-count${cartPop ? " cart-pop-animate" : ""}`}>
-                  {count}
-                </span>
-              ) : null}
-            </Link>
+          <div className="kanakshi-topbar-links">
+            <Link href="/track-order">Track Order</Link>
+            <Link href="/returns">Easy Returns</Link>
+            <Link href="/pages/contact">Need Help?</Link>
           </div>
         </div>
+      </div>
 
-      </header>
-
-      <div className={`mobile-nav-layer${mobileMenuOpen ? " is-open" : ""}`} aria-hidden={!mobileMenuOpen}>
-        <button
-          type="button"
-          className="mobile-nav-backdrop"
-          aria-label="Close menu"
-          onClick={closeMobileMenu}
-        />
-
-        <aside className={`mobile-nav-panel${mobileMenuOpen ? " is-open" : ""}`} aria-label="Mobile menu">
-          <div className="mobile-nav-panel-head">
-            <div className="mobile-nav-profile">
-              <span className="mobile-nav-avatar" aria-hidden="true">
-                {brandName.trim().charAt(0) || "L"}
-              </span>
-              <div className="mobile-nav-profile-copy">
-                <strong>{brandName}</strong>
-                <span>Shop, wishlist and account in one place</span>
-              </div>
-            </div>
-
-            <button type="button" className="mobile-nav-close" aria-label="Close menu" onClick={closeMobileMenu}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6l12 12" />
-                <path d="M18 6 6 18" />
+      {/* Main Header */}
+      <header className="kanakshi-header-wrapper">
+        <div className="kanakshi-container">
+          <div className="kanakshi-main-header">
+            {/* Mobile Hamburger Toggle */}
+            <button
+              type="button"
+              className="kanakshi-mobile-nav-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-          </div>
 
-          <div className="mobile-nav-quicklinks">
-            <Link href="/account" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
-              Account
+            {/* Logo */}
+            <Link href="/" className="kanakshi-logo">
+              <span className="kanakshi-logo-title">{brandName.replace("Fine Jewellery", "").trim() || "KANAKSHI"}</span>
+              <span className="kanakshi-logo-sub">FINE JEWELLERY</span>
             </Link>
-            <Link href="/wishlist" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
-              Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
-            </Link>
-            <Link href="/cart" className="mobile-nav-quicklink" onClick={closeMobileMenu}>
-              Cart{count > 0 ? ` (${count})` : ""}
-            </Link>
-          </div>
 
-          <div className="mobile-nav-inner">
-            <div className="mobile-nav-list">
-              {mobileNavItems.map((item) => {
-                const hasSubmenu = item.submenu.length > 0;
-                const isOpen = openMobileSectionId === item.id;
+            {/* Delivery Pincode Box */}
+            <button
+              type="button"
+              className="kanakshi-pincode-btn"
+              onClick={() => setPincodeModalOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--kanakshi-pink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <div>
+                <div className="kanakshi-pincode-label">Deliver to</div>
+                <div className="kanakshi-pincode-val">{selectedPincode} • {selectedCity}</div>
+              </div>
+            </button>
 
-                return (
-                  <div key={item.id} className="mobile-nav-entry">
-                    <div className="mobile-nav-row">
-                      <Link
-                        href={item.href}
-                        target={item.target || undefined}
-                        rel={item.target === "_blank" ? "noreferrer" : undefined}
-                        className={["mobile-nav-link", item.cssClass].filter(Boolean).join(" ")}
-                        onClick={closeMobileMenu}
+            {/* Search Bar */}
+            <div className="kanakshi-search-box">
+              <form onSubmit={handleSearchSubmit}>
+                <div className="kanakshi-search-input-wrap">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--kanakshi-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="kanakshi-search-icon">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    className="kanakshi-search-input"
+                    placeholder="Search for Rings, 925 Silver, Lab Diamonds, Gifts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--kanakshi-text-muted)", display: "flex" }}
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {/* Instant Search Dropdown */}
+              {searchFocused && (
+                <div className="kanakshi-search-dropdown">
+                  <div className="kanakshi-search-section-title">Trending Searches</div>
+                  <div className="kanakshi-search-chips">
+                    {popularSearches.map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="kanakshi-search-chip"
+                        onMouseDown={() => {
+                          setSearchQuery(item);
+                          router.push(`/shop?q=${encodeURIComponent(item)}`);
+                        }}
                       >
-                        {item.name}
-                      </Link>
+                        {item}
+                      </button>
+                    ))}
+                  </div>
 
-                      {hasSubmenu ? (
-                        <button
-                          type="button"
-                          className={`mobile-submenu-toggle${isOpen ? " is-open" : ""}`}
-                          aria-label={`Toggle ${item.name} submenu`}
-                          aria-expanded={isOpen}
-                          onClick={() =>
-                            setOpenMobileSectionId((current) => (current === item.id ? null : item.id))
-                          }
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true" className="nav-chevron">
-                            <path d="M7 10.5 12 15l5-4.5" />
-                          </svg>
-                        </button>
-                      ) : null}
-                    </div>
+                  <div className="kanakshi-search-section-title">Shop by Metal</div>
+                  <div style={{ display: "flex", gap: "12px", fontSize: "0.85rem" }}>
+                    <Link href="/shop/silver-jewellery" style={{ color: "var(--kanakshi-pink-dark)", fontWeight: "600" }}>
+                      • 925 Sterling Silver
+                    </Link>
+                    <Link href="/shop/gold-lab-diamonds" style={{ color: "var(--kanakshi-gold-dark)", fontWeight: "600" }}>
+                      • 18K Real Gold
+                    </Link>
+                    <Link href="/shop/necklaces" style={{ color: "var(--kanakshi-pink)", fontWeight: "600" }}>
+                      • Rose Gold Edit
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                    {hasSubmenu ? (
-                      <div className={`mobile-nav-submenu${isOpen ? " is-open" : ""}`}>
-                        {item.submenu.map((submenuItem) => (
-                          <Link
-                            key={`${item.slug}-${submenuItem.id}`}
-                            href={submenuItem.href}
-                            target={submenuItem.target || undefined}
-                            rel={submenuItem.target === "_blank" ? "noreferrer" : undefined}
-                            className={["mobile-nav-submenu-link", submenuItem.cssClass].filter(Boolean).join(" ")}
-                            onClick={closeMobileMenu}
-                          >
-                            {submenuItem.name}
+            {/* Actions: Wishlist, Account, Cart */}
+            <div className="kanakshi-header-actions">
+              <Link href="/wishlist" className="kanakshi-icon-btn" aria-label="Wishlist">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span className="kanakshi-icon-btn-label">Wishlist</span>
+                {wishlistCount > 0 && (
+                  <span className="kanakshi-badge-count">{wishlistCount}</span>
+                )}
+              </Link>
+
+              <Link href="/account" className="kanakshi-icon-btn" aria-label="Account">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="kanakshi-icon-btn-label">Account</span>
+              </Link>
+
+              <Link href="/cart" className="kanakshi-icon-btn" aria-label="Shopping Bag">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+                <span className="kanakshi-icon-btn-label">Bag</span>
+                {cartCount > 0 && (
+                  <span className="kanakshi-badge-count">{cartCount}</span>
+                )}
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Mega-Menu Navigation Bar */}
+        <nav className="kanakshi-nav-bar">
+          <div className="kanakshi-container">
+            <ul className="kanakshi-nav-list">
+              {menuItems.map((item) => (
+                <li key={item.id} className="kanakshi-nav-item">
+                  <Link href={item.url || "/shop"} className="kanakshi-nav-link">
+                    {item.title}
+                    {item.children && item.children.length > 0 && (
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "4px" }}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    )}
+                  </Link>
+
+                  {/* Mega Menu Dropdown */}
+                  {item.children && item.children.length > 0 && (
+                    <div className="kanakshi-mega-dropdown">
+                      <div>
+                        <div className="kanakshi-dropdown-col-title">Popular Styles</div>
+                        {item.children.slice(0, 4).map((child) => (
+                          <Link key={child.id} href={child.url} className="kanakshi-dropdown-link">
+                            {child.title}
                           </Link>
                         ))}
                       </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+
+                      {item.children.length > 4 && (
+                        <div>
+                          <div className="kanakshi-dropdown-col-title">More Collections</div>
+                          {item.children.slice(4).map((child) => (
+                            <Link key={child.id} href={child.url} className="kanakshi-dropdown-link">
+                              {child.title}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ background: "var(--kanakshi-pink-subtle)", padding: "12px", borderRadius: "var(--radius-sm)" }}>
+                        <div className="kanakshi-dropdown-col-title" style={{ borderBottom: "none", color: "var(--kanakshi-pink-dark)" }}>
+                          Special Offers
+                        </div>
+                        <p style={{ fontSize: "0.78rem", color: "var(--kanakshi-text-body)", marginBottom: "8px" }}>
+                          Get ₹500 OFF on orders above ₹2,999 with code <strong>SPARKLE500</strong>.
+                        </p>
+                        <Link
+                          href="/shop?sort=bestseller"
+                          style={{
+                            display: "inline-block",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            color: "var(--kanakshi-pink)"
+                          }}
+                        >
+                          Explore Bestsellers →
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+      </header>
+
+      {/* Mobile Drawer Navigation */}
+      {mobileMenuOpen && (
+        <div
+          className="kanakshi-modal-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ justifyContent: "flex-start", padding: 0 }}
+        >
+          <div
+            style={{
+              width: "82%",
+              maxWidth: "320px",
+              height: "100%",
+              background: "#ffffff",
+              overflowY: "auto",
+              padding: "24px 20px"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div className="kanakshi-logo">
+                <span className="kanakshi-logo-title" style={{ fontSize: "1.4rem" }}>KANAKSHI</span>
+                <span className="kanakshi-logo-sub">FINE JEWELLERY</span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ background: "transparent", border: "none", color: "var(--kanakshi-text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                aria-label="Close Navigation"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <Link
+                href="/shop"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: "1rem", fontWeight: "700", color: "var(--kanakshi-pink)", paddingBottom: "8px", borderBottom: "1px solid var(--kanakshi-border)" }}
+              >
+                Shop All Fine Jewellery
+              </Link>
+              {menuItems.map((item) => (
+                <div key={item.id} style={{ borderBottom: "1px solid var(--kanakshi-border)", paddingBottom: "10px" }}>
+                  <Link
+                    href={item.url || "/shop"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ fontSize: "0.95rem", fontWeight: "600", color: "var(--kanakshi-black)", display: "block", marginBottom: "6px" }}
+                  >
+                    {item.title}
+                  </Link>
+                  {item.children && item.children.length > 0 && (
+                    <div style={{ paddingLeft: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {item.children.map((child) => (
+                         <Link
+                          key={child.id}
+                          href={child.url}
+                          onClick={() => setMobileMenuOpen(false)}
+                          style={{ fontSize: "0.85rem", color: "var(--kanakshi-text-muted)" }}
+                        >
+                          {child.title}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid var(--kanakshi-border)" }}>
+              <Link href="/track-order" onClick={() => setMobileMenuOpen(false)} style={{ display: "block", fontSize: "0.88rem", padding: "6px 0" }}>
+                Track Order
+              </Link>
+              <Link href="/returns" onClick={() => setMobileMenuOpen(false)} style={{ display: "block", fontSize: "0.88rem", padding: "6px 0" }}>
+                7-Day Easy Returns
+              </Link>
+              <Link href="/pages/contact" onClick={() => setMobileMenuOpen(false)} style={{ display: "block", fontSize: "0.88rem", padding: "6px 0" }}>
+                Contact Support
+              </Link>
             </div>
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
 
-      <nav className="mobile-bottom-nav" aria-label="Mobile quick navigation">
-        <Link href="/" className={`mobile-bottom-link${pathname === "/" ? " is-active" : ""}`} onClick={closeMobileMenu}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" />
-          </svg>
-          <span>Home</span>
-        </Link>
-        <Link
-          href="/shop"
-          className={`mobile-bottom-link${pathname.startsWith("/shop") ? " is-active" : ""}`}
-          onClick={closeMobileMenu}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4.5 7.5h15" />
-            <path d="M6.5 7.5l1.2 10h8.6l1.2-10" />
-            <path d="M9 11h6" />
-          </svg>
-          <span>Shop</span>
-        </Link>
-        <button
-          type="button"
-          className={`mobile-bottom-link mobile-bottom-link--menu${mobileMenuOpen ? " is-active" : ""}`}
-          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileMenuOpen}
-          onClick={() => setMobileMenuOpen((current) => !current)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 7h14" />
-            <path d="M5 12h14" />
-            <path d="M5 17h14" />
-          </svg>
-          <span>Menu</span>
-        </button>
-        <Link
-          href="/wishlist"
-          className={`mobile-bottom-link${pathname.startsWith("/wishlist") ? " is-active" : ""}`}
-          onClick={closeMobileMenu}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 20s-6.5-4.3-8.5-8.1C2 9.4 3 6.5 5.7 5.4c2-.8 4.2-.2 5.3 1.5c1.1-1.7 3.3-2.3 5.3-1.5C19 6.5 20 9.4 18.5 11.9C16.5 15.7 12 20 12 20Z" />
-          </svg>
-          <span>Wishlist</span>
-          {wishlistCount > 0 ? <em>{wishlistCount}</em> : null}
-        </Link>
-        <Link
-          href="/account"
-          className={`mobile-bottom-link${pathname.startsWith("/account") ? " is-active" : ""}`}
-          onClick={closeMobileMenu}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.2" />
-            <path d="M5.5 18.5c1.6-2.6 4-3.9 6.5-3.9s4.9 1.3 6.5 3.9" />
-          </svg>
-          <span>Account</span>
-        </Link>
-      </nav>
+      {/* Pincode Selector Modal */}
+      <KanakshiPincodeModal
+        isOpen={pincodeModalOpen}
+        onClose={() => setPincodeModalOpen(false)}
+        currentPincode={selectedPincode}
+        onSelectPincode={(pin, city) => {
+          setSelectedPincode(pin);
+          setSelectedCity(city);
+        }}
+      />
     </>
   );
 }

@@ -120,7 +120,7 @@ export default function AuctionDetailPage() {
             <div className="ad-img-wrap">
               {imgSrc
                 ? <img src={imgSrc} alt={auction.title} className="ad-img" />
-                : <div className="ad-img-placeholder"><span>🏺</span></div>
+                : <div className="ad-img-placeholder"><span>ARTIFACT</span></div>
               }
               <div className={`ad-status-pill ad-status-${auction.status}`}>
                 {isLive && <span className="ad-pulse-dot" />}
@@ -180,7 +180,6 @@ export default function AuctionDetailPage() {
             {/* Winner */}
             {isEnded && auction.winner && (
               <div className="ad-winner-block">
-                <div className="ad-winner-icon">🏆</div>
                 <div>
                   <p className="ad-winner-label">WINNING BID</p>
                   <p className="ad-winner-amount">₹{Number(auction.winner.bid || 0).toLocaleString("en-IN")}</p>
@@ -209,11 +208,11 @@ export default function AuctionDetailPage() {
                     <p className="ad-bid-hint">Minimum bid: ₹{minBid.toLocaleString("en-IN")} (increment: ₹{auction.min_bid_increment.toLocaleString("en-IN")})</p>
                     {bidMsg && (
                       <div className={`ad-msg ${bidMsg.type === "ok" ? "ad-msg-ok" : "ad-msg-err"}`}>
-                        {bidMsg.type === "ok" ? "✓" : "⚠"} {bidMsg.text}
+                        {bidMsg.text}
                       </div>
                     )}
                     <button type="submit" disabled={bidding} className="ad-bid-btn">
-                      {bidding ? <><span className="ad-spinner-sm" /> Placing Bid…</> : "🔨 PLACE BID"}
+                      {bidding ? <><span className="ad-spinner-sm" /> Placing Bid…</> : "PLACE BID"}
                     </button>
                     <button
                       type="button"
@@ -225,7 +224,6 @@ export default function AuctionDetailPage() {
                   </form>
                 ) : (
                   <div className="ad-login-gate">
-                    <div className="ad-login-icon">🔒</div>
                     <p>You must be logged in to place bids on this auction.</p>
                     <Link href={`/account/login?redirect=/live-auctions/${id}`} className="ad-login-btn">Login to Bid</Link>
                     <Link href="/account/register" className="ad-register-link">Don't have an account? Register →</Link>
@@ -258,7 +256,7 @@ export default function AuctionDetailPage() {
                       <div className="ad-bid-placed">{bid.placed_at}</div>
                       <div className="ad-bid-amount">
                         ₹{bid.amount.toLocaleString("en-IN")}
-                        {bid.is_winning && <span className="ad-winning-badge">🏆</span>}
+                        {bid.is_winning && <span className="ad-winning-badge">Highest</span>}
                       </div>
                     </div>
                   ))}

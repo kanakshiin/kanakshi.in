@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { subscribeNewsletter } from "../lib/api";
 
-export function FooterNewsletterForm({ email: fallbackEmail }: { email: string }) {
+export function FooterNewsletterForm({ email: fallbackEmail = "" }: { email?: string }) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);

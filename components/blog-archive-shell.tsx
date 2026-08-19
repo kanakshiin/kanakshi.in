@@ -136,9 +136,7 @@ export function BlogArchiveShell({
                         alt={post.author.avatar_alt || post.author.name}
                         className="blog-author-avatar-small"
                       />
-                    ) : (
-                      <span style={{ fontSize: "1.1rem", marginRight: "0.45rem" }}>✍</span>
-                    )}
+                    ) : null}
                     <span>{post.author?.name || "Editorial"}</span>
                   </div>
                   <span>{post.reading_time || 4} min read</span>

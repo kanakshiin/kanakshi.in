@@ -189,3 +189,12 @@ export async function deleteCustomerAddress(token: string, addressId: number): P
 
   return data.addresses || [];
 }
+
+export async function fetchCustomerWallet(token: string): Promise<import("./types").CustomerWalletPayload> {
+  const data = await request<import("./types").CustomerWalletPayload>("/customer/wallet", {
+    method: "GET",
+    cache: "no-store"
+  }, token);
+
+  return data;
+}

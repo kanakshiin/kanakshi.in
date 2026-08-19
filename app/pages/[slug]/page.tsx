@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getSettings } from "../../../lib/api";
-import { liveContactDefaults, livePrivacyPolicyHtml, liveRefundPolicyHtml, liveShippingPolicyHtml, liveTermsHtml } from "../../../lib/legal-content";
+import { livePrivacyPolicyHtml, liveRefundPolicyHtml, liveShippingPolicyHtml, liveTermsHtml } from "../../../lib/legal-content";
 import { getCanonicalUrl, getSiteName } from "../../../lib/site";
+import { ContactUsView } from "../../../components/contact-us-view";
+import { KanakshiTrustBadges } from "../../../components/kanakshi-trust-badges";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,17 +14,17 @@ export const revalidate = 0;
 const pageContent = {
   "about-us": {
     eyebrow: "About Us",
-    title: "A handcrafted home for meaningful decor and gifting.",
+    title: "Handcrafted everyday fine jewellery for the modern soul.",
     body: [
-      "Kanakshi.in curates brass decor, pooja accents, and gifting pieces with a warmer, handcrafted visual language. The idea is simple: products should feel personal, display-worthy, and rooted in Indian craft culture.",
-      "Our storefront brings together sacred pieces, home styling accents, and festive gifting options so customers can browse one place with confidence. Over time, these sections can be fully driven from admin or CMS data."
+      "Kanakshi Fine Jewellery creates authentic, certified, everyday fine jewellery in 100% BIS Hallmarked 925 Sterling Silver, 18K Real Gold, and Ethical Lab-Grown Diamonds.",
+      "Our mission is to make fine jewellery accessible, wearable, and everlasting. Every piece comes with an anti-tarnish rhodium coating, 7-day hassle-free home trial returns, and a certificate of authenticity."
     ]
   },
   contact: {
-    eyebrow: "Contact",
-    title: "Reach the Kanakshi.in team.",
+    eyebrow: "Contact Us",
+    title: "We're here to assist your jewellery journey.",
     body: [
-      "For product questions, order help, gifting support, or wholesale conversations, customers can contact the store using the details below."
+      "Have a question about ring sizing, custom gifting hampers, order tracking, or 7-day returns & exchanges? Reach out to our dedicated jewellery care team."
     ]
   },
   "privacy-policy": {
@@ -48,10 +50,10 @@ const pageContent = {
 } as const;
 
 const policyDescriptions = {
-  "privacy-policy": "Read how Kanakshi.in collects, uses, and protects your personal information.",
-  "terms-conditions": "Read the store use, ordering, billing, and service terms for Kanakshi.in.",
-  "refund-policy": "Read the return, exchange, and refund process for Kanakshi.in orders.",
-  "shipping-policy": "Read the domestic and international shipping timelines, tracking, and delivery information for Kanakshi.in orders.",
+  "privacy-policy": "Read how Kanakshi Fine Jewellery collects, uses, and protects your personal information.",
+  "terms-conditions": "Read the store use, ordering, billing, and service terms for Kanakshi Fine Jewellery.",
+  "refund-policy": "Read the return, exchange, and refund process for Kanakshi Fine Jewellery orders.",
+  "shipping-policy": "Read the domestic and international shipping timelines, tracking, and delivery information for Kanakshi Fine Jewellery orders.",
 } as const;
 
 type ContentPageProps = {
@@ -72,14 +74,14 @@ export async function generateMetadata({ params }: ContentPageProps): Promise<Me
   }
 
   return {
-    title: content.eyebrow,
-    description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi.in.",
+    title: `${content.eyebrow} | ${getSiteName(settings)}`,
+    description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi Fine Jewellery.",
     alternates: {
       canonical: `/pages/${slug}`
     },
     openGraph: {
       title: `${content.eyebrow} | ${getSiteName(settings)}`,
-      description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi.in.",
+      description: policyDescriptions[slug as keyof typeof policyDescriptions] || content.body[0] || "Learn more about Kanakshi Fine Jewellery.",
       url: getCanonicalUrl(`/pages/${slug}`, settings)
     }
   };
@@ -92,6 +94,11 @@ export default async function ContentPage({ params }: ContentPageProps) {
 
   if (!content) {
     notFound();
+  }
+
+  // Dedicated Rich Contact Us Experience
+  if (slug === "contact") {
+    return <ContactUsView settings={settings} />;
   }
 
   const configuredPolicyHtml =
@@ -122,47 +129,65 @@ export default async function ContentPage({ params }: ContentPageProps) {
       : policyFallbackHtml;
 
   return (
-    <main className="page-shell">
-      <section className="content-section white-section">
-        <div className="container" style={{ maxWidth: "960px" }}>
-          <p className="eyebrow">{content.eyebrow}</p>
-          <h1 className="page-title" style={{ maxWidth: "14ch" }}>{content.title}</h1>
-          {policyHtml ? (
-            <div
-              style={{ display: "grid", gap: "1rem", maxWidth: "52rem", color: "var(--muted)", fontSize: "1.02rem", lineHeight: 1.8 }}
-              dangerouslySetInnerHTML={{ __html: policyHtml }}
-            />
-          ) : (
-            <div style={{ display: "grid", gap: "1rem", maxWidth: "52rem", color: "var(--muted)", fontSize: "1.02rem", lineHeight: 1.8 }}>
-              {content.body.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          )}
+    <div className="kanakshi-container" style={{ paddingTop: "24px", paddingBottom: "72px" }}>
+      {/* Breadcrumbs */}
+      <nav style={{ display: "flex", gap: "8px", fontSize: "0.82rem", color: "var(--kanakshi-text-muted)", marginBottom: "20px" }}>
+        <Link href="/" style={{ color: "var(--kanakshi-text-muted)" }}>Home</Link>
+        <span>/</span>
+        <span style={{ color: "var(--kanakshi-pink)", fontWeight: "600" }}>{content.eyebrow}</span>
+      </nav>
 
-          {slug === "contact" ? (
-            <div style={{ display: "grid", gap: "0.8rem", marginTop: "2rem", padding: "1.4rem 1.5rem", border: "1px solid var(--line)", borderRadius: "28px", background: "rgba(255,255,255,0.74)", maxWidth: "34rem" }}>
-              <p><strong>Trade name:</strong> {settings.business_name || settings.site_name || liveContactDefaults.tradeName}</p>
-              <p><strong>Email:</strong> {settings.support_email || settings.site_email || liveContactDefaults.email}</p>
-              <p><strong>Phone:</strong> {settings.support_phone || settings.site_phone || liveContactDefaults.phone}</p>
-              {settings.whatsapp_number ? <p><strong>WhatsApp:</strong> {settings.whatsapp_number}</p> : null}
-              <p>
-                <strong>Address:</strong>{" "}
-                {settings.address_line1 || liveContactDefaults.addressLine1}
-                {settings.address_line2 ? `, ${settings.address_line2}` : ""}
-                , {settings.city || liveContactDefaults.city}
-                {settings.state ? `, ${settings.state}` : ""}
-                {" "}{settings.pincode || liveContactDefaults.pincode}
-                , {settings.country || liveContactDefaults.country}
-              </p>
-            </div>
-          ) : null}
+      {/* Header Banner */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #fff0f3 0%, #fff9fa 100%)",
+          borderRadius: "var(--radius-lg)",
+          padding: "36px 32px",
+          marginBottom: "36px",
+          border: "1px solid rgba(233, 113, 139, 0.15)",
+        }}
+      >
+        <span className="kanakshi-badge kanakshi-badge-pink" style={{ marginBottom: "12px", display: "inline-block" }}>
+          Kanakshi Fine Jewellery
+        </span>
+        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "2.4rem", fontWeight: "600", color: "var(--kanakshi-black)", lineHeight: "1.2", marginBottom: "10px" }}>
+          {content.title}
+        </h1>
+      </div>
 
-          <div style={{ marginTop: "2rem" }}>
-            <Link href="/shop" className="text-link">Continue browsing the collection</Link>
+      {/* Content Body */}
+      <div
+        style={{
+          background: "#ffffff",
+          padding: "36px 32px",
+          borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--kanakshi-border)",
+          boxShadow: "var(--shadow-sm)",
+          marginBottom: "48px",
+        }}
+      >
+        {policyHtml ? (
+          <div
+            style={{ display: "grid", gap: "1.2rem", color: "var(--kanakshi-text-body)", fontSize: "0.95rem", lineHeight: 1.8 }}
+            dangerouslySetInnerHTML={{ __html: policyHtml }}
+          />
+        ) : (
+          <div style={{ display: "grid", gap: "1.2rem", color: "var(--kanakshi-text-body)", fontSize: "0.95rem", lineHeight: 1.8 }}>
+            {content.body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
           </div>
+        )}
+
+        <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid var(--kanakshi-border)" }}>
+          <Link href="/shop" className="kanakshi-btn kanakshi-btn-primary" style={{ display: "inline-block", textDecoration: "none", padding: "10px 24px" }}>
+            Explore Fine Jewellery Collection →
+          </Link>
         </div>
-      </section>
-    </main>
+      </div>
+
+      {/* Trust Badges */}
+      <KanakshiTrustBadges />
+    </div>
   );
 }

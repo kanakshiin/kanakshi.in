@@ -48,46 +48,214 @@ function LoginForm() {
   }
 
   return (
-    <main className="content-section auth-page">
-      <div className="container">
-        <section className="auth-card">
-          <small className="eyebrow">Customer Login</small>
-          <h1 className="auth-title">Welcome Back</h1>
-          <p className="auth-muted">Login to view your account, saved details, and future orders.</p>
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label className="auth-field">
-              <span>Email</span>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                spellCheck={false}
-                className={emailInvalid ? "input-invalid" : ""}
-                aria-invalid={emailInvalid}
-                value={email}
-                onChange={(event) => setEmail(normalizeEmailInput(event.target.value))}
-                placeholder="name@example.com"
-                required
-              />
-              {emailInvalid ? <p className="auth-field-error">Enter a valid email like `name@example.com`.</p> : null}
-            </label>
-            <PasswordField
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              required
-              autoComplete="current-password"
-            />
-            {error ? <p className="auth-error">{error}</p> : null}
-            <button type="submit" className="primary-button" disabled={loading}>
-              {loading ? "Signing In…" : "Login"}
-            </button>
-          </form>
-          <div className="auth-link-row">
-            <Link href="/account/forgot-password" className="text-link">Forgot Password</Link>
-            <Link href={`/account/register?redirect=${encodeURIComponent(redirect)}`} className="text-link">Create Account</Link>
+    <main className="content-section" style={{ minHeight: "85vh", padding: "3rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ maxWidth: "1020px", width: "100%", margin: "0 auto" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          borderRadius: "28px",
+          overflow: "hidden",
+          border: "1px solid var(--line)",
+          background: "rgba(255, 255, 255, 0.8)",
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 20px 45px -15px rgba(0, 0, 0, 0.08)"
+        }}>
+          
+          {/* Left Brand Experience Column */}
+          <div style={{
+            padding: "3rem 2.5rem",
+            background: "linear-gradient(145deg, #fff5f7 0%, #fff9fa 50%, #fdf8ee 100%)",
+            borderRight: "1px solid rgba(233, 113, 139, 0.2)",
+            color: "#2d2d2d",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            position: "relative"
+          }}>
+            <div>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 14px",
+                borderRadius: "20px",
+                background: "rgba(233, 113, 139, 0.12)",
+                border: "1px solid rgba(233, 113, 139, 0.3)",
+                color: "#b83253",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                marginBottom: "1.5rem"
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Kanakshi Privé Club
+              </span>
+
+              <h2 style={{ fontSize: "2rem", fontWeight: 700, lineHeight: 1.25, color: "#1a1a1a", marginBottom: "1rem" }}>
+                Welcome to the Atelier of Fine Jewellery
+              </h2>
+
+              <p style={{ color: "#555555", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "2rem" }}>
+                Log in to access your order archives, manage delivery addresses, track live courier milestones, and redeem Kanakshi wallet cashback.
+              </p>
+
+              {/* Privé Features List */}
+              <div style={{ display: "grid", gap: "1.2rem" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(233, 113, 139, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#b83253", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                  </div>
+                  <div>
+                    <strong style={{ color: "#1a1a1a", fontSize: "0.92rem", display: "block" }}>Kanakshi Wallet Cash</strong>
+                    <span style={{ color: "#666666", fontSize: "0.84rem", lineHeight: 1.4, display: "block" }}>Earn loyalty credits and post-purchase non-return cashbacks spendable at checkout.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(212, 175, 55, 0.18)", display: "flex", alignItems: "center", justifyContent: "center", color: "#b08d20", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  </div>
+                  <div>
+                    <strong style={{ color: "#1a1a1a", fontSize: "0.92rem", display: "block" }}>7-Day Hassle-Free Returns</strong>
+                    <span style={{ color: "#666666", fontSize: "0.84rem", lineHeight: 1.4, display: "block" }}>Easy doorstep pickup with 100% money-back guarantee post home trial.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "rgba(233, 113, 139, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#b83253", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <div>
+                    <strong style={{ color: "#1a1a1a", fontSize: "0.92rem", display: "block" }}>100% Certified Authenticity</strong>
+                    <span style={{ color: "#666666", fontSize: "0.84rem", lineHeight: 1.4, display: "block" }}>BIS Hallmarked 925 Sterling Silver &amp; Ethical Lab-Grown Diamonds.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: "2.5rem", borderTop: "1px solid rgba(233, 113, 139, 0.18)", paddingTop: "1.2rem", fontSize: "0.82rem", color: "#888888" }}>
+              Encrypted 256-Bit SSL Protection · Verified Customer Portal
+            </div>
           </div>
-        </section>
+
+          {/* Right Form Column */}
+          <div style={{ padding: "3.2rem 2.6rem", display: "flex", flexDirection: "column", justifyContent: "center", background: "#ffffff" }}>
+            <div style={{ marginBottom: "1.8rem" }}>
+              <p className="eyebrow" style={{ color: "var(--kanakshi-pink, #e9718b)", letterSpacing: "1.5px", marginBottom: "0.3rem", fontWeight: 700 }}>Member Sign-In</p>
+              <h1 style={{ fontSize: "1.85rem", fontWeight: 700, margin: 0, color: "#1a1a1a" }}>Welcome Back</h1>
+              <p style={{ color: "#767676", fontSize: "0.92rem", margin: "0.4rem 0 0", lineHeight: 1.5 }}>
+                Enter your credentials to securely access your customer account.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.2rem" }}>
+              <div>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: 600, color: "#2d2d2d", marginBottom: "0.4rem" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                  <span>Email Address</span>
+                </label>
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  value={email}
+                  onChange={(event) => setEmail(normalizeEmailInput(event.target.value))}
+                  placeholder="name@example.com"
+                  required
+                  className="auth-input"
+                  style={{
+                    width: "100%",
+                    padding: "0.8rem 1rem",
+                    borderRadius: "14px",
+                    border: emailInvalid ? "1.5px solid #ef4444" : "1.5px solid var(--kanakshi-border-dark, #e0e0e0)",
+                    background: "#ffffff",
+                    fontSize: "0.95rem",
+                    color: "#1a1a1a",
+                    outline: "none"
+                  }}
+                />
+                {emailInvalid && <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.3rem 0 0" }}>Enter a valid email like name@example.com.</p>}
+              </div>
+
+              <div>
+                <PasswordField
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+
+              {error && (
+                <div style={{
+                  padding: "0.8rem 1rem",
+                  borderRadius: "12px",
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  color: "#b91c1c",
+                  fontSize: "0.88rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="primary-button"
+                style={{
+                  width: "100%",
+                  padding: "0.95rem 1.8rem",
+                  borderRadius: "14px",
+                  fontSize: "0.98rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  marginTop: "0.5rem"
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner" style={{ width: "16px", height: "16px", borderWidth: "2px" }} />
+                    <span>Signing In…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In to Account</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: "1.8rem",
+              paddingTop: "1.2rem",
+              borderTop: "1px solid var(--kanakshi-border, #f0f0f0)",
+              fontSize: "0.88rem"
+            }}>
+              <Link href="/account/forgot-password" style={{ color: "#767676", textDecoration: "none", transition: "color 0.2s ease" }}>
+                Forgot Password?
+              </Link>
+              <Link href={`/account/register?redirect=${encodeURIComponent(redirect)}`} style={{ color: "var(--kanakshi-pink, #e9718b)", fontWeight: 700, textDecoration: "none", transition: "color 0.2s ease" }}>
+                Create New Account →
+              </Link>
+            </div>
+          </div>
+
+        </div>
       </div>
     </main>
   );

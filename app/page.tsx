@@ -1,517 +1,355 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { StructuredData } from "../components/structured-data";
 import { HeroSlider } from "../components/hero-slider";
 import { ProductCard } from "../components/product-card";
-import { HomepageNewsletter } from "../components/homepage-newsletter";
-import { getHomePageData, resolveAssetUrl } from "../lib/api";
+import { KanakshiStoryCircles } from "../components/kanakshi-story-circles";
+import { KanakshiMarqueeStrip } from "../components/kanakshi-marquee-strip";
+import { KanakshiTrustBadges } from "../components/kanakshi-trust-badges";
+import { getHomePageData } from "../lib/api";
 import { resolveFullHomepageContent } from "../lib/homepage-content";
 import { referenceAssets } from "../lib/reference-assets";
-import { getCanonicalUrl, getProductPath, getProductRenderKey, getSiteDescription, getSiteName } from "../lib/site";
+import { getCanonicalUrl, getSiteDescription, getSiteName } from "../lib/site";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { settings, socialLinks, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
+  const { settings, categories, featuredProducts, newestProducts, homepageSections } = await getHomePageData();
   const currencySymbol = settings.site_currency_symbol || "₹";
-  const siteName = getSiteName(settings);
-  const instagramLink = socialLinks.find((link) => link.platform.toLowerCase() === "instagram");
-  const instagramUrl = instagramLink?.url || "https://kanakshi.in";
-  const instagramLabel = instagramLink?.handle
-    ? (instagramLink.handle.startsWith("@") ? instagramLink.handle : `@${instagramLink.handle}`)
-    : "kanakshi.in";
-  const sectionMap = new Map(homepageSections.map((section) => [section.section_key, section]));
+  const siteName = getSiteName(settings) || "Kanakshi Fine Jewellery";
 
-  const heroPromos = [
-    {
-      title: "Wall Decor Collection",
-      subtitle: "Designed for thoughtful spaces",
-      show_text: true,
-      image: referenceAssets.hero.wallDecor,
-      href: "/shop?category=wall-decor"
-    },
-    {
-      title: "Stonework Collection",
-      subtitle: "Timeless pieces for every space",
-      show_text: true,
-      image: referenceAssets.hero.stonework,
-      href: "/shop?category=home-decor"
-    }
-  ];
+  const fullHomepageSection = homepageSections.find((s) => s.section_key === "full-homepage");
+  const homepageContent = resolveFullHomepageContent(
+    (fullHomepageSection?.config as Record<string, unknown> | null) || null
+  );
 
   const heroSlides = [
     {
-      alt: "Mother's Day gifting collection",
-      title: "Mother's Day Collection",
-      image: referenceAssets.hero.primary
+      alt: "The Solitaire Diamond & Silver Edit",
+      eyebrow: "Exclusive 2026 Collection",
+      title: "Everyday Luxury Made For You",
+      subtitle: "100% Certified 925 Sterling Silver, 18K Real Gold & Ethical Lab-Grown Diamonds. Backed by 7-Day Hassle-Free Returns.",
+      image: referenceAssets.hero.primary,
+      href: "/shop?sort=bestseller",
+      buttonText: "Shop Solitaires →"
     },
     {
-      alt: "Brass English watch collection",
-      title: "Brass English Watch",
-      image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_2/screen.png"
+      alt: "925 Sterling Silver Everlasting Collection",
+      eyebrow: "Anti-Tarnish Fine Silver",
+      title: "Pure 925 Sterling Silver",
+      subtitle: "Rhodium-coated everyday elegance designed for daily wear. Hypoallergenic, lightweight, and everlasting.",
+      image: referenceAssets.hero.silver,
+      href: "/shop/silver-jewellery",
+      buttonText: "Explore 925 Silver →"
     },
     {
-      alt: "Sacred incense decor",
-      title: "Ritual Essentials",
-      image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_whatsapp_image_2026_02_20_at_2/screen.png"
+      alt: "Romantic Heart & Anniversary Gifts",
+      eyebrow: "Gifting Edits for Love",
+      title: "Gifts That Speak Love",
+      subtitle: "Rose gold heart lockets, matching couple promise bands, and sparkling tennis bracelets in signature velvet gift boxes.",
+      image: referenceAssets.hero.valentines,
+      href: "/shop/gifting-edits",
+      buttonText: "Shop Gifting Picks →"
     },
     {
-      alt: "Buddha collection",
-      title: "Buddha Collection",
-      image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_your_paragraph_text_2025_10_2/screen.png"
-    },
-    {
-      alt: "Wooden collection",
-      title: "Wooden Collection",
-      image: "/reference-assets/image_from_https_theadvitya.com_cdn_shop_files_whatsapp_image_2026_02_20_at_3/screen.png"
+      alt: "Men's Fine Jewellery & Chains",
+      eyebrow: "Men's Bold Collection",
+      title: "Contemporary Men's Jewellery",
+      subtitle: "Diamond-cut Cuban chains, rugged oxidized rings, and masculine silver bracelets.",
+      image: referenceAssets.hero.men,
+      href: "/shop/mens-jewellery",
+      buttonText: "Shop Men's Edit →"
     }
   ];
 
-  const heroSection = sectionMap.get("hero");
-  const bestSellerSection = sectionMap.get("best-sellers");
-  const newArrivalsSection = sectionMap.get("new-arrivals");
-  const newArrivalsProductsSection = sectionMap.get("new-arrivals-products");
-  const fullHomepageSection = sectionMap.get("full-homepage");
-  const hasAdminHomepageSections = homepageSections.length > 0;
-  const homepageContent = resolveFullHomepageContent((fullHomepageSection?.config as Record<string, unknown> | null) || null);
-
-  const heroConfig = (heroSection?.config as {
-    slider_settings?: { show_text?: boolean; show_dots?: boolean; show_arrows?: boolean; autoplay_ms?: number; nav_gap?: number };
-    slides?: Array<{ title?: string; image?: string; alt?: string; href?: string; is_active?: boolean }>;
-    promos?: Array<{ title?: string; subtitle?: string; image?: string; href?: string; show_text?: boolean; is_active?: boolean }>;
-    secondary_button_text?: string;
-    secondary_button_url?: string;
-  } | null) || { slides: [], promos: [] };
-
-  const heroHeadline = heroSection?.heading || "Sacred Craft. Pure Brass. Pan-India Delivery.";
-  const heroDescription =
-    heroSection?.content || "Handcrafted god idols, home decor & festive gifting — trusted by 45,000+ customers across India.";
-  const heroPrimaryButtonText = heroSection?.button_text || "Shop the Collection →";
-  const heroPrimaryButtonUrl = heroSection?.button_url || "/shop";
-  const heroSecondaryButtonText = heroConfig.secondary_button_text || "Explore Gifting Picks";
-  const heroSecondaryButtonUrl = heroConfig.secondary_button_url || "/shop?category=gifting-edit";
-
-  const resolvedHeroSlides =
-    heroConfig.slides?.filter((slide) => slide.image && slide.is_active !== false).map((slide, index) => ({
-      alt: slide.alt || slide.title || `Hero slide ${index + 1}`,
-      title: slide.title,
-      href: slide.href,
-      image: resolveAssetUrl(slide.image || "")
-    })) || [];
-
-  const resolvedHeroPromos =
-    heroConfig.promos?.filter((promo) => promo.image && promo.is_active !== false).map((promo) => ({
-      title: promo.title || "",
-      subtitle: promo.subtitle || "",
-      show_text: promo.show_text !== false,
-      image: resolveAssetUrl(promo.image || ""),
-      href: promo.href || "/shop"
-    })) || [];
-
-  const finalHeroSlides = resolvedHeroSlides.length
-    ? resolvedHeroSlides
-    : heroSlides.map((slide) => ({ ...slide, image: resolveAssetUrl(slide.image) }));
-  const finalHeroPromos = resolvedHeroPromos.length
-    ? resolvedHeroPromos
-    : heroPromos.map((promo) => ({ ...promo, image: resolveAssetUrl(promo.image) }));
-  const isHeroEnabled = heroSection?.is_active !== false;
-  const showBestSellersSection = hasAdminHomepageSections ? Boolean(bestSellerSection) : true;
-  const showNewArrivalsPromoSection = hasAdminHomepageSections ? Boolean(newArrivalsSection) : true;
-  const showNewArrivalsProductsSection = hasAdminHomepageSections ? Boolean(newArrivalsProductsSection) : true;
-
-  const twinPromos = [
-    {
-      title: "Serving Boxes & Trays",
-      image: referenceAssets.founderAndBrand.weddingGift,
-      href: "/shop?category=home-kitchen"
-    },
-    {
-      title: "Wooden Collection",
-      image: referenceAssets.founderAndBrand.woodenDecor,
-      href: "/shop?category=wooden-collection"
-    }
-  ];
-
-  const finalNewArrivalPromos = [
-    {
-      title: (newArrivalsSection?.config as { left_title?: string } | null)?.left_title || twinPromos[0].title,
-      image: resolveAssetUrl(newArrivalsSection?.image_url || twinPromos[0].image),
-      href: (newArrivalsSection?.config as { left_href?: string } | null)?.left_href || twinPromos[0].href
-    },
-    {
-      title: (newArrivalsSection?.config as { right_title?: string } | null)?.right_title || twinPromos[1].title,
-      image: resolveAssetUrl(newArrivalsSection?.side_image_url || twinPromos[1].image),
-      href: (newArrivalsSection?.config as { right_href?: string } | null)?.right_href || twinPromos[1].href
-    }
-  ];
+  const displayProducts = featuredProducts.length > 0 ? featuredProducts : newestProducts;
+  const bestSellerProducts = displayProducts.slice(0, 8);
 
   const homePageJsonLd = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: siteName,
+    "@type": "WebPage",
+    name: `${siteName} | Fine Jewellery, 925 Silver & Lab Diamonds`,
     description: getSiteDescription(settings),
-    url: getCanonicalUrl("/", settings),
-    mainEntity: {
-      "@type": "ItemList",
-      itemListElement: featuredProducts.slice(0, 8).map((product, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        url: getCanonicalUrl(getProductPath(product), settings),
-        name: product.name
-      }))
-    }
+    url: getCanonicalUrl("", settings)
   };
 
+  const metalsList = [
+    {
+      title: "925 Sterling Silver",
+      tag: "Anti-Tarnish Rhodium",
+      desc: "Pure hallmarked silver engineered for everyday wear with scratch-resistant shine.",
+      image: referenceAssets.categories.silver,
+      href: "/shop/silver-jewellery"
+    },
+    {
+      title: "18K Gold & Lab Diamonds",
+      tag: "IGI Certified",
+      desc: "Solid gold brilliance with conflict-free, ethically grown DEF color diamonds.",
+      image: referenceAssets.categories.gold,
+      href: "/shop/gold-lab-diamonds"
+    },
+    {
+      title: "Rose Gold Romance",
+      tag: "18K Blush Plating",
+      desc: "Warm blush tones that flatter every Indian skin tone with e-coat durability.",
+      image: referenceAssets.products.roseGoldPendant1,
+      href: "/shop/necklaces"
+    },
+    {
+      title: "Heritage Oxidised Silver",
+      tag: "Handcrafted Antique",
+      desc: "Statement jhumkas, temple chokers, and artisanal tribal accents.",
+      image: referenceAssets.products.pearlEarrings1,
+      href: "/shop/earrings"
+    }
+  ];
+
   return (
-    <main>
+    <>
       <StructuredData data={homePageJsonLd} />
-      {isHeroEnabled ? (
-        <section className="hero-section">
-          <div className="container hero-grid">
-            <div className="hero-primary-stack">
-              <div className="hero-visual">
-                <HeroSlider
-                  slides={finalHeroSlides}
-                  autoplayMs={heroConfig.slider_settings?.autoplay_ms || 3500}
-                  navGap={heroConfig.slider_settings?.nav_gap || 34}
-                  showArrows={heroConfig.slider_settings?.show_arrows !== false}
-                  showDots={heroConfig.slider_settings?.show_dots === true}
-                  showText={heroConfig.slider_settings?.show_text !== false}
-                />
-                <div className="hero-cta-overlay">
-                  <h1 className="hero-cta-headline">{heroHeadline}</h1>
-                  <p className="hero-cta-sub">{heroDescription}</p>
-                  <div className="hero-cta-actions">
-                    <Link href={heroPrimaryButtonUrl} className="primary-button">{heroPrimaryButtonText}</Link>
-                    <Link href={heroSecondaryButtonUrl} className="secondary-button">{heroSecondaryButtonText}</Link>
+
+      {/* 1. Hero Editorial Banner Slider (TOP) */}
+      <HeroSlider slides={heroSlides} />
+
+      {/* 2. Infinite Loop Marquee Strip (Free Insured Delivery, Easy Returns, 3,000+ Styles) */}
+      <KanakshiMarqueeStrip />
+
+      {/* 3. TOP CATEGORIES - Infinite Loop Story Circles (BELOW HERO) */}
+      <KanakshiStoryCircles categories={categories} />
+
+      {/* 4. Curated Best Sellers Grid */}
+      <section className="kanakshi-section">
+        <div className="kanakshi-container">
+          <div className="kanakshi-section-header">
+            <span className="kanakshi-section-eyebrow">Customer Favorites</span>
+            <h2 className="kanakshi-section-title">Best Sellers in Fine Jewellery</h2>
+            <p className="kanakshi-section-subtitle">
+              The most loved solitaires, tennis bracelets, heart lockets, and 925 silver classics chosen by 200,000+ customers.
+            </p>
+          </div>
+
+          <div className="kanakshi-product-grid">
+            {bestSellerProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                currencySymbol={currencySymbol}
+              />
+            ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "40px" }}>
+            <Link href="/shop?sort=bestseller" className="kanakshi-btn kanakshi-btn-outline kanakshi-btn-lg">
+              View All Best Sellers ({bestSellerProducts.length}+) →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Shop by Metal / Purity Showcase */}
+      <section className="kanakshi-section" style={{ backgroundColor: "var(--kanakshi-bg-alt)" }}>
+        <div className="kanakshi-container">
+          <div className="kanakshi-section-header">
+            <span className="kanakshi-section-eyebrow">Purity & Craft</span>
+            <h2 className="kanakshi-section-title">Shop by Precious Metal</h2>
+            <p className="kanakshi-section-subtitle">
+              Every creation is stamped with authentic hallmark certifications and anti-tarnish protective barriers.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+            {metalsList.map((metal, idx) => (
+              <Link
+                key={idx}
+                href={metal.href}
+                className="kanakshi-card"
+                style={{ overflow: "hidden", textDecoration: "none" }}
+              >
+                <div style={{ position: "relative", width: "100%", height: "220px", overflow: "hidden" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={metal.image}
+                    alt={metal.title}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.7) 100%)"
+                    }}
+                  />
+                  <span
+                    className="kanakshi-badge kanakshi-badge-pink"
+                    style={{ position: "absolute", top: "12px", left: "12px" }}
+                  >
+                    {metal.tag}
+                  </span>
+                  <div style={{ position: "absolute", bottom: "16px", left: "16px", right: "16px", color: "#ffffff" }}>
+                    <h3 style={{ color: "#ffffff", fontSize: "1.35rem", marginBottom: "4px" }}>{metal.title}</h3>
+                    <p style={{ fontSize: "0.82rem", color: "#f0f0f0", opacity: 0.9 }}>{metal.desc}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <div className="hero-cta-mobile" aria-label="Hero call to action">
-                <h1 className="hero-cta-headline">{heroHeadline}</h1>
-                <p className="hero-cta-sub">{heroDescription}</p>
-                <div className="hero-cta-actions">
-                  <Link href={heroPrimaryButtonUrl} className="primary-button">{heroPrimaryButtonText}</Link>
-                  <Link href={heroSecondaryButtonUrl} className="secondary-button">{heroSecondaryButtonText}</Link>
-                </div>
+      {/* 6. Shop by Occasion / Gifting Edits */}
+      <section className="kanakshi-section">
+        <div className="kanakshi-container">
+          <div className="kanakshi-section-header">
+            <span className="kanakshi-section-eyebrow">Thoughtful Moments</span>
+            <h2 className="kanakshi-section-title">Shop by Recipient & Occasion</h2>
+            <p className="kanakshi-section-subtitle">
+              Finding the perfect surprise has never been easier. Curated with luxury gift wrap and personal cards.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
+            <Link href="/shop/gifting-edits" className="kanakshi-card" style={{ textDecoration: "none" }}>
+              <div style={{ height: "180px", position: "relative", overflow: "hidden" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={referenceAssets.hero.valentines}
+                  alt="Gifts for Her"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%)" }} />
+                <span style={{ position: "absolute", bottom: "14px", left: "16px", color: "#ffffff", fontWeight: "700", fontSize: "1.1rem" }}>
+                  Gifts for Her
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/shop/mens-jewellery" className="kanakshi-card" style={{ textDecoration: "none" }}>
+              <div style={{ height: "180px", position: "relative", overflow: "hidden" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={referenceAssets.hero.men}
+                  alt="Gifts for Him"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%)" }} />
+                <span style={{ position: "absolute", bottom: "14px", left: "16px", color: "#ffffff", fontWeight: "700", fontSize: "1.1rem" }}>
+                  Gifts for Him
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/shop/rings" className="kanakshi-card" style={{ textDecoration: "none" }}>
+              <div style={{ height: "180px", position: "relative", overflow: "hidden" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={referenceAssets.products.coupleBands1}
+                  alt="Anniversary & Promise"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%)" }} />
+                <span style={{ position: "absolute", bottom: "14px", left: "16px", color: "#ffffff", fontWeight: "700", fontSize: "1.1rem" }}>
+                  Couple Promise Bands
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/shop?price=under-1999" className="kanakshi-card" style={{ textDecoration: "none" }}>
+              <div style={{ height: "180px", position: "relative", overflow: "hidden" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={referenceAssets.products.solitaireRing1}
+                  alt="Affordable Sparkle"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%)" }} />
+                <span style={{ position: "absolute", bottom: "14px", left: "16px", color: "#ffffff", fontWeight: "700", fontSize: "1.1rem" }}>
+                  Curated Under ₹1,999
+                </span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Trust & Guarantees Strip */}
+      <KanakshiTrustBadges />
+
+      {/* 8. Customer Reviews & Social Proof */}
+      {homepageContent.testimonials?.items?.length > 0 && (
+        <section className="kanakshi-section" style={{ backgroundColor: "var(--kanakshi-bg-alt)" }}>
+          <div className="kanakshi-container">
+            <div className="kanakshi-section-header">
+              <span className="kanakshi-section-eyebrow">{homepageContent.testimonials.eyebrow || "Real Sparkle Stories"}</span>
+              <h2 className="kanakshi-section-title">{homepageContent.testimonials.title || "Loved by Over 200,000+ Customers"}</h2>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                <span style={{ color: "#f59e0b", fontSize: "1.2rem" }}>★★★★★</span>
+                <span style={{ fontWeight: "700", color: "var(--kanakshi-black)" }}>4.9 / 5 Overall Rating</span>
               </div>
             </div>
 
-            <div className="hero-promo-stack">
-              {finalHeroPromos.map((promo) => (
-                <Link key={promo.title} href={promo.href} className="hero-promo-card">
-                  <Image src={promo.image} alt={promo.title} fill sizes="(max-width: 900px) 100vw, 30vw" />
-                  {promo.show_text !== false ? (
-                    <div className="hero-promo-copy">
-                      <small>{promo.subtitle}</small>
-                      <strong>{promo.title}</strong>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
+              {homepageContent.testimonials.items.map((review, i) => (
+                <div key={i} className="kanakshi-review-card">
+                  <div className="kanakshi-review-stars">
+                    {review.stars || "★★★★★"}
+                  </div>
+                  <h4 style={{ fontSize: "1rem", fontWeight: "700", marginBottom: "8px" }}>{review.title}</h4>
+                  <p style={{ fontSize: "0.88rem", color: "var(--kanakshi-text-muted)", lineHeight: "1.5", flex: 1 }}>
+                    “{review.quote}”
+                  </p>
+                  <div className="kanakshi-review-author">
+                    <span>{review.author}</span>
+                    <span className="kanakshi-verified-pill">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", marginRight: "3px", verticalAlign: "middle" }}>
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Verified Buyer
+                    </span>
+                  </div>
+                  {review.product && (
+                    <div style={{ fontSize: "0.75rem", color: "var(--kanakshi-pink-dark)", marginTop: "6px" }}>
+                      Purchased: {review.product}
                     </div>
-                  ) : null}
-                </Link>
+                  )}
+                </div>
               ))}
             </div>
           </div>
         </section>
-      ) : null}
+      )}
 
-      {homepageContent.collections.is_active ? (
-      <section className="content-section" id="collections">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{homepageContent.collections.eyebrow}</p>
-              <h2>{homepageContent.collections.title}</h2>
-            </div>
-            <Link href={homepageContent.collections.button_url} className="text-link">
-              {homepageContent.collections.button_text}
-            </Link>
+      {/* 9. Instagram UGC #KanakshiSparkle Gallery */}
+      <section className="kanakshi-section" style={{ backgroundColor: "var(--kanakshi-bg-alt)", paddingBottom: "72px" }}>
+        <div className="kanakshi-container">
+          <div className="kanakshi-section-header">
+            <span className="kanakshi-section-eyebrow">#KanakshiSparkle</span>
+            <h2 className="kanakshi-section-title">Styled by You on Instagram</h2>
+            <p className="kanakshi-section-subtitle">
+              Tag <a href="https://instagram.com/kanakshi.in" target="_blank" rel="noreferrer" style={{ color: "var(--kanakshi-pink)", fontWeight: "700" }}>@kanakshi.in</a> on Instagram to be featured in our weekly Sparkle Spotlight.
+            </p>
           </div>
 
-          <div className="category-grid">
-            {homepageContent.collections.items.map((collection) => (
-              <Link key={collection.title} href={collection.href} className="category-card">
-                <Image src={resolveAssetUrl(collection.image)} alt={collection.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" />
-                <div>
-                  <small>{collection.subtitle}</small>
-                  <strong>{collection.title}</strong>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.occasions.is_active ? (
-      <section className="content-section circle-category-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head section-head-center">
-            <div>
-              <p className="eyebrow">{homepageContent.occasions.eyebrow}</p>
-              <h2>{homepageContent.occasions.title}</h2>
-            </div>
-          </div>
-
-          <div className="circle-category-grid">
-            {homepageContent.occasions.items.map((category) => (
-              <Link key={category.title} href={category.href} className="circle-category-card">
-                <span className="circle-category-image">
-                  <Image src={resolveAssetUrl(category.image)} alt={category.title} fill sizes="(max-width: 768px) 40vw, 16vw" />
-                </span>
-                <strong>{category.title}</strong>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.editorial_picks.is_active ? (
-      <section className="content-section soft-section mobile-home-hidden">
-        <div className="container story-grid">
-          {homepageContent.editorial_picks.items.map((item, index) => (
-            <Link key={item.title} href={item.href} className={`story-card story-card-${index}`}>
-              <Image src={resolveAssetUrl(item.image)} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" />
-              <div className="story-overlay" />
-              <div className="story-copy">
-                <small>{item.badge || "Editorial Pick"}</small>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-      ) : null}
-
-      {showBestSellersSection ? (
-      <section className="content-section" id="bestsellers">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{bestSellerSection?.subtitle || "Best Sellers"}</p>
-              <h2>{bestSellerSection?.title || "Most Loved Across The Storefront"}</h2>
-            </div>
-            <Link href={bestSellerSection?.button_url || "/shop"} className="text-link">
-              {bestSellerSection?.button_text || "Shop all"}
-            </Link>
-          </div>
-
-          <div className="product-grid">
-            {featuredProducts.map((product) => (
-              <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.about_brand.is_active ? (
-      <section className="content-section white-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{homepageContent.about_brand.eyebrow}</p>
-              <h2>{homepageContent.about_brand.title}</h2>
-            </div>
-          </div>
-
-          <div className="about-brand-grid">
-            <div className="about-brand-image">
-              <Image src={resolveAssetUrl(homepageContent.about_brand.image)} alt="About the brand" width={1200} height={900} sizes="(max-width: 900px) 100vw, 45vw" />
-            </div>
-            <div className="about-brand-copy">
-              <p>{homepageContent.about_brand.paragraph_one}</p>
-              <p>{homepageContent.about_brand.paragraph_two}</p>
-              <Link href={homepageContent.about_brand.button_url} className="text-link">
-                {homepageContent.about_brand.button_text}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.founders.is_active ? (
-      <section className="content-section artisan-section mobile-home-hidden">
-        <div className="container artisan-grid">
-          <div className="artisan-copy">
-            <p className="eyebrow">{homepageContent.founders.eyebrow}</p>
-            <h2>{homepageContent.founders.title}</h2>
-            <p className="hero-text">{homepageContent.founders.content}</p>
-            <Link href={homepageContent.founders.button_url} className="primary-button">
-              {homepageContent.founders.button_text}
-            </Link>
-          </div>
-          <div className="artisan-stack">
-            <Image src={resolveAssetUrl(homepageContent.founders.main_image)} alt="Artisans" className="artisan-main" width={900} height={1100} sizes="(max-width: 900px) 100vw, 40vw" />
-            <Image src={resolveAssetUrl(homepageContent.founders.side_image)} alt="Founder" className="artisan-side" width={900} height={1100} sizes="(max-width: 900px) 100vw, 20vw" />
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {showNewArrivalsPromoSection ? (
-      <section className="content-section white-section new-arrivals-showcase mobile-home-hidden">
-        <div className="container new-arrivals-showcase-shell">
-          <div className="section-head new-arrivals-heading">
-            <div>
-              <p className="eyebrow">{newArrivalsSection?.subtitle || "New Arrivals"}</p>
-              <h2>{newArrivalsSection?.title || "Fresh Pieces Worth A First Look"}</h2>
-            </div>
-          </div>
-
-          <div className="twin-promo-grid new-arrivals-grid">
-            {finalNewArrivalPromos.map((promo) => (
-              <Link key={promo.title} href={promo.href} className="twin-promo-card">
-                <Image src={promo.image} alt={promo.title} fill sizes="(max-width: 900px) 100vw, 50vw" />
-                <div className="twin-promo-copy">
-                  <small>Curated Promotion</small>
-                  <strong>{promo.title}</strong>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {showNewArrivalsProductsSection ? (
-      <section className="content-section new-arrivals-products mobile-home-hidden">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{newArrivalsProductsSection?.subtitle || "New Arrivals"}</p>
-              <h2>{newArrivalsProductsSection?.title || "Latest From The Craft Table"}</h2>
-            </div>
-            <Link href={newArrivalsProductsSection?.button_url || "/shop"} className="text-link">
-              {newArrivalsProductsSection?.button_text || "Explore all"}
-            </Link>
-          </div>
-          <div className="product-grid">
-            {newestProducts.map((product) => (
-              <ProductCard key={getProductRenderKey(product)} product={product} currencySymbol={currencySymbol} />
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.testimonials.is_active ? (
-      <section className="content-section white-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head section-head-center">
-            <div>
-              <p className="eyebrow">{homepageContent.testimonials.eyebrow}</p>
-              <h2>{homepageContent.testimonials.title}</h2>
-            </div>
-          </div>
-
-          <div className="testimonial-grid">
-            {homepageContent.testimonials.items.map((testimonial) => (
-              <article key={testimonial.author} className="testimonial-card">
-                <span className="testimonial-stars">{testimonial.stars}</span>
-                <h3>{testimonial.title}</h3>
-                <p>{testimonial.quote}</p>
-                <strong>{testimonial.author}</strong>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {/* Premium Homepage Lead Opt-in Banner */}
-      {homepageContent.newsletter.is_active ? (
-      <div className="mobile-home-hidden">
-        <HomepageNewsletter
-          eyebrow={homepageContent.newsletter.eyebrow}
-          title={homepageContent.newsletter.title}
-          description={homepageContent.newsletter.description}
-          buttonText={homepageContent.newsletter.button_text}
-          placeholder={homepageContent.newsletter.placeholder}
-          footnote={homepageContent.newsletter.footnote}
-        />
-      </div>
-      ) : null}
-
-      {homepageContent.instagram.is_active ? (
-      <section className="content-section instagram-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head section-head-center instagram-head">
-            <div>
-              <p className="eyebrow">{homepageContent.instagram.eyebrow}</p>
-              <h2>{homepageContent.instagram.title}</h2>
-            </div>
-            <a href={homepageContent.instagram.profile_url || instagramUrl} target="_blank" rel="noopener noreferrer" className="text-link">{homepageContent.instagram.profile_label || instagramLabel}</a>
-          </div>
-
-          <div className="instagram-grid">
-            {homepageContent.instagram.tiles.map((tile, index) => (
-              <a key={`${tile.image}-${index}`} href={homepageContent.instagram.profile_url || instagramUrl} target="_blank" rel="noopener noreferrer" className="instagram-tile" aria-label={`View on Instagram — post ${index + 1}`}>
-                <Image
-                  src={resolveAssetUrl(tile.image)}
-                  alt={tile.alt || `Handcrafted product ${index + 1}`}
-                  width={700}
-                  height={700}
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+            {[
+              { img: referenceAssets.products.solitaireRing1, alt: "Solitaire ring worn with elegant manicure" },
+              { img: referenceAssets.products.heartNecklace1, alt: "Heart pendant styled with evening dress" },
+              { img: referenceAssets.products.pearlEarrings1, alt: "Pearl studs styled for festive look" },
+              { img: referenceAssets.products.tennisBracelet1, alt: "Tennis bracelet stacked on wrist" },
+              { img: referenceAssets.products.roseGoldPendant1, alt: "Rose gold locket worn daily" },
+              { img: referenceAssets.products.evilEyeBracelet1, alt: "Evil eye charm bracelet close up" },
+            ].map((photo, i) => (
+              <div key={i} style={{ position: "relative", width: "100%", paddingTop: "100%", borderRadius: "var(--radius-md)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.img}
+                  alt={photo.alt}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              </a>
+              </div>
             ))}
           </div>
         </div>
       </section>
-      ) : null}
-
-      {homepageContent.stats.is_active ? (
-      <section className="content-section white-section stats-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head section-head-center">
-            <div>
-              <p className="eyebrow">{homepageContent.stats.eyebrow}</p>
-              <h2>{homepageContent.stats.title}</h2>
-            </div>
-          </div>
-
-          <div className="stats-grid">
-            {homepageContent.stats.items.map((item) => (
-              <article key={`${item.value}-${item.label}`} className="stat-card">
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      {homepageContent.festive_edits.is_active ? (
-      <section className="content-section mobile-home-hidden">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{homepageContent.festive_edits.eyebrow}</p>
-              <h2>{homepageContent.festive_edits.title}</h2>
-            </div>
-            <Link href={homepageContent.festive_edits.button_url} className="text-link">{homepageContent.festive_edits.button_text}</Link>
-          </div>
-
-          <div className="occasion-grid">
-            {homepageContent.festive_edits.items.map((moment) => (
-              <Link key={moment.title} href={moment.href} className="occasion-card">
-                <Image src={resolveAssetUrl(moment.image)} alt={moment.title} width={700} height={700} sizes="(max-width: 768px) 100vw, 25vw" />
-                <div>
-                  <small>{moment.badge || "Curated Edit"}</small>
-                  <strong>{moment.title}</strong>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-      ) : null}
-    </main>
+    </>
   );
 }

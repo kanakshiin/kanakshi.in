@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Product, SiteSettings } from "./types";
 
 const fallbackSiteUrl = "https://kanakshi.in";
-const fallbackSiteName = "Kanakshi.in";
+const fallbackSiteName = "Kanakshi Fine Jewellery";
 const fallbackSiteDescription =
-  "Handcrafted brass decor, pooja accents, and meaningful gifting pieces for home styling and festive gifting.";
+  "Everyday luxury fine jewellery | 925 Sterling Silver, 18K Real Gold & Certified Lab-Grown Diamonds. 100% BIS Hallmarked with 7-day easy returns.";
 const fallbackBackendSiteUrl =
   process.env.NEXT_PUBLIC_BACKEND_SITE_URL ||
   process.env.BACKEND_SITE_URL ||
@@ -125,12 +125,13 @@ export function buildStoreMetadata(settings?: SiteSettings | null): Metadata {
       apple: [favicon],
     },
     keywords: [
-      "brass decor",
-      "god idols",
-      "pooja decor",
-      "home decor",
-      "festive gifting",
-      "wooden collection",
+      "fine jewellery",
+      "925 sterling silver",
+      "lab grown diamonds",
+      "solitaire rings",
+      "gold jewellery",
+      "silver earrings",
+      "tennis bracelet",
       siteName
     ],
     openGraph: {

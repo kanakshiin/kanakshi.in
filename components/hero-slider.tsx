@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 type HeroSlide = {
   alt: string;
@@ -11,157 +11,120 @@ type HeroSlide = {
   image: string;
   subtitle?: string;
   title?: string;
+  buttonText?: string;
 };
 
 type HeroSliderProps = {
   autoplayMs?: number;
-  navGap?: number;
-  showArrows?: boolean;
-  showDots?: boolean;
-  showText?: boolean;
   slides: HeroSlide[];
 };
 
-export function HeroSlider({
-  slides,
-  autoplayMs = 3500,
-  navGap = 34,
-  showArrows = true,
-  showDots = false,
-  showText = true,
-}: HeroSliderProps) {
+export function HeroSlider({ slides, autoplayMs = 4500 }: HeroSliderProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [viewportKey, setViewportKey] = useState("desktop");
 
   useEffect(() => {
-    const resolveViewportKey = () => {
-      if (window.innerWidth <= 768) {
-        return "mobile";
-      }
-
-      if (window.innerWidth <= 991) {
-        return "tablet";
-      }
-
-      return "desktop";
-    };
-
-    const syncViewport = () => {
-      setViewportKey((current) => {
-        const next = resolveViewportKey();
-        return current === next ? current : next;
-      });
-    };
-
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    window.addEventListener("orientationchange", syncViewport);
-
-    return () => {
-      window.removeEventListener("resize", syncViewport);
-      window.removeEventListener("orientationchange", syncViewport);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (slides.length <= 1) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % slides.length);
+    if (slides.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % slides.length);
     }, autoplayMs);
-
-    return () => window.clearInterval(timer);
+    return () => clearInterval(interval);
   }, [autoplayMs, slides.length]);
 
-  useEffect(() => {
-    if (activeIndex > slides.length - 1) {
-      setActiveIndex(0);
-    }
-  }, [activeIndex, slides.length]);
+  if (!slides || slides.length === 0) return null;
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [viewportKey]);
+  const current = slides[activeIndex];
 
   return (
-    <div className="hero-slider" data-viewport={viewportKey}>
-      <div className="hero-slider-stage" key={viewportKey}>
-        {slides.map((slide, index) => (
-          <div
-            key={`${slide.image}-${index}`}
-            className={`hero-slide ${index === activeIndex ? "active" : ""}`}
-            aria-hidden={index === activeIndex ? "false" : "true"}
-          >
-            {slide.href ? (
-              <Link href={slide.href} className="hero-slide-link" aria-label={slide.title || slide.alt}>
-                <Image
-                  src={slide.image}
-                  alt={slide.alt}
-                  fill
-                  priority={index === 0}
-                  unoptimized={slide.image.startsWith("http")}
-                  sizes="(max-width: 900px) 100vw, 70vw"
-                />
+    <section className="kanakshi-hero">
+      <div className="kanakshi-hero-slide">
+        {/* Background Image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={current.image}
+          alt={current.alt || "Fine Jewellery Collection"}
+          className="kanakshi-hero-bg-img"
+        />
+        <div className="kanakshi-hero-overlay" />
+
+        {/* Content Box */}
+        <div className="kanakshi-container" style={{ position: "relative", zIndex: 3 }}>
+          <div className="kanakshi-hero-content">
+            <div className="kanakshi-hero-tag">
+              {current.eyebrow || "Exclusive 2026 Collection"}
+            </div>
+            <h1 className="kanakshi-hero-title">
+              {current.title || "The Solitaire & Silver Edit"}
+            </h1>
+            <p className="kanakshi-hero-description">
+              {current.subtitle ||
+                "Certified 925 Sterling Silver, 18K Real Gold & Ethical Lab-Grown Diamonds. Designed for everyday brilliance with 7-day hassle-free returns."}
+            </p>
+            <div className="kanakshi-hero-actions">
+              <Link href={current.href || "/shop"} className="kanakshi-btn kanakshi-btn-primary kanakshi-btn-lg">
+                {current.buttonText || "Shop New Arrivals →"}
               </Link>
-            ) : (
-              <Image
-                src={slide.image}
-                alt={slide.alt}
-                fill
-                priority={index === 0}
-                unoptimized={slide.image.startsWith("http")}
-                sizes="(max-width: 900px) 100vw, 70vw"
-              />
-            )}
+              <Link href="/shop?sort=bestseller" className="kanakshi-btn kanakshi-btn-outline kanakshi-btn-lg" style={{ backgroundColor: "rgba(255, 255, 255, 0.85)" }}>
+                View Best Sellers
+              </Link>
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="hero-slider-controls" style={{ gap: `${navGap}px` }}>
-        {showArrows ? (
-          <button
-            type="button"
-            className="hero-slider-arrow"
-            onClick={() => setActiveIndex((activeIndex - 1 + slides.length) % slides.length)}
-            aria-label="Previous slide"
-          >
-            ‹
-          </button>
-        ) : null}
-
-        {showText && slides[activeIndex]?.title ? (
-          <div className="hero-slide-copy">
-            <strong className="hero-slide-title">{slides[activeIndex].title}</strong>
-          </div>
-        ) : null}
-
-        {showArrows ? (
-          <button
-            type="button"
-            className="hero-slider-arrow"
-            onClick={() => setActiveIndex((activeIndex + 1) % slides.length)}
-            aria-label="Next slide"
-          >
-            ›
-          </button>
-        ) : null}
-      </div>
-
-      {showDots && slides.length > 1 ? (
-        <div className="hero-slider-dots" aria-label="Hero slider pagination">
-          {slides.map((slide, index) => (
-            <button
-              key={`${slide.image}-dot-${index}`}
-              type="button"
-              className={`hero-slider-dot ${index === activeIndex ? "active" : ""}`}
-              onClick={() => setActiveIndex(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
         </div>
-      ) : null}
-    </div>
+
+        {/* Slider Controls / Arrows */}
+        {slides.length > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "24px",
+              right: "32px",
+              zIndex: 4,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <button
+              onClick={() => setActiveIndex((activeIndex - 1 + slides.length) % slides.length)}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.9)",
+                boxShadow: "var(--shadow-sm)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+                color: "var(--kanakshi-black)"
+              }}
+              aria-label="Previous slide"
+            >
+              ‹
+            </button>
+            <div style={{ fontSize: "0.85rem", fontWeight: "700", padding: "0 8px", color: "var(--kanakshi-black)" }}>
+              {activeIndex + 1} / {slides.length}
+            </div>
+            <button
+              onClick={() => setActiveIndex((activeIndex + 1) % slides.length)}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.9)",
+                boxShadow: "var(--shadow-sm)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+                color: "var(--kanakshi-black)"
+              }}
+              aria-label="Next slide"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

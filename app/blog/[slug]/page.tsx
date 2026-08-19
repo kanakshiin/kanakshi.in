@@ -173,7 +173,7 @@ export default async function BlogDetailsPage({ params }: PageProps) {
           <div className="blog-meta-strip" style={{ justifyContent: "center" }}>
             {post.author && (
               <span style={{ display: "flex", alignItems: "center" }}>
-                ✍ By &nbsp;
+                By &nbsp;
                 <Link
                   href={`/blog/author/${post.author.slug}`}
                   style={{ textDecoration: "none", fontWeight: 700, color: "var(--accent-deep)" }}
@@ -274,7 +274,7 @@ export default async function BlogDetailsPage({ params }: PageProps) {
                     rel="noopener noreferrer"
                     className="blog-author-social"
                   >
-                    🐦 @{post.author.twitter_handle}
+                    @{post.author.twitter_handle}
                   </a>
                 )}
               </div>
