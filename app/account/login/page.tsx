@@ -50,28 +50,10 @@ function LoginForm() {
   return (
     <main className="content-section" style={{ minHeight: "85vh", padding: "3rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ maxWidth: "1020px", width: "100%", margin: "0 auto" }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          borderRadius: "28px",
-          overflow: "hidden",
-          border: "1px solid var(--line)",
-          background: "rgba(255, 255, 255, 0.8)",
-          backdropFilter: "blur(16px)",
-          boxShadow: "0 20px 45px -15px rgba(0, 0, 0, 0.08)"
-        }}>
+        <div className="auth-card-shell">
           
-          {/* Left Brand Experience Column */}
-          <div style={{
-            padding: "3rem 2.5rem",
-            background: "linear-gradient(145deg, #fff5f7 0%, #fff9fa 50%, #fdf8ee 100%)",
-            borderRight: "1px solid rgba(233, 113, 139, 0.2)",
-            color: "#2d2d2d",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            position: "relative"
-          }}>
+          {/* Brand Experience Column (Shows on top on desktop, bottom on mobile) */}
+          <div className="auth-experience-column">
             <div>
               <span style={{
                 display: "inline-flex",
@@ -139,8 +121,8 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Right Form Column */}
-          <div style={{ padding: "3.2rem 2.6rem", display: "flex", flexDirection: "column", justifyContent: "center", background: "#ffffff" }}>
+          {/* Form Column (Renders FIRST on mobile!) */}
+          <div className="auth-form-column">
             <div style={{ marginBottom: "1.8rem" }}>
               <p className="eyebrow" style={{ color: "var(--kanakshi-pink, #e9718b)", letterSpacing: "1.5px", marginBottom: "0.3rem", fontWeight: 700 }}>Member Sign-In</p>
               <h1 style={{ fontSize: "1.85rem", fontWeight: 700, margin: 0, color: "#1a1a1a" }}>Welcome Back</h1>

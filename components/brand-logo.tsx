@@ -30,8 +30,7 @@ export function BrandLogo({ theme = "dark", logoUrl, className = "", height = 38
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "10px",
-        height: `${height}px`,
+        gap: "8px",
         userSelect: "none"
       }}
       aria-label="Kanakshi Fine Jewellery"
@@ -39,10 +38,9 @@ export function BrandLogo({ theme = "dark", logoUrl, className = "", height = 38
       {/* Precision Vector Diamond Insignia */}
       <svg
         viewBox="0 0 44 44"
-        width={height}
-        height={height}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        className="kanakshi-brand-logo-icon"
         style={{ flexShrink: 0 }}
       >
         <defs>
@@ -79,11 +77,11 @@ export function BrandLogo({ theme = "dark", logoUrl, className = "", height = 38
       {/* Luxury Serif Typography */}
       <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.05, justifyContent: "center" }}>
         <span
+          className="kanakshi-brand-logo-text"
           style={{
             fontFamily: "var(--font-heading-family, 'Cormorant Garamond', Georgia, serif)",
-            fontSize: `${Math.round(height * 0.56)}px`,
             fontWeight: 700,
-            letterSpacing: "0.14em",
+            letterSpacing: "0.12em",
             color: primaryTextColor,
             textTransform: "uppercase"
           }}
@@ -91,14 +89,14 @@ export function BrandLogo({ theme = "dark", logoUrl, className = "", height = 38
           KANAKSHI
         </span>
         <span
+          className="kanakshi-brand-logo-sub"
           style={{
             fontFamily: "var(--font-body-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif)",
-            fontSize: `${Math.max(9, Math.round(height * 0.22))}px`,
             fontWeight: 700,
-            letterSpacing: "0.26em",
+            letterSpacing: "0.22em",
             color: subTextColor,
             textTransform: "uppercase",
-            marginTop: "2px"
+            marginTop: "1px"
           }}
         >
           FINE JEWELLERY

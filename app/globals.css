@@ -676,6 +676,12 @@ ul, ol {
   gap: 16px;
 }
 
+@media (max-width: 767px) {
+  .kanakshi-header-actions {
+    gap: 4px;
+  }
+}
+
 .kanakshi-icon-btn {
   display: flex;
   flex-direction: column;
@@ -688,6 +694,16 @@ ul, ol {
   transition: all var(--transition-fast);
 }
 
+@media (max-width: 767px) {
+  .kanakshi-icon-btn {
+    padding: 4px 4px;
+  }
+  .kanakshi-icon-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 .kanakshi-icon-btn:hover {
   color: var(--kanakshi-pink);
   background-color: var(--kanakshi-pink-subtle);
@@ -697,6 +713,13 @@ ul, ol {
   font-size: 0.7rem;
   font-weight: 600;
   margin-top: 2px;
+}
+
+@media (max-width: 767px) {
+  .kanakshi-icon-btn-label {
+    font-size: 0.6rem;
+    letter-spacing: -0.02em;
+  }
 }
 
 .kanakshi-badge-count {
@@ -714,6 +737,33 @@ ul, ol {
   align-items: center;
   justify-content: center;
   padding: 0 4px;
+}
+
+/* Brand Logo Responsive Scaling */
+.kanakshi-brand-logo-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.kanakshi-brand-logo-text {
+  font-size: 1.35rem;
+}
+
+.kanakshi-brand-logo-sub {
+  font-size: 0.54rem;
+}
+
+@media (min-width: 768px) {
+  .kanakshi-brand-logo-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .kanakshi-brand-logo-text {
+    font-size: 1.65rem;
+  }
+  .kanakshi-brand-logo-sub {
+    font-size: 0.62rem;
+  }
 }
 
 /* Desktop Navigation Mega Menu Bar */
@@ -2156,5 +2206,64 @@ ul, ol {
 @media (min-width: 1024px) {
   .contact-page-grid {
     grid-template-columns: 1.15fr 0.85fr !important;
+  }
+}
+
+/* ==========================================================================
+   AUTH PAGES (LOGIN & REGISTER) RESPONSIVE FORM-FIRST STYLES
+   ========================================================================== */
+
+.auth-card-shell {
+  display: flex;
+  flex-direction: column;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 860px) {
+  .auth-card-shell {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+  }
+}
+
+.auth-form-column {
+  order: 1; /* Form is FIRST on mobile so no scrolling needed */
+  background: #ffffff;
+  padding: 2.2rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (min-width: 860px) {
+  .auth-form-column {
+    order: 2; /* Form is on right side on desktop */
+    padding: 3.2rem 2.6rem;
+  }
+}
+
+.auth-experience-column {
+  order: 2; /* Text/Benefits is BELOW the form on mobile */
+  padding: 2.2rem 1.6rem;
+  background: linear-gradient(145deg, #fff5f7 0%, #fff9fa 50%, #fdf8ee 100%);
+  border-top: 1px solid rgba(233, 113, 139, 0.2);
+  color: #2d2d2d;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+@media (min-width: 860px) {
+  .auth-experience-column {
+    order: 1; /* Hero Brand experience is on left side on desktop */
+    padding: 3rem 2.5rem;
+    border-top: none;
+    border-right: 1px solid rgba(233, 113, 139, 0.2);
   }
 }
