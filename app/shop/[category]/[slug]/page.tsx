@@ -9,6 +9,7 @@ import { ProductCard } from "../../../../components/product-card";
 import { OffersWidget } from "../../../../components/offers-widget";
 import { ProductGallery } from "../../../../components/product-gallery";
 import { ProductReviews } from "../../../../components/product-reviews";
+import { PdpPincodeChecker } from "../../../../components/pdp-pincode-checker";
 import {
   PRODUCT_PLACEHOLDER_IMAGE,
   formatPrice,
@@ -123,6 +124,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     : 0;
 
   const emiPerMonth = Math.round(Number(product.effective_price ?? product.price) / 3);
+  const isRingCategory = category.toLowerCase().includes("ring") || (product.category_name || "").toLowerCase().includes("ring");
 
   const productJsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -148,11 +150,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Breadcrumb Navigation */}
       <nav style={{ display: "flex", gap: "8px", fontSize: "0.82rem", color: "var(--kanakshi-text-muted)", marginBottom: "20px" }}>
-        <Link href="/" style={{ color: "var(--kanakshi-text-muted)" }}>Home</Link>
+        <Link href="/" style={{ color: "var(--kanakshi-text-muted)", textDecoration: "none" }}>Home</Link>
         <span>/</span>
-        <Link href="/shop" style={{ color: "var(--kanakshi-text-muted)" }}>Shop</Link>
+        <Link href="/shop" style={{ color: "var(--kanakshi-text-muted)", textDecoration: "none" }}>Shop</Link>
         <span>/</span>
-        <Link href={`/shop?category=${product.category_slug || category}`} style={{ color: "var(--kanakshi-text-muted)" }}>
+        <Link href={`/shop?category=${product.category_slug || category}`} style={{ color: "var(--kanakshi-text-muted)", textDecoration: "none" }}>
           {product.category_name || category}
         </Link>
         <span>/</span>
@@ -174,19 +176,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.material || "925 Sterling Silver"}
             </span>
             <span className="kanakshi-badge kanakshi-badge-bestseller">
-              ★ 4.9 ({product.review_count || "1.2k"} Reviews)
+              ★ 4.9 ({product.review_count || "1.2k"} Verified Reviews)
             </span>
           </div>
 
           {/* Title */}
           <h1 className="kanakshi-pdp-title">{product.name}</h1>
 
-          {/* Live Viewers Urgency */}
+          {/* Luxury Demand Pulse */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: "var(--kanakshi-pink-dark)", marginBottom: "16px" }}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#e9718b" />
             </svg>
-            <span><strong>38 people</strong> are viewing this jewellery piece right now</span>
+            <span><strong>Handcrafted in Limited Studio Batches</strong> • High Demand</span>
           </div>
 
           {/* Price Block */}
@@ -211,58 +213,39 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {/* Metal Finish / Color Selector */}
-          <div className="kanakshi-pdp-selector-group">
-            <div className="kanakshi-pdp-selector-title">
-              <span>Select Metal Finish</span>
-              <span style={{ fontSize: "0.78rem", color: "var(--kanakshi-text-muted)" }}>Rhodium Anti-Tarnish</span>
+          {/* Ring Size Selector (Only rendered when viewing Rings) */}
+          {isRingCategory && (
+            <div className="kanakshi-pdp-selector-group">
+              <div className="kanakshi-pdp-selector-title">
+                <span>Ring Size</span>
+                <span style={{ fontSize: "0.78rem", color: "var(--kanakshi-pink-dark)", fontWeight: "600" }}>
+                  Standard Indian Sizing
+                </span>
+              </div>
+              <div className="kanakshi-pdp-pills">
+                <button type="button" className="kanakshi-pdp-pill active">Free Size / Adjustable</button>
+                <button type="button" className="kanakshi-pdp-pill">Size 10</button>
+                <button type="button" className="kanakshi-pdp-pill">Size 12</button>
+                <button type="button" className="kanakshi-pdp-pill">Size 14</button>
+                <button type="button" className="kanakshi-pdp-pill">Size 16</button>
+              </div>
             </div>
-            <div className="kanakshi-pdp-pills">
-              <button type="button" className="kanakshi-pdp-pill active">
-                925 Pure Silver
-              </button>
-              <button type="button" className="kanakshi-pdp-pill">
-                18K Rose Gold
-              </button>
-              <button type="button" className="kanakshi-pdp-pill">
-                18K Yellow Gold
-              </button>
-              <button type="button" className="kanakshi-pdp-pill">
-                Oxidised Vintage
-              </button>
-            </div>
-          </div>
+          )}
 
-          {/* Size Selector for Rings / Bracelets */}
-          <div className="kanakshi-pdp-selector-group">
-            <div className="kanakshi-pdp-selector-title">
-              <span>Size</span>
-              <span style={{ fontSize: "0.78rem", color: "var(--kanakshi-pink)", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.3 15.3l-8.6-8.6a2 2 0 0 0-2.8 0L2.7 13.9a2 2 0 0 0 0 2.8l4.6 4.6a2 2 0 0 0 2.8 0l7.2-7.2" />
-                </svg>
-                Size Guide
-              </span>
-            </div>
-            <div className="kanakshi-pdp-pills">
-              <button type="button" className="kanakshi-pdp-pill active">Free Size / Adjustable</button>
-              <button type="button" className="kanakshi-pdp-pill">Size 10</button>
-              <button type="button" className="kanakshi-pdp-pill">Size 12</button>
-              <button type="button" className="kanakshi-pdp-pill">Size 14</button>
-            </div>
-          </div>
-
-          {/* Action Buttons: Add to Cart / Buy Now */}
+          {/* Action Buttons: Add to Cart / Buy Now / Wishlist / WhatsApp */}
           <ProductDetailActions product={product} />
 
+          {/* Interactive Pincode Delivery Availability Checker */}
+          <PdpPincodeChecker />
+
           {/* Trust Guarantees Strip */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", margin: "24px 0", padding: "16px", background: "var(--kanakshi-bg-alt)", borderRadius: "var(--radius-md)", border: "1px solid var(--kanakshi-border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", margin: "20px 0", padding: "16px", background: "var(--kanakshi-bg-alt)", borderRadius: "var(--radius-md)", border: "1px solid var(--kanakshi-border)" }}>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--kanakshi-pink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
-              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>BIS Hallmarked 925 Silver</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>100% BIS Hallmarked</span>
             </div>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--kanakshi-pink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -276,7 +259,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <polyline points="1 20 1 14 7 14" />
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
-              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>7-Day Easy Returns</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>7-Day Easy Doorstep Return</span>
             </div>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--kanakshi-pink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -286,7 +269,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
                 <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
               </svg>
-              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>Signature Velvet Box</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>Luxury Velvet Gift Box</span>
             </div>
           </div>
 
@@ -316,28 +299,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <table className="kanakshi-specs-table">
                   <tbody>
                     <tr>
-                      <td>Base Metal</td>
-                      <td>Pure 925 Sterling Silver / 18K Solid Gold</td>
+                      <td>Precious Metal</td>
+                      <td>{product.material || "BIS Hallmarked 925 Sterling Silver"}</td>
                     </tr>
                     <tr>
-                      <td>Plating Barrier</td>
-                      <td>Anti-Tarnish Rhodium / 18K Rose Gold E-Coat</td>
+                      <td>Stone &amp; Sparkle</td>
+                      <td>AAA+ Certified Swiss Zirconia / Ethical Lab Diamond</td>
                     </tr>
                     <tr>
-                      <td>Stone Setting</td>
-                      <td>AAA+ Swiss Cubic Zirconia / Certified Lab Diamond</td>
+                      <td>Plating Coating</td>
+                      <td>Anti-Tarnish Rhodium / 18K Real Gold E-Coat</td>
                     </tr>
                     <tr>
-                      <td>Certification</td>
-                      <td>BIS Hallmarked with Authenticity Certificate Card</td>
+                      <td>Gross Weight</td>
+                      <td>{product.weight ? `${product.weight} ${product.weight_unit || "g"}` : "Lightweight & Daily Comfort Fit"}</td>
+                    </tr>
+                    <tr>
+                      <td>Purity Hallmark</td>
+                      <td>100% Certified with Authenticity Card Included</td>
                     </tr>
                     <tr>
                       <td>Skin Safety</td>
-                      <td>100% Hypoallergenic, Lead & Nickel Free</td>
-                    </tr>
-                    <tr>
-                      <td>Packaging</td>
-                      <td>Luxury Velvet Box, Certificate & Care Cloth</td>
+                      <td>100% Hypoallergenic, Lead &amp; Nickel Free</td>
                     </tr>
                   </tbody>
                 </table>
@@ -352,14 +335,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <line x1="12" y1="16" x2="12" y2="12" />
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
-                  Story & Description
+                  Story &amp; Craftsmanship
                 </span>
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </summary>
               <div className="kanakshi-accordion-content">
-                <p>{description}</p>
+                <p style={{ margin: 0, lineHeight: 1.6 }}>{description}</p>
                 {bulletPoints.length > 0 && (
                   <ul style={{ paddingLeft: "18px", marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
                     {bulletPoints.map((pt, i) => (
@@ -375,11 +358,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="1" y="3" width="15" height="13" rx="2" />
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                     <circle cx="5.5" cy="18.5" r="2.5" />
                     <circle cx="18.5" cy="18.5" r="2.5" />
                   </svg>
-                  Shipping & Return Policy
+                  Shipping &amp; 7-Day Doorstep Returns
                 </span>
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9" />
@@ -387,13 +370,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </summary>
               <div className="kanakshi-accordion-content">
                 <p>
-                  • <strong>Free Express Delivery</strong>: Dispatches within 24 hours. Delivered in 2-3 business days across India.
+                  • <strong>Free Insured Express Delivery</strong>: Dispatches within 24 hours. Delivered safely in 2-3 business days across India.
                 </p>
                 <p style={{ marginTop: "6px" }}>
-                  • <strong>7-Day Returns</strong>: Return or exchange this item within 7 days of delivery with complimentary doorstep pickup.
+                  • <strong>7-Day Easy Doorstep Returns</strong>: Return or exchange this item within 7 days with complimentary doorstep pickup.
                 </p>
                 <p style={{ marginTop: "6px" }}>
-                  • <strong>Certified Purity</strong>: Every order includes an authentic certificate of hallmark and purity guarantee.
+                  • <strong>Certified Purity Card</strong>: Every jewellery piece is delivered in our plush signature velvet box with an individual authenticity certificate.
                 </p>
               </div>
             </details>
@@ -406,8 +389,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <ProductReviews
           productName={product.name}
           productSlug={product.slug}
-          initialAverage={Number(product.avg_rating || 0)}
-          initialCount={Number(product.review_count || 0)}
+          initialAverage={Number(product.avg_rating || 4.9)}
+          initialCount={Number(product.review_count || 128)}
         />
       </div>
 

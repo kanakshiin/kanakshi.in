@@ -2773,3 +2773,207 @@ ul, ol {
   flex-shrink: 0;
 }
 
+/* ==========================================================================
+   PRODUCT DETAIL PAGE (PDP) LUXURY ACTIONS & PINCODE CHECKER
+   ========================================================================== */
+
+.detail-actions-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.action-primary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .action-primary-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pdp-add-to-cart-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border: 1.5px solid var(--kanakshi-pink, #e9718b);
+  color: var(--kanakshi-pink-dark, #b83253);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdp-add-to-cart-btn:hover {
+  background: #fff0f3;
+  border-color: var(--kanakshi-pink-dark, #b83253);
+  transform: translateY(-1px);
+}
+
+.pdp-buy-now-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #1f1f23 0%, #111113 100%);
+  border: 1.5px solid #1f1f23;
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.pdp-buy-now-btn:hover {
+  background: linear-gradient(135deg, #2d2d33 0%, #1a1a1e 100%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transform: translateY(-1px);
+}
+
+.action-secondary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .action-secondary-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pdp-wishlist-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #faf8f5;
+  border: 1px solid #e5dfd8;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdp-wishlist-btn:hover,
+.pdp-wishlist-btn.active {
+  border-color: #f7b5c3;
+  background: #fff0f3;
+  color: var(--kanakshi-pink-dark, #b83253);
+}
+
+.pdp-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #15803d;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.pdp-whatsapp-btn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* Pincode Availability Checker Widget */
+.pdp-delivery-check-box {
+  background: #faf8f5;
+  border: 1px solid #ede8e3;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin: 20px 0;
+}
+
+.pdp-delivery-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #111111;
+  margin-bottom: 10px;
+}
+
+.pdp-pincode-form {
+  display: flex;
+  gap: 8px;
+}
+
+.pdp-pincode-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid #d5cfc9;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #111111;
+  outline: none;
+}
+
+.pdp-pincode-input:focus {
+  border-color: var(--kanakshi-pink);
+}
+
+.pdp-pincode-btn {
+  padding: 9px 18px;
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pdp-pincode-btn:hover {
+  background: var(--kanakshi-pink);
+}
+
+.pdp-delivery-result {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pdp-delivery-result.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.pdp-delivery-result.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+
