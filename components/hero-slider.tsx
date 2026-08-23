@@ -72,23 +72,7 @@ export function HeroSlider({ slides, autoplayMs = 4500 }: HeroSliderProps) {
 
         {/* Slider Controls / Luxury Indicators & Navigation */}
         {slides.length > 1 && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "24px",
-              right: "32px",
-              zIndex: 4,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "rgba(255, 255, 255, 0.8)",
-              backdropFilter: "blur(12px)",
-              padding: "6px 10px",
-              borderRadius: "30px",
-              border: "1px solid rgba(255, 255, 255, 0.6)",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)"
-            }}
-          >
+          <div className="kanakshi-hero-controls">
             <button
               type="button"
               onClick={() => setActiveIndex((activeIndex - 1 + slides.length) % slides.length)}

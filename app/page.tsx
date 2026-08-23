@@ -157,7 +157,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          <div className="kanakshi-category-showcase-grid">
             {metalsList.map((metal, idx) => (
               <Link
                 key={idx}
@@ -165,7 +165,7 @@ export default async function HomePage() {
                 className="kanakshi-card"
                 style={{ overflow: "hidden", textDecoration: "none" }}
               >
-                <div style={{ position: "relative", width: "100%", height: "220px", overflow: "hidden" }}>
+                <div style={{ position: "relative", width: "100%", height: "200px", overflow: "hidden" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={metal.image}
@@ -181,13 +181,13 @@ export default async function HomePage() {
                   />
                   <span
                     className="kanakshi-badge kanakshi-badge-pink"
-                    style={{ position: "absolute", top: "12px", left: "12px" }}
+                    style={{ position: "absolute", top: "10px", left: "10px", fontSize: "0.72rem" }}
                   >
                     {metal.tag}
                   </span>
-                  <div style={{ position: "absolute", bottom: "16px", left: "16px", right: "16px", color: "#ffffff" }}>
-                    <h3 style={{ color: "#ffffff", fontSize: "1.35rem", marginBottom: "4px" }}>{metal.title}</h3>
-                    <p style={{ fontSize: "0.82rem", color: "#f0f0f0", opacity: 0.9 }}>{metal.desc}</p>
+                  <div style={{ position: "absolute", bottom: "12px", left: "12px", right: "12px", color: "#ffffff" }}>
+                    <h3 style={{ color: "#ffffff", fontSize: "clamp(1rem, 2.5vw, 1.25rem)", marginBottom: "2px" }}>{metal.title}</h3>
+                    <p style={{ fontSize: "clamp(0.7rem, 1.8vw, 0.82rem)", color: "#f0f0f0", opacity: 0.9 }}>{metal.desc}</p>
                   </div>
                 </div>
               </Link>
@@ -207,7 +207,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
+          <div className="kanakshi-occasions-grid">
             <Link href="/shop/gifting-edits" className="kanakshi-card" style={{ textDecoration: "none" }}>
               <div style={{ height: "180px", position: "relative", overflow: "hidden" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -66,6 +66,28 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, displayImages.length]);
 
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        // Swiped Left -> Next Image
+        switchImage((activeIndex + 1) % displayImages.length);
+      } else {
+        // Swiped Right -> Prev Image
+        switchImage((activeIndex - 1 + displayImages.length) % displayImages.length);
+      }
+    }
+    touchStartX.current = null;
+  };
+
   return (
     <div className="kanakshi-pdp-gallery-container">
       {/* Desktop Thumbnail Column (Left side) */}
@@ -98,6 +120,8 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         <div
           className={`kanakshi-gallery-stage ${isTransitioning ? "is-transitioning" : ""}`}
           onClick={() => openLightbox(activeIndex)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && openLightbox(activeIndex)}
