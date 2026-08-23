@@ -1256,30 +1256,30 @@ input, select, textarea {
 
 .kanakshi-stories-infinite-container {
   width: 100%;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   position: relative;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.kanakshi-stories-infinite-container::-webkit-scrollbar {
+  display: none;
+}
+
+.kanakshi-stories-infinite-container.is-dragging {
+  cursor: grabbing;
 }
 
 .kanakshi-stories-infinite-track {
   display: flex;
   width: max-content;
   gap: clamp(12px, 3vw, 24px);
-  animation: kanakshiStoriesLoop 38s linear infinite;
   padding: 6px 0;
-}
-
-.kanakshi-stories-infinite-track:hover {
-  animation-play-state: paused;
-}
-
-@keyframes kanakshiStoriesLoop {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  will-change: transform;
 }
 
 .kanakshi-story-item {
