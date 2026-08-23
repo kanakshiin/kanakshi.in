@@ -38,14 +38,14 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
   const isInteracting = useRef(false);
   const resumeTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Drag state
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollStart = useRef(0);
-  const dragMoved = useRef(false);
+  // Desktop Mouse Drag state
+  const isMouseDown = useRef(false);
+  const mouseStartX = useRef(0);
+  const mouseScrollStart = useRef(0);
+  const mouseMoved = useRef(false);
   const [isDragActive, setIsDragActive] = useState(false);
 
-  // Set initial scroll position to set 1 so reverse scrolling works immediately without boundary
+  // Set initial scroll position to set 1 so reverse scrolling works immediately
   useEffect(() => {
     const container = containerRef.current;
     const track = trackRef.current;
@@ -57,30 +57,28 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
         container.scrollLeft = singleSetWidth;
       }
     };
-    const t = setTimeout(setInitial, 80);
+    const t = setTimeout(setInitial, 60);
     return () => clearTimeout(t);
   }, [items.length]);
 
-  // Seamless Infinite Loop animation via requestAnimationFrame
+  // Seamless Infinite Loop animation
   useEffect(() => {
     let lastTime = performance.now();
-    const speed = 0.55; // pixels per frame at 60fps
+    const speed = 0.6; // pixels per frame at 60fps
 
     const loop = (currentTime: number) => {
       const container = containerRef.current;
       const track = trackRef.current;
 
-      if (container && track && !isInteracting.current && !isDragging.current) {
+      if (container && track && !isInteracting.current && !isMouseDown.current) {
         const delta = Math.min((currentTime - lastTime) / 16.67, 2);
         container.scrollLeft += speed * delta;
 
         const singleSetWidth = track.scrollWidth / 4;
         if (singleSetWidth > 0) {
-          // Scrolled forward past set 2 -> wrap back by 1 set
           if (container.scrollLeft >= singleSetWidth * 2) {
             container.scrollLeft -= singleSetWidth;
           } else if (container.scrollLeft <= 0.1 * singleSetWidth) {
-            // Dragged backward (reverse) near beginning -> jump forward by 1 set
             container.scrollLeft += singleSetWidth;
           }
         }
@@ -97,81 +95,78 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
     };
   }, []);
 
-  const handlePointerDown = (clientX: number) => {
-    isInteracting.current = true;
-    isDragging.current = true;
-    setIsDragActive(true);
-    startX.current = clientX;
-    dragMoved.current = false;
+  // Wrap around seamlessly on manual user scrolling (touch, wheel, drag)
+  const handleScroll = () => {
+    const container = containerRef.current;
+    const track = trackRef.current;
+    if (!container || !track) return;
 
-    if (containerRef.current) {
-      scrollStart.current = containerRef.current.scrollLeft;
-    }
-    if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
-  };
-
-  const handlePointerMove = (clientX: number) => {
-    if (!isDragging.current || !containerRef.current || !trackRef.current) return;
-    const diff = clientX - startX.current;
-    if (Math.abs(diff) > 5) {
-      dragMoved.current = true;
-    }
-
-    containerRef.current.scrollLeft = scrollStart.current - diff;
-
-    // Handle instant infinite wrap during manual touch/mouse drag (forward or reverse)
-    const singleSetWidth = trackRef.current.scrollWidth / 4;
+    const singleSetWidth = track.scrollWidth / 4;
     if (singleSetWidth > 0) {
-      if (containerRef.current.scrollLeft >= singleSetWidth * 2.5) {
-        containerRef.current.scrollLeft -= singleSetWidth;
-        scrollStart.current -= singleSetWidth;
-      } else if (containerRef.current.scrollLeft <= 0.2 * singleSetWidth) {
-        containerRef.current.scrollLeft += singleSetWidth;
-        scrollStart.current += singleSetWidth;
+      if (container.scrollLeft >= singleSetWidth * 2.5) {
+        container.scrollLeft -= singleSetWidth;
+        if (isMouseDown.current) {
+          mouseScrollStart.current -= singleSetWidth;
+        }
+      } else if (container.scrollLeft <= 0.15 * singleSetWidth) {
+        container.scrollLeft += singleSetWidth;
+        if (isMouseDown.current) {
+          mouseScrollStart.current += singleSetWidth;
+        }
       }
     }
+
+    if (isInteracting.current) {
+      if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+      resumeTimeout.current = setTimeout(() => {
+        isInteracting.current = false;
+      }, 1500);
+    }
   };
 
-  const handlePointerUp = () => {
-    isDragging.current = false;
-    setIsDragActive(false);
-    // Resume auto-scroll after release
+  // Touch Handlers (Mobile Touch Pause & Natural Scroll)
+  const onTouchStart = () => {
+    isInteracting.current = true;
     if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
-    resumeTimeout.current = setTimeout(() => {
-      isInteracting.current = false;
-      dragMoved.current = false;
-    }, 1200);
-  };
-
-  // Touch Handlers (Mobile)
-  const onTouchStart = (e: React.TouchEvent) => {
-    handlePointerDown(e.touches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    handlePointerMove(e.touches[0].clientX);
   };
 
   const onTouchEnd = () => {
-    handlePointerUp();
+    if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+    resumeTimeout.current = setTimeout(() => {
+      isInteracting.current = false;
+    }, 1500);
   };
 
-  // Mouse Handlers (Desktop click & drag)
+  // Mouse Handlers (Desktop click & drag in both directions)
   const onMouseDown = (e: React.MouseEvent) => {
-    handlePointerDown(e.clientX);
+    isInteracting.current = true;
+    isMouseDown.current = true;
+    setIsDragActive(true);
+    mouseMoved.current = false;
+    mouseStartX.current = e.pageX - (containerRef.current?.offsetLeft || 0);
+    mouseScrollStart.current = containerRef.current?.scrollLeft || 0;
+    if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
   };
 
   const onMouseMove = (e: React.MouseEvent) => {
-    if (isDragging.current) {
-      e.preventDefault();
-      handlePointerMove(e.clientX);
+    if (!isMouseDown.current || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - (containerRef.current.offsetLeft || 0);
+    const walk = (x - mouseStartX.current) * 1.4;
+    if (Math.abs(walk) > 4) {
+      mouseMoved.current = true;
     }
+    containerRef.current.scrollLeft = mouseScrollStart.current - walk;
   };
 
   const onMouseUp = () => {
-    if (isDragging.current) {
-      handlePointerUp();
-    }
+    isMouseDown.current = false;
+    setIsDragActive(false);
+    if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+    resumeTimeout.current = setTimeout(() => {
+      isInteracting.current = false;
+      mouseMoved.current = false;
+    }, 1500);
   };
 
   const onMouseEnter = () => {
@@ -180,15 +175,19 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
   };
 
   const onMouseLeave = () => {
-    if (!isDragging.current) {
-      isInteracting.current = false;
+    if (isMouseDown.current) {
+      onMouseUp();
+    } else {
+      if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+      resumeTimeout.current = setTimeout(() => {
+        isInteracting.current = false;
+      }, 800);
     }
-    handlePointerUp();
   };
 
-  // Prevent link click navigation when user is actively dragging/swiping
+  // Prevent link click navigation when user was dragging/swiping
   const handleClick = (e: React.MouseEvent) => {
-    if (dragMoved.current) {
+    if (mouseMoved.current) {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -202,12 +201,12 @@ export function KanakshiStoryCircles({ categories = [] }: StoryCirclesProps) {
         </div>
       </div>
 
-      {/* Interactive Infinite Loop Container with Touch Pause & Bidirectional Drag */}
+      {/* Interactive Infinite Loop Container with Touch Pause, Momentum Scroll & Reverse Drag */}
       <div
         ref={containerRef}
         className={`kanakshi-stories-infinite-container ${isDragActive ? "is-dragging" : ""}`}
+        onScroll={handleScroll}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
         onMouseDown={onMouseDown}

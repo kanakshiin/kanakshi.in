@@ -1260,6 +1260,8 @@ input, select, textarea {
   overflow-y: hidden;
   position: relative;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  scroll-behavior: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   cursor: grab;
