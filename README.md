@@ -1,28 +1,30 @@
-# ecommerce-frontend
+# Kanakshi Fine Jewellery — Storefront
 
-This folder contains the new Next.js App Router storefront intended for Vercel deployment.
+Premium e-commerce storefront for **Kanakshi Fine Jewellery** built with Next.js 16 App Router, React 19, and TypeScript.
 
-## Quick start
+## ✨ Key Features
+- **Fluid & Fully Responsive**: Auto-scales effortlessly from ultra-compact 320px screens up to large 4K displays.
+- **Interactive Story Circles**: Seamless GPU-accelerated infinite category marquee with touch pause, momentum swipe, and bidirectional reverse drag.
+- **Debounced Instant Search**: Real-time product search with keyword auto-suggest and instant price previews.
+- **Luxury Product Gallery**: Touch swipe navigation, multi-thumbnail support, and full-screen lightbox zoom.
+- **Cart & Checkout Engine**: Free shipping threshold tracker, instant coupon application, Razorpay & COD payment support.
+- **SEO & Performance**: Pre-rendered static pages, OpenGraph meta cards, and structured JSON-LD schema.
 
-1. `npm install`
-2. Copy `.env.example` to `.env.local`
-3. Set `NEXT_PUBLIC_API_BASE_URL` to the Laravel API URL
-4. Run `npm run dev`
+## 🚀 Quick Start
+```bash
+# 1. Install dependencies
+npm install
 
-## Expected backend endpoints
+# 2. Configure environment
+cp .env.example .env.local
 
-- `/api/v1/settings/public`
-- `/api/v1/catalog/categories`
-- `/api/v1/catalog/products`
-- `/api/v1/catalog/products/{slug}`
+# 3. Start development server
+npm run dev
 
-## Suggested Vercel env vars
+# 4. Build for production
+npm run build
+```
 
-- `NEXT_PUBLIC_API_BASE_URL`
-- `NEXT_PUBLIC_BACKEND_SITE_URL`
-- `NEXT_PUBLIC_SITE_URL`
+## 🌐 Deployment
+This storefront is configured for production deployment on Vercel, Hostinger, or any Node.js hosting platform.
 
-Demo catalog and settings fallbacks are enabled automatically during local
-development and disabled in production. Set
-`NEXT_PUBLIC_ENABLE_STOREFRONT_FALLBACKS=true` only for an intentional static
-preview that does not have a backend.
