@@ -154,7 +154,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ? Math.round((savingsAmount / Number(product.price)) * 100)
     : 0;
 
-  const emiPerMonth = Math.round(Number(product.effective_price ?? product.price) / 3);
   const isRingCategory = category.toLowerCase().includes("ring") || (product.category_name || "").toLowerCase().includes("ring");
 
   const productJsonLd = generateProductJsonLd(product, settings);
@@ -230,7 +229,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
             <div style={{ fontSize: "0.78rem", color: "var(--kanakshi-text-muted)" }}>
-              Inclusive of all taxes • or <strong>₹{emiPerMonth.toLocaleString("en-IN")}/mo</strong> with Cardless 0% EMI
+              Inclusive of all taxes • ⚡ <strong>Cash on Delivery (COD) Available</strong> • Fast 2-4 Days Dispatch
             </div>
           </div>
 

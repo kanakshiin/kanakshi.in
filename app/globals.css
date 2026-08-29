@@ -3726,4 +3726,536 @@ input, select, textarea {
   font-weight: 600;
 }
 
+/* ==========================================================================
+   DEDICATED CUSTOM NAME LOCKETS BUILDER & LANDING PAGE STYLES
+   ========================================================================== */
+
+.custom-page-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.custom-breadcrumb {
+  display: flex;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--kanakshi-text-muted);
+  margin-bottom: 24px;
+}
+
+.custom-breadcrumb a {
+  color: var(--kanakshi-text-muted);
+  text-decoration: none;
+}
+
+.custom-breadcrumb .current {
+  color: var(--kanakshi-pink);
+  font-weight: 600;
+}
+
+.custom-locket-builder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 36px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .custom-locket-builder-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.custom-locket-preview-wrap {
+  position: sticky;
+  top: 100px;
+}
+
+.custom-locket-preview-card {
+  background: radial-gradient(circle at 50% 30%, #2a2c31 0%, #151619 100%);
+  border: 2px solid #8e979e;
+  border-radius: var(--radius-lg);
+  padding: 36px 20px 28px;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-locket-preview-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.custom-locket-chain-graphic {
+  margin: 10px auto 0;
+  max-width: 220px;
+  opacity: 0.85;
+}
+
+.custom-locket-pendant-plate {
+  display: inline-block;
+  padding: 14px 28px;
+  border-radius: 12px;
+  margin: -10px auto 20px;
+  max-width: 90%;
+  word-break: break-word;
+  transition: all 0.3s ease;
+}
+
+.custom-locket-engraved-name {
+  font-size: clamp(1.4rem, 3.5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.custom-locket-preview-specs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: #d1d5db;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.custom-locket-unboxing-note {
+  background: rgba(233, 113, 139, 0.12);
+  border: 1px dashed rgba(233, 113, 139, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: #fbcfe8;
+  text-align: left;
+}
+
+/* Controls Wrap */
+.custom-locket-controls-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.custom-step-card {
+  background: #ffffff;
+  border: 1px solid var(--kanakshi-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.custom-step-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111111;
+  margin-bottom: 12px;
+}
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--kanakshi-pink);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-name-input,
+.custom-name-input-secondary {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 1.5px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  color: #111111;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.custom-name-input:focus,
+.custom-name-input-secondary:focus {
+  border-color: var(--kanakshi-pink);
+  box-shadow: 0 0 0 3px rgba(233, 113, 139, 0.15);
+}
+
+.custom-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.custom-finish-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  border: 1.5px solid var(--kanakshi-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.custom-finish-btn.active {
+  border-color: var(--kanakshi-pink);
+  background: rgba(233, 113, 139, 0.04);
+  box-shadow: 0 0 0 2px rgba(233, 113, 139, 0.2);
+}
+
+.finish-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-bottom: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.finish-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #111111;
+  text-align: center;
+}
+
+.finish-tag {
+  font-size: 0.65rem;
+  color: var(--kanakshi-pink-dark);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.custom-font-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.custom-font-btn {
+  padding: 10px 6px;
+  border: 1.5px solid var(--kanakshi-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.custom-font-btn.active {
+  border-color: var(--kanakshi-pink);
+  background: rgba(233, 113, 139, 0.04);
+}
+
+.custom-tier-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.custom-tier-card {
+  padding: 12px 14px;
+  border: 1.5px solid var(--kanakshi-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-tier-card.selected {
+  border-color: var(--kanakshi-pink);
+  background: #fff8f9;
+  box-shadow: 0 2px 10px rgba(233, 113, 139, 0.12);
+}
+
+.tier-badge {
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+}
+
+.custom-gift-addon-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px dashed var(--kanakshi-pink);
+  background: rgba(233, 113, 139, 0.04);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.custom-cta-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+@media (max-width: 540px) {
+  .custom-cta-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.custom-buy-now-btn {
+  background: var(--kanakshi-black);
+  color: #ffffff;
+  border: none;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.custom-buy-now-btn:hover {
+  background: #2b2b2b;
+  transform: translateY(-1px);
+}
+
+.custom-add-bag-btn {
+  background: var(--kanakshi-pink);
+  color: #ffffff;
+  border: none;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-add-bag-btn:hover {
+  background: var(--kanakshi-pink-dark);
+}
+
+.custom-added-alert {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.custom-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.custom-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #444444;
+  background: #f9f9f9;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+/* Landing Page Sections */
+.custom-section-title-wrap {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.custom-how-it-works-section,
+.custom-ugc-section,
+.custom-faq-section,
+.custom-more-picks-section {
+  margin-top: 64px;
+}
+
+.custom-steps-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.flow-step-card {
+  background: #ffffff;
+  border: 1px solid var(--kanakshi-border);
+  border-radius: var(--radius-md);
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.flow-step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--kanakshi-pink);
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+.flow-step-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.flow-step-card p {
+  font-size: 0.85rem;
+  color: #666666;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.custom-ugc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.custom-ugc-card {
+  background: #ffffff;
+  border: 1px solid var(--kanakshi-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.custom-ugc-img-wrap {
+  position: relative;
+  height: 200px;
+}
+
+.custom-ugc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ugc-verified-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.custom-ugc-body {
+  padding: 14px;
+}
+
+.ugc-stars {
+  color: #f59e0b;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.ugc-quote {
+  font-size: 0.84rem;
+  color: #444444;
+  line-height: 1.45;
+  margin: 0 0 8px;
+}
+
+.ugc-author {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.custom-faq-list {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custom-faq-item {
+  background: #ffffff;
+  border: 1px solid var(--kanakshi-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+}
+
+.custom-faq-question {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #111111;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+}
+
+.custom-faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.custom-faq-answer {
+  padding-top: 10px;
+  font-size: 0.86rem;
+  color: #666666;
+  line-height: 1.55;
+}
+
+
 

@@ -52,10 +52,10 @@ export function SiteHeader({
     return list.length
       ? list
       : [
+          "✨ Design Your Custom Name Locket | Starting ₹399 | Cash on Delivery",
           "FLAT ₹500 OFF on Orders Above ₹2,999 | Code: SPARKLE500",
-          "Free Insured Express Delivery Across India",
-          "100% Certified 925 Sterling Silver & Hallmarked Gold",
-          "7-Day Hassle-Free Returns & Express Doorstep Pickup"
+          "Free Express Insured Delivery Across India",
+          "Handcrafted Antique Oxidised & Customised Jewellery"
         ];
   }, [settings.topbar_offers]);
 
@@ -425,6 +425,17 @@ export function SiteHeader({
         <nav className="kanakshi-nav-bar">
           <div className="kanakshi-container">
             <ul className="kanakshi-nav-list">
+              <li className="kanakshi-nav-item">
+                <Link
+                  href="/custom-name-lockets"
+                  className="kanakshi-nav-link"
+                  style={{ color: "var(--kanakshi-pink)", fontWeight: "700" }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    <span>✨</span> Custom Name Lockets
+                  </span>
+                </Link>
+              </li>
               {menuItems.map((item) => (
                 <li key={item.id} className="kanakshi-nav-item">
                   <Link href={item.url || "/shop"} className="kanakshi-nav-link">
@@ -521,11 +532,31 @@ export function SiteHeader({
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <Link
+                href="/custom-name-lockets"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  fontSize: "0.95rem",
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  background: "var(--kanakshi-pink)",
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  textDecoration: "none",
+                  boxShadow: "0 4px 12px rgba(233, 113, 139, 0.3)"
+                }}
+              >
+                <span>✨ Custom Name Lockets</span>
+                <span style={{ fontSize: "0.75rem", background: "#ffffff", color: "var(--kanakshi-pink)", padding: "2px 6px", borderRadius: "999px", fontWeight: "800" }}>NEW</span>
+              </Link>
+              <Link
                 href="/shop"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ fontSize: "1rem", fontWeight: "700", color: "var(--kanakshi-pink)", paddingBottom: "8px", borderBottom: "1px solid var(--kanakshi-border)" }}
+                style={{ fontSize: "1rem", fontWeight: "700", color: "var(--kanakshi-black)", paddingBottom: "8px", borderBottom: "1px solid var(--kanakshi-border)", textDecoration: "none" }}
               >
-                Shop All Fine Jewellery
+                Shop All Jewellery
               </Link>
               {menuItems.map((item) => (
                 <div key={item.id} style={{ borderBottom: "1px solid var(--kanakshi-border)", paddingBottom: "10px" }}>
