@@ -427,13 +427,18 @@ export function SiteHeader({
             <ul className="kanakshi-nav-list">
               <li className="kanakshi-nav-item">
                 <Link
-                  href="/custom-name-lockets"
+                  href="/"
                   className="kanakshi-nav-link"
                   style={{ color: "var(--kanakshi-pink)", fontWeight: "700" }}
                 >
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                     <span>✨</span> Custom Name Lockets
                   </span>
+                </Link>
+              </li>
+              <li className="kanakshi-nav-item">
+                <Link href="/home-2" className="kanakshi-nav-link">
+                  Classic Collection (Home 2)
                 </Link>
               </li>
               {menuItems.map((item) => (
@@ -532,7 +537,7 @@ export function SiteHeader({
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <Link
-                href="/custom-name-lockets"
+                href="/"
                 onClick={() => setMobileMenuOpen(false)}
                 style={{
                   fontSize: "0.95rem",
@@ -549,12 +554,19 @@ export function SiteHeader({
                 }}
               >
                 <span>✨ Custom Name Lockets</span>
-                <span style={{ fontSize: "0.75rem", background: "#ffffff", color: "var(--kanakshi-pink)", padding: "2px 6px", borderRadius: "999px", fontWeight: "800" }}>NEW</span>
+                <span style={{ fontSize: "0.75rem", background: "#ffffff", color: "var(--kanakshi-pink)", padding: "2px 6px", borderRadius: "999px", fontWeight: "800" }}>HOT</span>
+              </Link>
+              <Link
+                href="/home-2"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--kanakshi-black)", textDecoration: "none", paddingBottom: "6px", borderBottom: "1px solid var(--kanakshi-border)" }}
+              >
+                Classic Collection (Home 2)
               </Link>
               <Link
                 href="/shop"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ fontSize: "1rem", fontWeight: "700", color: "var(--kanakshi-black)", paddingBottom: "8px", borderBottom: "1px solid var(--kanakshi-border)", textDecoration: "none" }}
+                style={{ fontSize: "0.95rem", fontWeight: "600", color: "var(--kanakshi-black)", paddingBottom: "6px", borderBottom: "1px solid var(--kanakshi-border)", textDecoration: "none" }}
               >
                 Shop All Jewellery
               </Link>
